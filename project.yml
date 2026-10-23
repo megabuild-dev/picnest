@@ -1,0 +1,117 @@
+# XcodeGen spec for the Picnest app. Run `xcodegen generate` after you change it.
+# The generated Picnest.xcodeproj is committed, so a Mac without XcodeGen can open it.
+name: Picnest
+options:
+  bundleIdPrefix: dev.megabuild
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    # Sign to run locally. The user has no paid developer account (spec 8).
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+
+packages:
+  PicnestCore:
+    path: PicnestCore
+
+targets:
+  Picnest:
+    type: application
+    platform: macOS
+    # Sets the scheme's BuildableName to "Picnest.app", the same as PRODUCT_NAME below.
+    productName: Picnest
+    sources:
+      - path: Picnest
+    dependencies:
+      - package: PicnestCore
+        product: PicnestCore
+    # XcodeGen writes this partial Info.plist. Xcode merges it with the generated keys.
+    info:
+      path: Picnest/Info.plist
+      properties:
+        PicnestModelStem: $(PICNEST_MODEL_STEM)
+        # The version comes from MARKETING_VERSION and CURRENT_PROJECT_VERSION below, not from 2 copies.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # The private type of a photo drag from the grid to a sidebar category (MediaIDs).
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: dev.megabuild.picnest.media-ids
+            UTTypeDescription: Picnest photos
+            UTTypeConformsTo: [public.data]
+    settings:
+      base:
+        PRODUCT_NAME: Picnest
+        PRODUCT_BUNDLE_IDENTIFIER: dev.megabuild.picnest
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Picnest
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.photography
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Tinh Nguyen. MIT License."
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # Hardened runtime on, App Sandbox off (spec 8). No entitlements file.
+        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_APP_SANDBOX: NO
+        # The model scripts read and write folders, which the script sandbox does not allow.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        # The 1 place that sets the model size (a MobileCLIPSize.modelStem). The scripts below copy
+        # its 2 packages, and AppEnvironment reads it from the Info.plist key PicnestModelStem.
+        PICNEST_MODEL_STEM: mobileclip_s2
+    preBuildScripts:
+      - name: Check models
+        basedOnDependencyAnalysis: false
+        script: |
+          for kind in image text; do
+            if [ ! -d "${SRCROOT}/Models/${PICNEST_MODEL_STEM}_${kind}.mlpackage" ]; then
+              echo "error: Missing ${PICNEST_MODEL_STEM}_${kind}.mlpackage. Run scripts/fetch-models.sh"
+              exit 1
+            fi
+          done
+    postCompileScripts:
+      - name: Copy models
+        basedOnDependencyAnalysis: false
+        script: |
+          # Copy only the 2 packages of the app's model size, unchanged. CoreMLEmbedder compiles them at run time.
+          dest="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Models"
+          mkdir -p "$dest"
+          rsync -a --delete \
+            --include="${PICNEST_MODEL_STEM}_image.mlpackage/***" \
+            --include="${PICNEST_MODEL_STEM}_text.mlpackage/***" \
+            --exclude='*' \
+            "${SRCROOT}/Models/" "$dest/"
+
+  PicnestTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: PicnestTests
+    dependencies:
+      - target: Picnest
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.megabuild.picnest.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Picnest.app/Contents/MacOS/Picnest"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+schemes:
+  Picnest:
+    build:
+      targets:
+        Picnest: all
+        PicnestTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - PicnestTests

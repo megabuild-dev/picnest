@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{--accent:#c8557a;--accent-soft:#fbeef2;--blue:#3a6fd8;--blue-soft:#eaf0fc;--green:#3a9a62;--green-soft:#e8f5ed;--amber:#c27a12;--amber-soft:#fdf3e2;--ink:#1d1d1f;--sub:#6e6e73;--line:#ececef;--bg:#fbfbfc}
+  *{box-sizing:border-box}
+  body{margin:0;background:#e9e9ee;font:14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:var(--ink);padding:28px}
+  h1.page{font-size:18px;margin:0 0 4px} p.lead{color:var(--sub);margin:0 0 22px}
+  .cap{font-size:13px;color:var(--sub);margin:-10px 0 34px 6px}
+  .win{display:flex;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 20px 50px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.2);margin-bottom:22px}
+  .side{width:230px;background:rgba(240,240,244,.92);border-right:.5px solid #d8d8dc;padding:14px 12px;flex:none}
+  .lights{display:flex;gap:8px;margin:2px 4px 16px}.lights span{width:12px;height:12px;border-radius:50%}
+  .sh{font-size:11px;font-weight:600;color:#8e8e93;letter-spacing:.06em;text-transform:uppercase;margin:14px 8px 6px}
+  .si{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px}
+  .si .ic{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font-size:13px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.08)}
+  .si .n{margin-left:auto;font-size:12px;color:#8e8e93;background:rgba(0,0,0,.05);padding:1px 7px;border-radius:9px}
+  .si.sel{background:var(--accent-soft);position:relative}
+  .si.sel::before{content:"";position:absolute;left:-6px;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--accent)}
+  .si.drop{box-shadow:0 0 0 2px var(--accent) inset;background:#fff}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  /* compact unified toolbar */
+  .tb{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:.5px solid #e2e2e6;background:rgba(251,251,252,.9)}
+  .tb .t{font-weight:700;font-size:16px}
+  .tb .p{font:12px ui-monospace,Menlo,monospace;color:var(--sub)}
+  .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:11px;white-space:nowrap}
+  .c-y{background:var(--amber-soft);color:var(--amber)}.c-g{background:var(--green-soft);color:var(--green)}.c-a{background:var(--accent-soft);color:var(--accent)}
+  .ibtn{color:var(--sub);font-size:13px;white-space:nowrap}
+  .pbtn{background:var(--accent);color:#fff;border-radius:18px;padding:7px 16px;font-weight:600;font-size:13px;white-space:nowrap}
+  .gbtn{background:#fff;border-radius:18px;padding:6px 14px;font-weight:500;font-size:13px;box-shadow:0 0 0 .5px rgba(0,0,0,.18);white-space:nowrap}
+  .gbtn.acc{color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .slider{display:flex;align-items:center;gap:6px;color:var(--sub);font-size:12px}
+  .slider i{display:block;width:80px;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--accent) 75%,#d6d6db 75%)}
+  .content{padding:14px 20px 20px;position:relative}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .ph{border-radius:10px;overflow:hidden;position:relative;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.1)}
+  .ph.sel{box-shadow:0 0 0 3px var(--accent)}
+  .img{aspect-ratio:4/3}
+  .ov{position:absolute;left:0;right:0;bottom:0;padding:22px 10px 8px;background:linear-gradient(transparent,rgba(0,0,0,.55));color:#fff;font-size:12px;display:flex;justify-content:space-between;align-items:flex-end}
+  .ov b{font-size:12.5px}
+  .badge{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.95)}
+  .chk{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.2)}
+  .ph.sel .chk{background:var(--accent);border-color:#fff;display:grid;place-items:center;color:#fff;font-size:12px}
+  .grp{display:flex;align-items:center;gap:10px;margin:18px 0 10px}
+  .grp:first-child{margin-top:4px}
+  .grp h3{margin:0;font-size:15px}
+  .grp .sub{color:var(--sub);font-size:13px}
+  .grp .r{margin-left:auto;display:flex;gap:8px}
+  .help{display:flex;gap:10px;align-items:center;background:var(--amber-soft);border-radius:10px;padding:9px 14px;font-size:13px;margin-bottom:6px}
+  .selbar{margin-top:16px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.95);border-radius:12px;box-shadow:0 6px 22px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.1);padding:10px 14px;font-size:13px;flex-wrap:wrap}
+  kbd{font:11px ui-monospace,Menlo;background:#f0f0f3;border-radius:4px;padding:1px 5px;box-shadow:0 0 0 .5px rgba(0,0,0,.15)}
+  .menu{position:absolute;right:30px;top:58px;width:230px;background:rgba(255,255,255,.98);border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.22),0 0 0 .5px rgba(0,0,0,.15);padding:5px;font-size:13px;z-index:3}
+  .menu div{padding:5px 10px;border-radius:6px}.menu .hi{background:var(--accent);color:#fff}.menu hr{border:0;border-top:.5px solid #ddd;margin:4px 6px}.menu small{color:var(--sub);float:right}.menu .hi small{color:#fff}
+</style></head><body>
+
+<h1 class="page">v3: bigger thumbnails, less header, batch actions for "Not sure"</h1>
+<p class="lead">The big header is gone. Title, folder, counts and buttons now fit in one toolbar row. The thumbnail size slider sits in the toolbar too.</p>
+
+<!-- ============ A: Not sure view ============ -->
+<div class="win">
+  <div class="side">
+    <div class="lights"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+    <div class="sh">Review</div>
+    <div class="si"><div class="ic">🗂</div>All photos<span class="n">2,413</span></div>
+    <div class="si sel"><div class="ic" style="color:var(--amber)">⚠︎</div>Not sure<span class="n">184</span></div>
+    <div class="si"><div class="ic" style="color:var(--green)">✓</div>Changed by you<span class="n">23</span></div>
+    <div class="sh">Categories</div>
+    <div class="si"><div class="ic">🎨</div>Kids' artwork<span class="n">312</span></div>
+    <div class="si drop"><div class="ic">🌳</div>Family outings<span class="n">540</span></div>
+    <div class="si"><div class="ic">🍜</div>Food<span class="n">221</span></div>
+    <div class="si"><div class="ic">🧾</div>Documents<span class="n">97</span></div>
+    <div class="si"><div class="ic">📱</div>Screenshots<span class="n">430</span></div>
+    <div class="si"><div class="ic">🏫</div>School events<span class="n">205</span></div>
+    <div class="si"><div class="ic">🐶</div>Pets<span class="n">88</span></div>
+    <div class="sh">Other</div>
+    <div class="si"><div class="ic">⊘</div>Don't move<span class="n">12</span></div>
+  </div>
+  <div class="main">
+    <div class="tb">
+      <span class="t">Not sure</span><span class="chip c-y">184</span>
+      <span class="p">~/Pictures/Zalo export</span>
+      <span style="margin-left:auto"></span>
+      <span class="slider">▫︎<i></i>◻︎</span>
+      <span class="ibtn">↻ Rescan</span>
+      <span class="gbtn acc">✓ Accept all best guesses</span>
+      <span class="pbtn">Sort Photos…</span>
+    </div>
+    <div class="content">
+      <div class="help">⚠︎ The app is not confident about these photos. They are grouped by best guess. Accept a group, or select photos and move them.</div>
+
+      <div class="grp"><h3>Best guess: Kids' artwork</h3><span class="sub">42 photos</span>
+        <div class="r"><span class="gbtn">Select all</span><span class="gbtn acc">✓ Accept 42</span></div></div>
+      <div class="grid">
+        <div class="ph sel"><div class="img" style="background:linear-gradient(135deg,#d9a46b,#a7663f)"></div><span class="badge" style="color:var(--amber)">41%</span><span class="chk">✓</span><div class="ov"><b>z7913505267117_a3f.jpg</b><span>or Documents 38%</span></div></div>
+        <div class="ph sel"><div class="img" style="background:linear-gradient(135deg,#e7c27a,#c9884f)"></div><span class="badge" style="color:var(--amber)">44%</span><span class="chk">✓</span><div class="ov"><b>IMG_20240601_0932.jpg</b><span>or Food 40%</span></div></div>
+        <div class="ph"><div class="img" style="background:linear-gradient(135deg,#e39aac,#b65c78)"></div><span class="badge" style="color:var(--amber)">47%</span><span class="chk"></span><div class="ov"><b>1718202933221.jpg</b><span>or School events 42%</span></div></div>
+      </div>
+
+      <div class="grp"><h3>Best guess: Family outings</h3><span class="sub">61 photos</span>
+        <div class="r"><span class="gbtn">Select all</span><span class="gbtn acc">✓ Accept 61</span></div></div>
+      <div class="grid">
+        <div class="ph"><div class="img" style="background:linear-gradient(135deg,#9cc58a,#5f9a6a)"></div><span class="badge" style="color:var(--amber)">39%</span><span class="chk"></span><div class="ov"><b>z7913505270032_c01.jpg</b><span>or School events 36%</span></div></div>
+        <div class="ph"><div class="img" style="background:linear-gradient(135deg,#8fb8d8,#4f7fae)"></div><span class="badge" style="color:var(--amber)">43%</span><span class="chk"></span><div class="ov"><b>IMG_4410.HEIC</b><span>or Pets 37%</span></div></div>
+        <div class="ph"><div class="img" style="background:linear-gradient(135deg,#c7b6e0,#8a72b8)"></div><span class="badge" style="color:var(--amber)">45%</span><span class="chk"></span><div class="ov"><b>1720011223344.jpg</b><span>or Food 30%</span></div></div>
+      </div>
+
+      <div class="selbar">
+        <b>2 selected</b>
+        <span class="gbtn acc">✓ Accept best guess</span>
+        <span class="gbtn">Move to… ▾</span>
+        <span class="gbtn">Don't move</span>
+        <span style="color:var(--sub)">or drag to a category · <kbd>1</kbd>–<kbd>9</kbd></span>
+        <span style="margin-left:auto;color:var(--sub)"><kbd>⌘A</kbd> select all · <kbd>⌘Z</kbd> undo</span>
+      </div>
+
+      <div class="menu">
+        <div class="hi">🎨 Kids' artwork <small>1</small></div>
+        <div>🌳 Family outings <small>2</small></div>
+        <div>🍜 Food <small>3</small></div>
+        <div>🧾 Documents <small>4</small></div>
+        <div>📱 Screenshots <small>5</small></div>
+        <hr><div>＋ New category…</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="cap">A. "Not sure" view. You can act on photos in 3 ways: <b>Accept all best guesses</b> (toolbar), <b>Accept N</b> for 1 group, or select photos → Accept / Move to… / Don't move. Accepted photos leave this list and go to their category. They count as "Changed by you", so Rescan keeps them.</p>
+
+<!-- ============ B: Category view, compact ============ -->
+<div class="win">
+  <div class="side">
+    <div class="lights"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+    <div class="sh">Review</div>
+    <div class="si"><div class="ic">🗂</div>All photos<span class="n">2,413</span></div>
+    <div class="si"><div class="ic" style="color:var(--amber)">⚠︎</div>Not sure<span class="n">81</span></div>
+    <div class="si"><div class="ic" style="color:var(--green)">✓</div>Changed by you<span class="n">126</span></div>
+    <div class="sh">Categories</div>
+    <div class="si sel"><div class="ic">🎨</div>Kids' artwork<span class="n">354</span></div>
+    <div class="si"><div class="ic">🌳</div>Family outings<span class="n">601</span></div>
+  </div>
+  <div class="main">
+    <div class="tb">
+      <span class="t">🎨 Kids' artwork</span><span class="chip c-a">354</span>
+      <span style="margin-left:auto"></span>
+      <span class="slider">▫︎<i></i>◻︎</span>
+      <span class="ibtn">Lowest confidence ▾</span>
+      <span class="pbtn">Sort Photos…</span>
+    </div>
+    <div class="content">
+      <div class="grid">
+        <div class="ph"><div class="img" style="background:linear-gradient(135deg,#d9a46b,#a7663f)"></div><span class="badge" style="color:var(--green)">✓ You</span><span class="chk"></span><div class="ov"><b>z7913505267117_a3f.jpg</b><span>2024-05-12</span></div></div>
+        <div class="ph"><div class="img" style="background:linear-gradient(135deg,#e39aac,#b65c78)"></div><span class="badge" style="color:var(--amber)">62%</span><span class="chk"></span><div class="ov"><b>IMG_5521.HEIC</b><span>2023-11-02</span></div></div>
+        <div class="ph"><div class="img" style="background:linear-gradient(135deg,#8fb8d8,#4f7fae)"></div><span class="badge" style="color:var(--green)">91%</span><span class="chk"></span><div class="ov"><b>1718202933221.jpg</b><span>2024-06-12</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="cap">B. Category view with the same compact toolbar. A photo with confidence ≥ 70% shows a green badge, and one below 70% shows amber.</p>
+
+</body></html>

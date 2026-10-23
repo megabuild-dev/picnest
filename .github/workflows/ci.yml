@@ -1,0 +1,14 @@
+# Runs the core tests, which do not need the model files. The app tests need 200 MB of models, so run them locally.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core-tests:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test --package-path PicnestCore

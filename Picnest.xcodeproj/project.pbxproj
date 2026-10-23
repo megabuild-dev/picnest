@@ -1,0 +1,694 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0D135A442D6E88198A5A795D /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */; };
+		16DC62252371603DC3D9DD17 /* SuggestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */; };
+		219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */; };
+		21ABC7AB273C92070EBEBE84 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989FD2A75D20A49C2832027B /* ScanView.swift */; };
+		2AA7F661CDC1E5AF2268CA06 /* DuplicatesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */; };
+		3701C843F134677B347B048F /* SelectionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBC5504915550647169DBD7 /* SelectionBar.swift */; };
+		40DF2F882721EFAE00B7D586 /* ReviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5040C0826039EBEC8EDE68A /* ReviewViewModel.swift */; };
+		4389658CBA389E3956766A27 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC9F57247BA22021E463784C /* AppModel.swift */; };
+		45D05A0645B36215E4861488 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F58180671D305DA5D5D04A /* SidebarView.swift */; };
+		556D4B5EA4DD80A6FE2C8D07 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A23A226DCC3C8650C439A15E /* ReviewView.swift */; };
+		5E5EBEB4613086D0FD6C9433 /* ReviewViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */; };
+		5EC0A2D59907C15FB0D2604A /* ScanViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D61409C47FE261863147401E /* ScanViewModelTests.swift */; };
+		61B83CA7F230CB6792E22FBC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D594434602636BD2EEEFF69E /* Assets.xcassets */; };
+		625C90178B01EB2121FB70BE /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C2B7BBF113F2DC262B2B68 /* RootView.swift */; };
+		66083AC05E13E723E2A46072 /* WelcomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845387F7A11FB74846F778E8 /* WelcomeViewModel.swift */; };
+		689A81B87787FDF696696773 /* SortViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A59DEB649794DC24646B1F0 /* SortViewModel.swift */; };
+		6F90566DA29FC4725D1FDB85 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65043FDF2E3D7F22128AA68E /* WelcomeView.swift */; };
+		70F1E214CEAC18D05A77D56B /* PicnestApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE5C538024D2F93601A43E4D /* PicnestApp.swift */; };
+		73B91E90E6553F5DEAB35D9A /* SuggestSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */; };
+		78EC7D52544D30719D020C2A /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08D2B7C9420C231204BC494F /* AppEnvironment.swift */; };
+		81A840EAE82A6E64825282AC /* SuggestViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B56D8F8749FFD9F550296D /* SuggestViewModelTests.swift */; };
+		8A94F39BEF25EB2D1F85781E /* ReviewStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F10389CA705A630CD7876B /* ReviewStyle.swift */; };
+		8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501266281830058D97AF399D /* DuplicatesView.swift */; };
+		9395AF3BEDCC01FED02365BC /* AppDelegateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */; };
+		97486C098A9BF55A6CD6EB3C /* QuickLookPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A582EB3063F6C786DBEDF4B /* QuickLookPreview.swift */; };
+		A69E706284D40D6D2A1A4579 /* Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D74193AE5CCDEA74C74B46 /* Support.swift */; };
+		C0C910198431EECC707F81BE /* PicnestCore in Frameworks */ = {isa = PBXBuildFile; productRef = 30B03628CE17F8732AD5C557 /* PicnestCore */; };
+		C0D6276346C37C0D994D1657 /* ReviewCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */; };
+		C85B93CBA4C456D7B1094A35 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8720DD050E7DEC881184656B /* AppModelTests.swift */; };
+		C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0629FE80B349DDD9DC93B874 /* AppDelegate.swift */; };
+		D107C155337D4DE5FBBF567E /* SortViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0977699F69AB7452B6F56650 /* SortViewModelTests.swift */; };
+		D54CFD0B3713BDC63BE47DEE /* SortSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A0384D25A40836DB152C65 /* SortSheet.swift */; };
+		D5E02ACC4D238BF7ACF5EEBE /* SortMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70654CE25C0D4A3AEB26F66C /* SortMessages.swift */; };
+		E3CBD322C27A8077774D9E12 /* PhotoTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35166FEF0689ABA60577363E /* PhotoTile.swift */; };
+		EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */; };
+		F23B8FDED3D74BE03246FEE3 /* WelcomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */; };
+		F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920C3114E14A8F5535838C19 /* NotSureView.swift */; };
+		FDBFE918B994319F3232C9DC /* ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25180EB57733ADEE527C9178 /* ScanViewModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		341247927DED8A659034D0E8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D2F932FB5DFBAF44A7FCC158 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2D4281D7207331F00ABBA938;
+			remoteInfo = Picnest;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		05B56D8F8749FFD9F550296D /* SuggestViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestViewModelTests.swift; sourceTree = "<group>"; };
+		05F58180671D305DA5D5D04A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		0629FE80B349DDD9DC93B874 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		06A0384D25A40836DB152C65 /* SortSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortSheet.swift; sourceTree = "<group>"; };
+		08D2B7C9420C231204BC494F /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		0977699F69AB7452B6F56650 /* SortViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortViewModelTests.swift; sourceTree = "<group>"; };
+		0DAF2183D3E900579E277CDD /* PicnestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PicnestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A5B92C09D222C1D48568576 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1EBC5504915550647169DBD7 /* SelectionBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionBar.swift; sourceTree = "<group>"; };
+		25180EB57733ADEE527C9178 /* ScanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModel.swift; sourceTree = "<group>"; };
+		2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestViewModel.swift; sourceTree = "<group>"; };
+		2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestSheet.swift; sourceTree = "<group>"; };
+		35166FEF0689ABA60577363E /* PhotoTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoTile.swift; sourceTree = "<group>"; };
+		501266281830058D97AF399D /* DuplicatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesView.swift; sourceTree = "<group>"; };
+		57D74193AE5CCDEA74C74B46 /* Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support.swift; sourceTree = "<group>"; };
+		5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
+		65043FDF2E3D7F22128AA68E /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		70654CE25C0D4A3AEB26F66C /* SortMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMessages.swift; sourceTree = "<group>"; };
+		7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeViewModelTests.swift; sourceTree = "<group>"; };
+		7A59DEB649794DC24646B1F0 /* SortViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortViewModel.swift; sourceTree = "<group>"; };
+		7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModelTests.swift; sourceTree = "<group>"; };
+		7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesViewModelTests.swift; sourceTree = "<group>"; };
+		845387F7A11FB74846F778E8 /* WelcomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeViewModel.swift; sourceTree = "<group>"; };
+		8720DD050E7DEC881184656B /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
+		8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndToEndTests.swift; sourceTree = "<group>"; };
+		920C3114E14A8F5535838C19 /* NotSureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotSureView.swift; sourceTree = "<group>"; };
+		989FD2A75D20A49C2832027B /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
+		9A582EB3063F6C786DBEDF4B /* QuickLookPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLookPreview.swift; sourceTree = "<group>"; };
+		A23A226DCC3C8650C439A15E /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		A5F10389CA705A630CD7876B /* ReviewStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewStyle.swift; sourceTree = "<group>"; };
+		A7C2B7BBF113F2DC262B2B68 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		BC73950B912E76D04662E063 /* PicnestCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PicnestCore; path = PicnestCore; sourceTree = SOURCE_ROOT; };
+		C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCommands.swift; sourceTree = "<group>"; };
+		C5040C0826039EBEC8EDE68A /* ReviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModel.swift; sourceTree = "<group>"; };
+		D594434602636BD2EEEFF69E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D61409C47FE261863147401E /* ScanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModelTests.swift; sourceTree = "<group>"; };
+		D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesViewModel.swift; sourceTree = "<group>"; };
+		D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
+		DE5C538024D2F93601A43E4D /* PicnestApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PicnestApp.swift; sourceTree = "<group>"; };
+		EC9F57247BA22021E463784C /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		FCD14299CCEEDDCB5B11ACF7 /* Picnest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Picnest.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		749D3D175F427D2CEE5FBE30 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C0C910198431EECC707F81BE /* PicnestCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0CCEF3A80EF5954A31120D35 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FCD14299CCEEDDCB5B11ACF7 /* Picnest.app */,
+				0DAF2183D3E900579E277CDD /* PicnestTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0DF81434DB1AA03046151114 /* Scan */ = {
+			isa = PBXGroup;
+			children = (
+				989FD2A75D20A49C2832027B /* ScanView.swift */,
+				25180EB57733ADEE527C9178 /* ScanViewModel.swift */,
+			);
+			path = Scan;
+			sourceTree = "<group>";
+		};
+		3807D8D8DFC5F208A36BFFB6 = {
+			isa = PBXGroup;
+			children = (
+				E10AC9887760944ADCE61A3C /* Packages */,
+				7A9C43406D6D08405A4358D5 /* Picnest */,
+				3F8633FC32E02C95667AEFD3 /* PicnestTests */,
+				0CCEF3A80EF5954A31120D35 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3F8633FC32E02C95667AEFD3 /* PicnestTests */ = {
+			isa = PBXGroup;
+			children = (
+				5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */,
+				8720DD050E7DEC881184656B /* AppModelTests.swift */,
+				7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */,
+				8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */,
+				7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */,
+				D61409C47FE261863147401E /* ScanViewModelTests.swift */,
+				0977699F69AB7452B6F56650 /* SortViewModelTests.swift */,
+				05B56D8F8749FFD9F550296D /* SuggestViewModelTests.swift */,
+				57D74193AE5CCDEA74C74B46 /* Support.swift */,
+				7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */,
+			);
+			path = PicnestTests;
+			sourceTree = "<group>";
+		};
+		7A9C43406D6D08405A4358D5 /* Picnest */ = {
+			isa = PBXGroup;
+			children = (
+				D594434602636BD2EEEFF69E /* Assets.xcassets */,
+				1A5B92C09D222C1D48568576 /* Info.plist */,
+				900ACE24C78A981403F67AD7 /* App */,
+				A48ADFC30BF399456D9B75AE /* Review */,
+				0DF81434DB1AA03046151114 /* Scan */,
+				E244B58BF70F7E0260D5F0FB /* Sort */,
+				8B3CB8EA66A1D323E59F41E8 /* Welcome */,
+			);
+			path = Picnest;
+			sourceTree = "<group>";
+		};
+		8B3CB8EA66A1D323E59F41E8 /* Welcome */ = {
+			isa = PBXGroup;
+			children = (
+				65043FDF2E3D7F22128AA68E /* WelcomeView.swift */,
+				845387F7A11FB74846F778E8 /* WelcomeViewModel.swift */,
+			);
+			path = Welcome;
+			sourceTree = "<group>";
+		};
+		900ACE24C78A981403F67AD7 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				0629FE80B349DDD9DC93B874 /* AppDelegate.swift */,
+				08D2B7C9420C231204BC494F /* AppEnvironment.swift */,
+				EC9F57247BA22021E463784C /* AppModel.swift */,
+				DE5C538024D2F93601A43E4D /* PicnestApp.swift */,
+				A7C2B7BBF113F2DC262B2B68 /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A48ADFC30BF399456D9B75AE /* Review */ = {
+			isa = PBXGroup;
+			children = (
+				501266281830058D97AF399D /* DuplicatesView.swift */,
+				D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */,
+				920C3114E14A8F5535838C19 /* NotSureView.swift */,
+				D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */,
+				35166FEF0689ABA60577363E /* PhotoTile.swift */,
+				9A582EB3063F6C786DBEDF4B /* QuickLookPreview.swift */,
+				C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */,
+				A5F10389CA705A630CD7876B /* ReviewStyle.swift */,
+				A23A226DCC3C8650C439A15E /* ReviewView.swift */,
+				C5040C0826039EBEC8EDE68A /* ReviewViewModel.swift */,
+				1EBC5504915550647169DBD7 /* SelectionBar.swift */,
+				05F58180671D305DA5D5D04A /* SidebarView.swift */,
+				2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */,
+				2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */,
+			);
+			path = Review;
+			sourceTree = "<group>";
+		};
+		E10AC9887760944ADCE61A3C /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				BC73950B912E76D04662E063 /* PicnestCore */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		E244B58BF70F7E0260D5F0FB /* Sort */ = {
+			isa = PBXGroup;
+			children = (
+				70654CE25C0D4A3AEB26F66C /* SortMessages.swift */,
+				06A0384D25A40836DB152C65 /* SortSheet.swift */,
+				7A59DEB649794DC24646B1F0 /* SortViewModel.swift */,
+			);
+			path = Sort;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2D4281D7207331F00ABBA938 /* Picnest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 31EC97295673AA115091A0D5 /* Build configuration list for PBXNativeTarget "Picnest" */;
+			buildPhases = (
+				36597EEB39A1D9E14D35B6E9 /* Check models */,
+				5BFF3A5DDE7E6D00D54C4734 /* Sources */,
+				0D2E0574BC78829A7F3A26D5 /* Copy models */,
+				E3578127C73133B8923E48FE /* Resources */,
+				749D3D175F427D2CEE5FBE30 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Picnest;
+			packageProductDependencies = (
+				30B03628CE17F8732AD5C557 /* PicnestCore */,
+			);
+			productName = Picnest;
+			productReference = FCD14299CCEEDDCB5B11ACF7 /* Picnest.app */;
+			productType = "com.apple.product-type.application";
+		};
+		461A6DD4063190C53A2021D7 /* PicnestTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8355C206C52D58E51963569C /* Build configuration list for PBXNativeTarget "PicnestTests" */;
+			buildPhases = (
+				3194C22DB01AA549456440F3 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AE6F753879B2D8DD82A1C84D /* PBXTargetDependency */,
+			);
+			name = PicnestTests;
+			packageProductDependencies = (
+			);
+			productName = PicnestTests;
+			productReference = 0DAF2183D3E900579E277CDD /* PicnestTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D2F932FB5DFBAF44A7FCC158 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					2D4281D7207331F00ABBA938 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+					461A6DD4063190C53A2021D7 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 0B55604C4475DE926E017567 /* Build configuration list for PBXProject "Picnest" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 3807D8D8DFC5F208A36BFFB6;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A6C687020CB97FEDFE2BCA1B /* XCLocalSwiftPackageReference "PicnestCore" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0CCEF3A80EF5954A31120D35 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2D4281D7207331F00ABBA938 /* Picnest */,
+				461A6DD4063190C53A2021D7 /* PicnestTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E3578127C73133B8923E48FE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				61B83CA7F230CB6792E22FBC /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0D2E0574BC78829A7F3A26D5 /* Copy models */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy models";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Copy only the 2 packages of the app's model size, unchanged. CoreMLEmbedder compiles them at run time.\ndest=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Models\"\nmkdir -p \"$dest\"\nrsync -a --delete \\\n  --include=\"${PICNEST_MODEL_STEM}_image.mlpackage/***\" \\\n  --include=\"${PICNEST_MODEL_STEM}_text.mlpackage/***\" \\\n  --exclude='*' \\\n  \"${SRCROOT}/Models/\" \"$dest/\"\n";
+		};
+		36597EEB39A1D9E14D35B6E9 /* Check models */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Check models";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "for kind in image text; do\n  if [ ! -d \"${SRCROOT}/Models/${PICNEST_MODEL_STEM}_${kind}.mlpackage\" ]; then\n    echo \"error: Missing ${PICNEST_MODEL_STEM}_${kind}.mlpackage. Run scripts/fetch-models.sh\"\n    exit 1\n  fi\ndone\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3194C22DB01AA549456440F3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9395AF3BEDCC01FED02365BC /* AppDelegateTests.swift in Sources */,
+				C85B93CBA4C456D7B1094A35 /* AppModelTests.swift in Sources */,
+				2AA7F661CDC1E5AF2268CA06 /* DuplicatesViewModelTests.swift in Sources */,
+				EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */,
+				5E5EBEB4613086D0FD6C9433 /* ReviewViewModelTests.swift in Sources */,
+				5EC0A2D59907C15FB0D2604A /* ScanViewModelTests.swift in Sources */,
+				D107C155337D4DE5FBBF567E /* SortViewModelTests.swift in Sources */,
+				81A840EAE82A6E64825282AC /* SuggestViewModelTests.swift in Sources */,
+				A69E706284D40D6D2A1A4579 /* Support.swift in Sources */,
+				F23B8FDED3D74BE03246FEE3 /* WelcomeViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5BFF3A5DDE7E6D00D54C4734 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */,
+				78EC7D52544D30719D020C2A /* AppEnvironment.swift in Sources */,
+				4389658CBA389E3956766A27 /* AppModel.swift in Sources */,
+				8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */,
+				219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */,
+				F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */,
+				0D135A442D6E88198A5A795D /* PhotoGridView.swift in Sources */,
+				E3CBD322C27A8077774D9E12 /* PhotoTile.swift in Sources */,
+				70F1E214CEAC18D05A77D56B /* PicnestApp.swift in Sources */,
+				97486C098A9BF55A6CD6EB3C /* QuickLookPreview.swift in Sources */,
+				C0D6276346C37C0D994D1657 /* ReviewCommands.swift in Sources */,
+				8A94F39BEF25EB2D1F85781E /* ReviewStyle.swift in Sources */,
+				556D4B5EA4DD80A6FE2C8D07 /* ReviewView.swift in Sources */,
+				40DF2F882721EFAE00B7D586 /* ReviewViewModel.swift in Sources */,
+				625C90178B01EB2121FB70BE /* RootView.swift in Sources */,
+				21ABC7AB273C92070EBEBE84 /* ScanView.swift in Sources */,
+				FDBFE918B994319F3232C9DC /* ScanViewModel.swift in Sources */,
+				3701C843F134677B347B048F /* SelectionBar.swift in Sources */,
+				45D05A0645B36215E4861488 /* SidebarView.swift in Sources */,
+				D5E02ACC4D238BF7ACF5EEBE /* SortMessages.swift in Sources */,
+				D54CFD0B3713BDC63BE47DEE /* SortSheet.swift in Sources */,
+				689A81B87787FDF696696773 /* SortViewModel.swift in Sources */,
+				73B91E90E6553F5DEAB35D9A /* SuggestSheet.swift in Sources */,
+				16DC62252371603DC3D9DD17 /* SuggestViewModel.swift in Sources */,
+				6F90566DA29FC4725D1FDB85 /* WelcomeView.swift in Sources */,
+				66083AC05E13E723E2A46072 /* WelcomeViewModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AE6F753879B2D8DD82A1C84D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2D4281D7207331F00ABBA938 /* Picnest */;
+			targetProxy = 341247927DED8A659034D0E8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0A15F4CA857C0A5B96B8FA55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.megabuild.picnest.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Picnest.app/Contents/MacOS/Picnest";
+			};
+			name = Debug;
+		};
+		0B857EF0511E5D9EB81DF70D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		345F0DFF03403B775492F5E4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		6AA1ECB8EDB5B7A4B99CCEAE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Picnest/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Picnest;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Tinh Nguyen. MIT License.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PICNEST_MODEL_STEM = mobileclip_s2;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.megabuild.picnest;
+				PRODUCT_NAME = Picnest;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		98DF3CD37CA421E99FD184EA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Picnest/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Picnest;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Tinh Nguyen. MIT License.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PICNEST_MODEL_STEM = mobileclip_s2;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.megabuild.picnest;
+				PRODUCT_NAME = Picnest;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		B16150D500B9E6F84261EBBD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.megabuild.picnest.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Picnest.app/Contents/MacOS/Picnest";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0B55604C4475DE926E017567 /* Build configuration list for PBXProject "Picnest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				345F0DFF03403B775492F5E4 /* Debug */,
+				0B857EF0511E5D9EB81DF70D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		31EC97295673AA115091A0D5 /* Build configuration list for PBXNativeTarget "Picnest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6AA1ECB8EDB5B7A4B99CCEAE /* Debug */,
+				98DF3CD37CA421E99FD184EA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8355C206C52D58E51963569C /* Build configuration list for PBXNativeTarget "PicnestTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A15F4CA857C0A5B96B8FA55 /* Debug */,
+				B16150D500B9E6F84261EBBD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A6C687020CB97FEDFE2BCA1B /* XCLocalSwiftPackageReference "PicnestCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = PicnestCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		30B03628CE17F8732AD5C557 /* PicnestCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PicnestCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = D2F932FB5DFBAF44A7FCC158 /* Project object */;
+}

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{--accent:#c8557a;--accent-soft:#fbeef2;--blue:#3a6fd8;--blue-soft:#eaf0fc;--green:#3a9a62;--green-soft:#e8f5ed;--amber:#c27a12;--amber-soft:#fdf3e2;--ink:#1d1d1f;--sub:#6e6e73;--line:#ececef;--card:#fff;--bg:#fbfbfc}
+  *{box-sizing:border-box}
+  body{margin:0;background:#e9e9ee;font:14px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;color:var(--ink);padding:28px}
+  h1.page{font-size:18px;margin:0 0 4px}
+  p.lead{color:var(--sub);margin:0 0 22px}
+  .cap{font-size:13px;color:var(--sub);margin:-10px 0 34px 6px}
+  .win{display:flex;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 20px 50px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.2);margin-bottom:22px;min-height:640px}
+  /* sidebar */
+  .side{width:250px;background:rgba(240,240,244,.92);border-right:.5px solid #d8d8dc;padding:14px 12px;display:flex;flex-direction:column}
+  .lights{display:flex;gap:8px;align-items:center;margin:2px 4px 18px}
+  .lights span{width:12px;height:12px;border-radius:50%}
+  .lights .tog{margin-left:auto;width:20px;height:16px;border:1.5px solid #888;border-radius:4px}
+  .sh{font-size:11px;font-weight:600;color:#8e8e93;letter-spacing:.06em;text-transform:uppercase;margin:16px 8px 6px}
+  .si{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;font-size:14px;cursor:default}
+  .si .ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:14px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.08)}
+  .si .n{margin-left:auto;font-size:12px;color:#8e8e93;background:rgba(0,0,0,.05);padding:1px 7px;border-radius:9px}
+  .si.sel{background:var(--accent-soft);position:relative}
+  .si.sel::before{content:"";position:absolute;left:-6px;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--accent)}
+  .si.add{color:var(--sub)}
+  .foot{margin-top:auto;background:rgba(0,0,0,.04);border-radius:10px;padding:10px 12px;font-size:13px}
+  .foot b{display:block}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:6px}
+  /* main */
+  .main{flex:1;padding:16px 26px 26px;overflow:hidden}
+  .wtitle{font-weight:600;color:#3a3a3c;margin-bottom:22px}
+  .hero{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+  .appic{width:60px;height:60px;border-radius:15px;background:linear-gradient(160deg,#e07a9a,var(--accent));display:grid;place-items:center;color:#fff;font-size:28px}
+  .hero h2{margin:0;font-size:28px;letter-spacing:-.01em}
+  .hero p{margin:3px 0 0;color:var(--sub)}
+  .pbtn{margin-left:auto;background:var(--accent);color:#fff;border-radius:20px;padding:9px 18px;font-weight:600;font-size:14px;white-space:nowrap}
+  .gbtn{background:#fff;border-radius:20px;padding:8px 16px;font-weight:500;box-shadow:0 0 0 .5px rgba(0,0,0,.15);white-space:nowrap}
+  .card{background:var(--card);border-radius:12px;box-shadow:0 0 0 .5px rgba(0,0,0,.08);padding:12px 16px;margin-bottom:12px}
+  .path{display:flex;align-items:center;gap:10px;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  .lnk{color:var(--green);font-family:-apple-system,system-ui;font-size:13px;margin-left:14px}
+  .stats{display:flex;align-items:center;gap:20px;background:linear-gradient(90deg,#fff,var(--accent-soft))}
+  .big{font-size:34px;font-weight:700;color:var(--accent);line-height:1}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;border-left:1px solid var(--line);padding-left:20px}
+  .chip{font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:12px}
+  .c-a{background:var(--accent-soft);color:var(--accent)}.c-b{background:var(--blue-soft);color:var(--blue)}.c-g{background:var(--green-soft);color:var(--green)}.c-y{background:var(--amber-soft);color:var(--amber)}
+  .banner{display:flex;gap:12px;align-items:center;background:var(--amber-soft);border-radius:12px;padding:12px 16px;margin-bottom:16px}
+  .banner .bi{width:34px;height:34px;border-radius:9px;background:#fff;display:grid;place-items:center}
+  .banner b{display:block}.banner span{color:var(--sub);font-size:13px}
+  .toolbar{display:flex;align-items:center;gap:10px;margin:6px 0 12px}
+  .toolbar h3{margin:0;font-size:17px}
+  .seg{margin-left:auto;display:flex;background:rgba(0,0,0,.06);border-radius:8px;padding:2px;font-size:12px}
+  .seg span{padding:3px 10px;border-radius:6px}.seg .on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .ph{background:#fff;border-radius:12px;box-shadow:0 0 0 .5px rgba(0,0,0,.08);padding:8px;position:relative}
+  .ph.sel{box-shadow:0 0 0 2.5px var(--accent)}
+  .img{aspect-ratio:4/3;border-radius:8px}
+  .ph .nm{font-weight:600;font-size:12.5px;margin:7px 2px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ph .mt{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--sub);margin:0 2px 6px}
+  .ph .tag{position:absolute;top:14px;left:14px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.92)}
+  .ph .you{position:absolute;top:14px;right:14px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--green);color:#fff}
+  .pick{display:flex;align-items:center;justify-content:space-between;background:#f5f5f7;border-radius:7px;padding:5px 8px;font-size:12px}
+  .pick .alt{color:var(--sub)}
+  .selbar{position:sticky;bottom:0;margin-top:14px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.1);padding:10px 14px;font-size:13px}
+  .menu{background:#fff;border-radius:8px;box-shadow:0 0 0 .5px rgba(0,0,0,.2);padding:4px 10px}
+  kbd{font:11px ui-monospace,Menlo;background:#f0f0f3;border-radius:4px;padding:1px 5px;box-shadow:0 0 0 .5px rgba(0,0,0,.15)}
+  /* sheet */
+  .dim{position:relative}
+  .dim::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.18)}
+  .sheet{position:absolute;z-index:2;left:50%;top:40px;transform:translateX(-50%);width:470px;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.3);padding:22px}
+  .sheet h3{margin:0 0 4px;font-size:18px}.sheet .s{color:var(--sub);margin:0 0 16px;font-size:13px}
+  .opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:#f7f7f9;margin-bottom:8px}
+  .opt.on{background:var(--accent-soft);box-shadow:0 0 0 1.5px var(--accent)}
+  .opt small{display:block;color:var(--sub);font-size:12px}
+  .radio{width:16px;height:16px;border-radius:50%;border:1.5px solid #aaa;margin-top:2px;flex:none}
+  .opt.on .radio{border:5px solid var(--accent)}
+  .cb{display:flex;gap:10px;align-items:center;padding:7px 2px}
+  .box{width:16px;height:16px;border-radius:4px;border:1.5px solid #aaa;flex:none;display:grid;place-items:center;font-size:11px;color:#fff}
+  .box.on{background:var(--accent);border-color:var(--accent)}
+  .tree{font:12px/1.6 ui-monospace,Menlo,monospace;background:#f7f7f9;border-radius:10px;padding:10px 12px;margin:10px 0 16px;color:#3a3a3c}
+  .tree em{color:var(--sub);font-style:normal}
+</style></head><body><h1 class="page">v4: Sort sheet with a choice for the "Not sure" photos</h1><p class="lead">The sheet now asks what to do with the photos that are still "Not sure". Accept best guess is the default.</p><!-- ============ SCREEN B: Sort sheet ============ -->
+<div class="win dim" style="min-height:860px">
+  <div class="side">
+    <div class="lights"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span><div class="tog"></div></div>
+    <div class="sh">Categories</div>
+    <div class="si sel"><div class="ic">🎨</div>Kids' artwork<span class="n">312</span></div>
+    <div class="si"><div class="ic">🌳</div>Family outings<span class="n">540</span></div>
+    <div class="si"><div class="ic">🍜</div>Food<span class="n">221</span></div>
+  </div>
+  <div class="main"><div class="wtitle">Kids' artwork</div></div>
+  <div class="sheet">
+    <h3>Sort 2,401 photos into 7 folders</h3>
+    <p class="s">12 photos marked "Don't move" stay where they are.</p>
+    <div class="card path" style="background:#f7f7f9;box-shadow:none">📁 ~/Pictures/Zalo export - sorted <span class="lnk" style="margin-left:auto">Change…</span></div>
+    <div class="opt on"><div class="radio"></div><div><b>Copy</b><small>Originals stay in the source folder.</small></div></div>
+    <div class="opt"><div class="radio"></div><div><b>Move</b><small>Each original is deleted after its copy is checked.</small></div></div>
+    <div class="cb"><div class="box"></div>Make date sub-folders (year / month)</div>
+    <div class="cb"><div class="box"></div>Rename files to date + number</div>
+    <div style="font-weight:600;margin:12px 0 6px">81 photos still "Not sure":</div>
+    <div class="opt on"><div class="radio"></div><div><b>Accept best guess</b><small>Put each one in its most likely category.</small></div></div>
+    <div class="opt"><div class="radio"></div><div><b>Put in a "Not sure" folder</b><small>Sort them by hand later in Finder.</small></div></div>
+    <div class="opt"><div class="radio"></div><div><b>Leave in the source folder</b><small>Do not copy or move them.</small></div></div>
+    <div class="tree">Zalo export - sorted/<br>&nbsp;├ kids-artwork/ <em>312</em><br>&nbsp;│&nbsp; └ z7913505267117_a3f.jpg<br>&nbsp;├ family-outings/ <em>540</em><br>&nbsp;└ …</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><span class="gbtn">Cancel</span><span class="pbtn" style="margin:0">Sort</span></div>
+  </div>
+</div>
+<p class="cap">B. Sort sheet. Date folders and renaming are off by default. The preview updates when you tick a box. After sorting, the toolbar shows "Undo last sort".</p>
+
+</body></html>

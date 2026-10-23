@@ -1,0 +1,282 @@
+[
+  {
+    "displayName": "Artwork cityscape",
+    "emoji": "🏙️",
+    "prompts": [
+      "a watercolor painting of a city building"
+    ]
+  },
+  {
+    "displayName": "Artwork street",
+    "emoji": "🛣️",
+    "prompts": [
+      "a watercolor painting of a city street with people and vehicles"
+    ]
+  },
+  {
+    "displayName": "Artwork bridge",
+    "emoji": "🌉",
+    "prompts": [
+      "a watercolor painting of a bridge over a river"
+    ]
+  },
+  {
+    "displayName": "Artwork landscape",
+    "emoji": "🏞️",
+    "prompts": [
+      "a watercolor painting of a landscape with trees and sky"
+    ]
+  },
+  {
+    "displayName": "Artwork seascape",
+    "emoji": "⛵",
+    "prompts": [
+      "a watercolor painting of the sea and boats"
+    ]
+  },
+  {
+    "displayName": "Artwork flowers",
+    "emoji": "🌸",
+    "prompts": [
+      "a watercolor painting of flowers"
+    ]
+  },
+  {
+    "displayName": "Artwork still life",
+    "emoji": "🍎",
+    "prompts": [
+      "a painting of fruit and objects on a table"
+    ]
+  },
+  {
+    "displayName": "Artwork portrait",
+    "emoji": "🧑‍🎨",
+    "prompts": [
+      "a painted portrait of a person"
+    ]
+  },
+  {
+    "displayName": "Artwork animal",
+    "emoji": "🐾",
+    "prompts": [
+      "a painting of an animal"
+    ]
+  },
+  {
+    "displayName": "Artwork simple study",
+    "emoji": "📄",
+    "prompts": [
+      "a simple watercolor study of one object on white paper"
+    ]
+  },
+  {
+    "displayName": "Oil painting",
+    "emoji": "🖼️",
+    "prompts": [
+      "an oil painting on canvas"
+    ]
+  },
+  {
+    "displayName": "Pencil sketch",
+    "emoji": "✏️",
+    "prompts": [
+      "a pencil sketch on paper"
+    ]
+  },
+  {
+    "displayName": "Perspective lesson",
+    "emoji": "📐",
+    "prompts": [
+      "a drawing lesson with perspective lines and boxes"
+    ]
+  },
+  {
+    "displayName": "Calligraphy",
+    "emoji": "🖋️",
+    "prompts": [
+      "calligraphy lettering on paper"
+    ]
+  },
+  {
+    "displayName": "Color swatch",
+    "emoji": "🎨",
+    "prompts": [
+      "watercolor color swatches and paint tests"
+    ]
+  },
+  {
+    "displayName": "Art supplies",
+    "emoji": "🖌️",
+    "prompts": [
+      "art supplies: brushes, paints and palettes on a table"
+    ]
+  },
+  {
+    "displayName": "Class adults",
+    "emoji": "🧑‍🏫",
+    "prompts": [
+      "adults painting at tables in an art class"
+    ]
+  },
+  {
+    "displayName": "Class kids",
+    "emoji": "🧒",
+    "prompts": [
+      "children painting in an art class"
+    ]
+  },
+  {
+    "displayName": "Teacher demo",
+    "emoji": "👩‍🏫",
+    "prompts": [
+      "a teacher shows a painting technique to students"
+    ]
+  },
+  {
+    "displayName": "Student with artwork",
+    "emoji": "🙋",
+    "prompts": [
+      "a person holds up their painting and smiles"
+    ]
+  },
+  {
+    "displayName": "Child with artwork",
+    "emoji": "👧",
+    "prompts": [
+      "a child holds up their painting"
+    ]
+  },
+  {
+    "displayName": "Group photo",
+    "emoji": "👥",
+    "prompts": [
+      "a group photo of students in an art studio"
+    ]
+  },
+  {
+    "displayName": "Workshop event",
+    "emoji": "🎪",
+    "prompts": [
+      "people at an art workshop event"
+    ]
+  },
+  {
+    "displayName": "Painting in progress",
+    "emoji": "🖌️",
+    "prompts": [
+      "a hand paints on paper with a brush, close up"
+    ]
+  },
+  {
+    "displayName": "Studio interior",
+    "emoji": "🏠",
+    "prompts": [
+      "the interior of an art studio with paintings on the walls"
+    ]
+  },
+  {
+    "displayName": "Gallery wall",
+    "emoji": "🖼️",
+    "prompts": [
+      "framed paintings hanging on a wall"
+    ]
+  },
+  {
+    "displayName": "Framed artwork",
+    "emoji": "🖼️",
+    "prompts": [
+      "a framed painting"
+    ]
+  },
+  {
+    "displayName": "Poster course",
+    "emoji": "📋",
+    "prompts": [
+      "a poster with text that lists art courses and prices"
+    ]
+  },
+  {
+    "displayName": "Poster event",
+    "emoji": "📣",
+    "prompts": [
+      "a promotional poster for an art event"
+    ]
+  },
+  {
+    "displayName": "Infographic tips",
+    "emoji": "💡",
+    "prompts": [
+      "an infographic card with painting tips and text"
+    ]
+  },
+  {
+    "displayName": "Certificate",
+    "emoji": "🏅",
+    "prompts": [
+      "a certificate or award paper"
+    ]
+  },
+  {
+    "displayName": "Screenshot",
+    "emoji": "📱",
+    "prompts": [
+      "a screenshot of a phone app or website"
+    ]
+  },
+  {
+    "displayName": "Chat screenshot",
+    "emoji": "💬",
+    "prompts": [
+      "a screenshot of a chat conversation"
+    ]
+  },
+  {
+    "displayName": "Text document",
+    "emoji": "📝",
+    "prompts": [
+      "a document page with a lot of text"
+    ]
+  },
+  {
+    "displayName": "Logo",
+    "emoji": "🔖",
+    "prompts": [
+      "a logo on a plain background"
+    ]
+  },
+  {
+    "displayName": "Food drink",
+    "emoji": "🍽️",
+    "prompts": [
+      "a photo of food or drinks"
+    ]
+  },
+  {
+    "displayName": "Selfie",
+    "emoji": "🤳",
+    "prompts": [
+      "a selfie of a person"
+    ]
+  },
+  {
+    "displayName": "Outdoor sketching",
+    "emoji": "🧑‍🎨",
+    "prompts": [
+      "people sketching outdoors on the street"
+    ]
+  },
+  {
+    "displayName": "Product photo",
+    "emoji": "📦",
+    "prompts": [
+      "a product photo of a sketchbook or art material"
+    ]
+  },
+  {
+    "displayName": "Kids craft",
+    "emoji": "✂️",
+    "prompts": [
+      "a children's craft project"
+    ]
+  }
+]

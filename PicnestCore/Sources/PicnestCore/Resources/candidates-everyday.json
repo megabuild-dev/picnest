@@ -1,0 +1,408 @@
+[
+  {
+    "displayName": "Kids' artwork",
+    "emoji": "🎨",
+    "prompts": [
+      "a photo of a child's drawing or painting",
+      "a photo of a kids' craft project"
+    ]
+  },
+  {
+    "displayName": "Family outings",
+    "emoji": "👨‍👩‍👧",
+    "prompts": [
+      "a photo of a family on an outing together",
+      "a photo of a family at a park"
+    ]
+  },
+  {
+    "displayName": "Food",
+    "emoji": "🍜",
+    "prompts": [
+      "a photo of a meal on a table",
+      "a photo of food or drinks"
+    ]
+  },
+  {
+    "displayName": "Receipts",
+    "emoji": "🧾",
+    "prompts": [
+      "a photo of a paper receipt",
+      "a photo of a bill or invoice"
+    ]
+  },
+  {
+    "displayName": "Documents",
+    "emoji": "📄",
+    "prompts": [
+      "a photo of a document page with text",
+      "a photo of an official form or certificate"
+    ]
+  },
+  {
+    "displayName": "Screenshots",
+    "emoji": "📱",
+    "prompts": [
+      "a screenshot of a phone app or website"
+    ]
+  },
+  {
+    "displayName": "Pets",
+    "emoji": "🐶",
+    "prompts": [
+      "a photo of a pet dog or cat",
+      "a photo of an animal at home"
+    ]
+  },
+  {
+    "displayName": "School events",
+    "emoji": "🏫",
+    "prompts": [
+      "a photo of a school event with students",
+      "a photo of a school ceremony or performance"
+    ]
+  },
+  {
+    "displayName": "Selfies",
+    "emoji": "🤳",
+    "prompts": [
+      "a selfie of a person"
+    ]
+  },
+  {
+    "displayName": "Group photos",
+    "emoji": "👥",
+    "prompts": [
+      "a group photo of people posing together",
+      "a photo of many people smiling at the camera"
+    ]
+  },
+  {
+    "displayName": "Babies",
+    "emoji": "👶",
+    "prompts": [
+      "a photo of a baby",
+      "a photo of a newborn or infant"
+    ]
+  },
+  {
+    "displayName": "Birthdays",
+    "emoji": "🎂",
+    "prompts": [
+      "a photo of a birthday party with a cake",
+      "a photo of balloons and candles"
+    ]
+  },
+  {
+    "displayName": "Travel and landscapes",
+    "emoji": "🏞️",
+    "prompts": [
+      "a photo of a scenic landscape",
+      "a photo of a tourist place on a trip"
+    ]
+  },
+  {
+    "displayName": "Home and interior",
+    "emoji": "🛋️",
+    "prompts": [
+      "a photo of a room inside a home",
+      "a photo of furniture and home decoration"
+    ]
+  },
+  {
+    "displayName": "Shopping and products",
+    "emoji": "🛍️",
+    "prompts": [
+      "a photo of a product for sale",
+      "a photo of items in a shop"
+    ]
+  },
+  {
+    "displayName": "Memes and stickers",
+    "emoji": "😂",
+    "prompts": [
+      "a funny meme image with text",
+      "a cartoon sticker"
+    ]
+  },
+  {
+    "displayName": "Chat screenshots",
+    "emoji": "💬",
+    "prompts": [
+      "a screenshot of a chat conversation",
+      "a screenshot of a messaging app"
+    ]
+  },
+  {
+    "displayName": "Text and notes",
+    "emoji": "📝",
+    "prompts": [
+      "a photo of handwritten notes",
+      "a photo of a page with printed text"
+    ]
+  },
+  {
+    "displayName": "Vehicles",
+    "emoji": "🚗",
+    "prompts": [
+      "a photo of a car on a road",
+      "a photo of a motorbike or bicycle"
+    ]
+  },
+  {
+    "displayName": "Flowers and plants",
+    "emoji": "🌷",
+    "prompts": [
+      "a photo of flowers",
+      "a photo of plants and a garden"
+    ]
+  },
+  {
+    "displayName": "Beach and sea",
+    "emoji": "🏖️",
+    "prompts": [
+      "a photo of a beach and the sea",
+      "a photo of people swimming"
+    ]
+  },
+  {
+    "displayName": "Mountains and nature",
+    "emoji": "⛰️",
+    "prompts": [
+      "a photo of mountains and forest",
+      "a photo of a waterfall or a lake"
+    ]
+  },
+  {
+    "displayName": "City streets",
+    "emoji": "🏙️",
+    "prompts": [
+      "a photo of a city street with buildings",
+      "a photo of a busy street at night"
+    ]
+  },
+  {
+    "displayName": "Temples and landmarks",
+    "emoji": "🛕",
+    "prompts": [
+      "a photo of a temple or pagoda",
+      "a photo of a famous landmark"
+    ]
+  },
+  {
+    "displayName": "Weddings",
+    "emoji": "💒",
+    "prompts": [
+      "a photo of a wedding",
+      "a photo of a bride and groom"
+    ]
+  },
+  {
+    "displayName": "Tet and festivals",
+    "emoji": "🧧",
+    "prompts": [
+      "a photo of Lunar New Year decorations",
+      "a photo of a festival or lantern celebration"
+    ]
+  },
+  {
+    "displayName": "Family dinners",
+    "emoji": "🍲",
+    "prompts": [
+      "a photo of a family eating dinner together",
+      "a photo of people around a dining table"
+    ]
+  },
+  {
+    "displayName": "Cooking",
+    "emoji": "🍳",
+    "prompts": [
+      "a photo of someone cooking in a kitchen",
+      "a photo of ingredients being prepared"
+    ]
+  },
+  {
+    "displayName": "Drinks and coffee",
+    "emoji": "☕",
+    "prompts": [
+      "a photo of a cup of coffee or tea",
+      "a photo of a drink at a cafe"
+    ]
+  },
+  {
+    "displayName": "Fruit and vegetables",
+    "emoji": "🍉",
+    "prompts": [
+      "a photo of fruit",
+      "a photo of fresh vegetables at a market"
+    ]
+  },
+  {
+    "displayName": "Toddlers and play",
+    "emoji": "🧸",
+    "prompts": [
+      "a photo of a toddler playing with toys",
+      "a photo of children playing"
+    ]
+  },
+  {
+    "displayName": "School homework",
+    "emoji": "📚",
+    "prompts": [
+      "a photo of a child's homework or exercise book",
+      "a photo of a school textbook page"
+    ]
+  },
+  {
+    "displayName": "School uniforms",
+    "emoji": "🎒",
+    "prompts": [
+      "a photo of a child in a school uniform",
+      "a photo of students at school"
+    ]
+  },
+  {
+    "displayName": "Sports and exercise",
+    "emoji": "⚽",
+    "prompts": [
+      "a photo of people playing sports",
+      "a photo of a child playing football"
+    ]
+  },
+  {
+    "displayName": "Swimming and water play",
+    "emoji": "🏊",
+    "prompts": [
+      "a photo of children in a swimming pool",
+      "a photo of kids playing in water"
+    ]
+  },
+  {
+    "displayName": "Playgrounds and parks",
+    "emoji": "🛝",
+    "prompts": [
+      "a photo of a children's playground",
+      "a photo of a park with grass and trees"
+    ]
+  },
+  {
+    "displayName": "Grandparents",
+    "emoji": "👵",
+    "prompts": [
+      "a photo of grandparents with grandchildren",
+      "a photo of an elderly person"
+    ]
+  },
+  {
+    "displayName": "Couples",
+    "emoji": "💑",
+    "prompts": [
+      "a photo of a couple together",
+      "a photo of two adults posing"
+    ]
+  },
+  {
+    "displayName": "Portraits",
+    "emoji": "🧑",
+    "prompts": [
+      "a portrait photo of one person",
+      "a close-up photo of a face"
+    ]
+  },
+  {
+    "displayName": "Mirror and outfit photos",
+    "emoji": "👗",
+    "prompts": [
+      "a photo of a person showing their outfit",
+      "a photo of clothes and fashion"
+    ]
+  },
+  {
+    "displayName": "Medical and health",
+    "emoji": "🩺",
+    "prompts": [
+      "a photo of a medical document or prescription",
+      "a photo of medicine or a doctor visit"
+    ]
+  },
+  {
+    "displayName": "Maps and directions",
+    "emoji": "🗺️",
+    "prompts": [
+      "a screenshot of a map",
+      "a screenshot of directions on a phone"
+    ]
+  },
+  {
+    "displayName": "Payments and banking",
+    "emoji": "💳",
+    "prompts": [
+      "a screenshot of a bank transfer or payment",
+      "a screenshot of an online order"
+    ]
+  },
+  {
+    "displayName": "Social media posts",
+    "emoji": "📲",
+    "prompts": [
+      "a screenshot of a social media post",
+      "a screenshot of a video or news article"
+    ]
+  },
+  {
+    "displayName": "Posters and flyers",
+    "emoji": "📣",
+    "prompts": [
+      "a photo of a poster with text",
+      "a photo of a flyer or advertisement"
+    ]
+  },
+  {
+    "displayName": "Signs and menus",
+    "emoji": "🪧",
+    "prompts": [
+      "a photo of a street sign or shop sign",
+      "a photo of a restaurant menu"
+    ]
+  },
+  {
+    "displayName": "Electronics and gadgets",
+    "emoji": "💻",
+    "prompts": [
+      "a photo of a phone or laptop",
+      "a photo of an electronic device"
+    ]
+  },
+  {
+    "displayName": "Toys and crafts",
+    "emoji": "🧩",
+    "prompts": [
+      "a photo of toys on the floor",
+      "a photo of a handmade craft"
+    ]
+  },
+  {
+    "displayName": "Night and fireworks",
+    "emoji": "🎆",
+    "prompts": [
+      "a photo of fireworks at night",
+      "a photo of city lights in the dark"
+    ]
+  },
+  {
+    "displayName": "Sky and sunsets",
+    "emoji": "🌅",
+    "prompts": [
+      "a photo of a sunset",
+      "a photo of clouds in the sky"
+    ]
+  },
+  {
+    "displayName": "Blurry or dark photos",
+    "emoji": "🌑",
+    "prompts": [
+      "a blurry photo",
+      "a very dark photo"
+    ]
+  }
+]
