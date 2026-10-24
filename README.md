@@ -1,6 +1,14 @@
-# Picnest
+<p align="center">
+  <img src="Picnest/Assets.xcassets/AppIcon.appiconset/icon-128@2x.png" width="128" height="128" alt="Picnest app icon">
+</p>
 
-Picnest sorts a messy folder of photos into category folders. It runs on your Mac. Your photos never leave your computer.
+<h1 align="center">Picnest</h1>
+
+<p align="center">Picnest sorts a messy folder of photos into category folders. It runs on your Mac. Your photos never leave your computer.</p>
+
+<p align="center">
+  <img src="marketing/app-store-screenshots/exports/macos/mac/1280x800/en/01-hero.png" alt="Picnest shows a grid of photos with a confidence score on each photo, and categories in the sidebar">
+</p>
 
 Point it at a folder of photos with names like `z7913505267117_a3f.jpg`. The app looks at each photo with an on-device AI model (Apple MobileCLIP), proposes categories with clear names, and lets you fix any photo before it copies or moves the files.
 
@@ -13,6 +21,12 @@ Point it at a folder of photos with names like `z7913505267117_a3f.jpg`. The app
 - **Undo.** Undo Last Sort puts the folder back the way it was.
 - **Duplicates.** Find exact copies and similar photos, keep 1, and move the others to the Trash.
 - **Private.** No account, no upload, no network after the install.
+
+## Screenshots
+
+| Review every suggestion | Spot exact copies | Keep every original |
+|:---:|:---:|:---:|
+| <img src="marketing/app-store-screenshots/exports/macos/mac/1280x800/en/03-device-top.png" alt="The Not sure list groups photos by the best-guess category"> | <img src="marketing/app-store-screenshots/exports/macos/mac/1280x800/en/02-split-landscape.png" alt="The Duplicates tool shows groups of exact copies and marks 1 photo to keep"> | <img src="marketing/app-store-screenshots/exports/macos/mac/1280x800/en/04-no-device.png" alt="The Sort dialog with Copy and Move options and a preview of the sorted folders"> |
 
 ## Install
 
