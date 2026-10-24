@@ -42,6 +42,9 @@ struct SelectableTile: View {
     /// Runs after a click, so the grid takes the keyboard focus.
     let onTap: () -> Void
 
+    /// The AppKit view of the tile: the share sheet points its popover at it.
+    @State private var shareAnchor = ShareAnchor()
+
     var body: some View {
         PhotoTile(model: model, id: id, isSelected: isSelected)
             .onTapGesture(count: 2) { model.openPreview(id) }
@@ -50,8 +53,34 @@ struct SelectableTile: View {
                 onTap()
             })
             .draggable(MediaIDs(ids: model.dragIDs(for: id)))
-            .contextMenu { PhotoContextMenu(model: model, id: id) }
+            .background { ShareAnchorView(anchor: shareAnchor) }
+            .contextMenu { PhotoContextMenu(model: model, id: id, anchor: shareAnchor.view) }
     }
+}
+
+/// The AppKit view of a tile, so the share sheet's popover points at the photo that the menu belongs to.
+final class ShareAnchor {
+    weak var view: NSView?
+}
+
+/// An invisible background that gives its tile a view for `ShareAnchor`. It lets clicks and the
+/// right-click pass through to the tile above it.
+private struct ShareAnchorView: NSViewRepresentable {
+    let anchor: ShareAnchor
+
+    func makeNSView(context: Context) -> NSView {
+        let view = ClickThroughView()
+        anchor.view = view
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        anchor.view = view
+    }
+}
+
+private final class ClickThroughView: NSView {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }
 
 /// What every photo grid shares: the selection bar at the bottom, the focus, Space, Escape, keys 1 to 9,

@@ -1,3 +1,4 @@
+import AppKit
 import PicnestCore
 import SwiftUI
 
@@ -96,12 +97,21 @@ struct MoveToMenuItems: View {
 struct PhotoContextMenu: View {
     let model: ReviewViewModel
     let id: MediaID
+    /// The view of the tile, so the share sheet's popover points at the photo.
+    let anchor: NSView?
 
     var body: some View {
         // Building the menu changes nothing. Each action selects the photo first.
         Button("Quick Look") { model.contextMenuSelect(id); model.openPreview(id) }
         Button("Open") { model.contextMenuSelect(id); model.openInDefaultApp(id) }
         Button("Show in Finder") { model.contextMenuSelect(id); model.showInFinder() }
+        Button("Share…") {
+            model.contextMenuSelect(id)
+            let urls = model.selectedURLs()
+            guard !urls.isEmpty, let anchor else { return }
+            let picker = NSSharingServicePicker(items: urls)
+            picker.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .maxY)
+        }
         Divider()
         Menu("Move to…") { MoveToMenuItems(model: model) { model.contextMenuSelect(id) } }
         if model.canAccept(model.contextTargets(for: id)) {

@@ -496,6 +496,14 @@ struct ReviewViewModelTests {
         #expect(Set(revealed[0].map(\.lastPathComponent)) == ["a.jpg", "c.jpg"])
     }
 
+    @Test func selectedURLsAreTheSelection() throws {
+        let model = try makeModel()
+        #expect(model.selectedURLs().isEmpty)
+        model.click("c.jpg", modifiers: [])
+        model.click("a.jpg", modifiers: .command)
+        #expect(Set(model.selectedURLs().map(\.lastPathComponent)) == ["a.jpg", "c.jpg"])
+    }
+
     // MARK: - Multi-selection
 
     @Test func plainClickSelectsOnlyThatPhoto() throws {

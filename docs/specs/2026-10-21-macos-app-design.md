@@ -57,6 +57,7 @@ Terms are defined in [[dictionary]]. Section 13 adds the new app terms.
 | R17 | **Start Over…** scans the folder again and proposes new categories (feedback 2026-10-23). |
 | R18 | After a scan, the app opens the Suggest Categories sheet when many photos are "Not sure" (feedback 2026-10-23). |
 | R19 | The app gives each proposed and suggested category a meaningful name for any folder. The user does not select a list. "Group <n>" is a last resort (feedback 2026-10-23). |
+| R20 | The user can share a photo from the right-click menu (for example to Zalo) (feedback 2026-10-24). |
 
 ### 1.3 Goals
 
@@ -170,7 +171,7 @@ The window has a sidebar and a main area (`NavigationSplitView`).
 - Click selects 1 photo. ⌘-click and ⇧-click add to the selection. ⌘A selects all photos in the view.
 - Space and Return open the selected photo in Quick Look.
 - Double-click opens the photo in Quick Look.
-- Right-click a photo: if the photo is not selected, the app selects only that photo first. The menu has **Quick Look**, **Open**, **Show in Finder**, **Move to…**, **Accept Best Guess** (only for "Not sure" photos), **Don't Move**, and **Move to Trash**. **Open** opens the photo in its default app (for example Preview).
+- Right-click a photo: if the photo is not selected, the app selects only that photo first. The menu has **Quick Look**, **Open**, **Show in Finder**, **Share…**, **Move to…**, **Accept Best Guess** (only for "Not sure" photos), **Don't Move**, and **Move to Trash**. **Open** opens the photo in its default app (for example Preview). **Share…** opens the macOS share sheet for the selected photos, with the apps and share extensions that accept them (for example Zalo, Messages, Mail, and AirDrop).
 - **Move to Trash** (also ⌘⌫) moves the selected photos to the macOS Trash (section 7.4). The app does not ask for confirmation. ⌘Z puts the photos back.
 
 **Selection bar** (shows at the bottom when 1 or more photos are selected):

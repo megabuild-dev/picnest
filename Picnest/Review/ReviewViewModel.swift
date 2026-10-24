@@ -458,9 +458,14 @@ final class ReviewViewModel {
         openURL(url(of: media))
     }
 
+    /// The file URLs of the selected photos, in grid order.
+    func selectedURLs() -> [URL] {
+        selectedInGridOrder.compactMap { mediaByID[$0].map(url(of:)) }
+    }
+
     /// Shows the selected photos in Finder.
     func showInFinder() {
-        let urls = selectedInGridOrder.compactMap { mediaByID[$0].map(url(of:)) }
+        let urls = selectedURLs()
         guard !urls.isEmpty else { return }
         revealURLs(urls)
     }
