@@ -84,6 +84,14 @@ struct EndToEndTests {
 
     private enum Failure: Error { case notInReview(String) }
 
+    /// The relative paths of the files under `root` (no folders), sorted.
+    private func relativeFiles(in root: URL) throws -> [String] {
+        let snap = try snapshot(root)
+        return snap.keys.filter { snap[$0] != "dir" }
+            .map { $0.hasPrefix("/") ? String($0.dropFirst()) : $0 }
+            .sorted()
+    }
+
     private func sortModel(_ env: AppEnvironment, _ app: AppModel) async throws -> SortViewModel {
         let model = SortViewModel(review: try review(app), sortService: env.sortService, library: env.library,
                                   locale: Self.locale, onDone: app.done)
@@ -185,5 +193,57 @@ struct EndToEndTests {
         await welcome2.undoLastSort(movedEntry)
         #expect(welcome2.undoMessage == nil)
         #expect(try snapshot(work) == before)
+    }
+
+    /// Spec 7.2: **Done** creates a folder for each category inside the source folder, moves the photos
+    /// into it, and renames them. The session keeps the new paths, so the folder opens in Review again.
+    @Test func doneOrganizesTheFolderInPlace() async throws {
+        let source = try temp.folder("Work/Photos")
+        try makePhotos(in: source)
+
+        let env = makeEnvironment()
+        let app = AppModel(environment: env)
+        let welcome = WelcomeViewModel(app: app, library: env.library, locale: Self.locale)
+        welcome.choose(source)
+        await app.settled()
+        let scan = ScanViewModel(app: app, scanService: env.scanService, source: source, openURL: { _ in })
+        scan.start()
+        await scan.settled()
+        await app.settled()
+
+        let model = ReviewViewModel(review: try review(app), classify: env.classifyService, thumbnails: env.thumbnails,
+                                    library: env.library, app: app, onRescan: {})
+        let categoryCount = model.categories.count
+        #expect(model.count(of: .all) == 30)
+        #expect(model.canDone)
+
+        model.done()
+        await app.settled()
+        guard case .welcome = app.screen else { Issue.record("expected welcome: \(app.screen)"); return }
+
+        // Every photo is now inside a category sub-folder of the source, renamed to date + folder + number.
+        let files = try relativeFiles(in: source)
+        #expect(files.count == 30)
+        #expect(files.allSatisfy { $0.contains("/") })
+        #expect(files.allSatisfy { ($0 as NSString).lastPathComponent.contains("_") })
+        #expect(files.contains { $0.hasPrefix("Not sure/") })
+
+        // The saved session matches the new tree on disk.
+        let session = try #require(try env.sessions.load(source: source))
+        #expect(session.scan.media.count == 30)
+        for file in session.scan.media {
+            #expect(FileManager.default.fileExists(atPath: source.appending(path: file.relativePath).path))
+        }
+
+        // Opening the folder again loads the saved session (no scan) and keeps the categories.
+        let env2 = makeEnvironment()
+        let app2 = AppModel(environment: env2)
+        let welcome2 = WelcomeViewModel(app: app2, library: env2.library, locale: Self.locale)
+        welcome2.openRecent(try #require(welcome2.recent.first))
+        await app2.settled()
+        let model2 = ReviewViewModel(review: try review(app2), classify: env2.classifyService,
+                                     thumbnails: env2.thumbnails, library: env2.library, app: app2, onRescan: {})
+        #expect(model2.categories.count == categoryCount)
+        #expect(model2.count(of: .all) == 30)
     }
 }

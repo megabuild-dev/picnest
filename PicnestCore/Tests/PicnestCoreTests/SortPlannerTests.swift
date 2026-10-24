@@ -130,6 +130,53 @@ struct SortPlannerTests {
         #expect(p.leftInSource == 1)
     }
 
+    // MARK: - In place (organize on Done)
+
+    private func planInPlace(_ s: Session, rename: Bool = true) throws -> SortPlan {
+        try SortPlanner(timeZone: utc).planInPlace(s, source: src, rename: rename, existingNames: { _ in [] })
+    }
+
+    private func inPlaceRel(_ p: SortPlan) -> [String] {
+        p.entries.map { String($0.destination.path.dropFirst(src.path.count + 1)) }
+    }
+
+    @Test func inPlacePutsCategoryFoldersInsideSource() throws {
+        let s = session([media("IMG_1.jpg"), media("IMG_2.jpg")],
+                        states: ["IMG_1.jpg": .manual(food.id), "IMG_2.jpg": .manual(pets.id)])
+        let p = try planInPlace(s, rename: false)
+        #expect(inPlaceRel(p) == ["Food/IMG_1.jpg", "Pets/IMG_2.jpg"])
+        #expect(p.entries.allSatisfy { $0.destination.path.hasPrefix(src.path + "/") })
+    }
+
+    @Test func inPlaceRenamesWithTheDateAndCategory() throws {
+        let s = session([media("a.JPEG"), media("b.jpg")],
+                        states: ["a.JPEG": .manual(food.id), "b.jpg": .manual(food.id)],
+                        dates: ["a.JPEG": "2024-05-12", "b.jpg": "2024-05-12"])
+        let p = try planInPlace(s)
+        #expect(p.entries.map { $0.destination.lastPathComponent }
+            == ["2024-05-12_Food_001.jpg", "2024-05-12_Food_002.jpg"])
+    }
+
+    @Test func inPlaceSkipsPhotosAlreadyInTheirFolder() throws {
+        let s = session([media("Food/2024-05-12_Food_001.jpg"), media("IMG_2.jpg")],
+                        states: ["Food/2024-05-12_Food_001.jpg": .manual(food.id), "IMG_2.jpg": .manual(pets.id)],
+                        dates: ["IMG_2.jpg": "2024-05-12"])
+        let p = try planInPlace(s, rename: false)
+        #expect(p.entries.map(\.mediaID) == ["IMG_2.jpg"])
+        #expect(p.entries.first?.destination.path == src.appending(path: "Pets/IMG_2.jpg").path)
+    }
+
+    @Test func inPlaceNotSureVideosUnreadableAndDontMove() throws {
+        let s = session([media("u.jpg"), media("v.mov", .video), media("bad.jpg"), media("stay.jpg")],
+                        states: ["u.jpg": .heldNotSure(assignment(pets)), "bad.jpg": .unreadable, "stay.jpg": .dontMove],
+                        dates: ["u.jpg": "2024-05-12"])
+        let p = try planInPlace(s)
+        #expect(Set(inPlaceRel(p)) == [
+            "Not sure/2024-05-12_Not sure_001.jpg", "Videos/2024-01-01_Videos_001.mov", "Unreadable/bad.jpg",
+        ])
+        #expect(p.leftInSource == 1)
+    }
+
     @Test func videosAndUnreadable() throws {
         let s = session([media("v.mov", .video), media("bad.jpg"), media("a.jpg")],
                         states: ["bad.jpg": .unreadable, "a.jpg": .manual(pets.id)])

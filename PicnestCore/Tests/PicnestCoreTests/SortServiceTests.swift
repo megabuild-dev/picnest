@@ -142,6 +142,10 @@ func sortError(_ body: () async throws -> Void) async -> SortError? {
     do { try await body(); return nil } catch let e as SortError { return e } catch { return nil }
 }
 
+func organizeError(_ body: () throws -> Void) -> SortError? {
+    do { try body(); return nil } catch let e as SortError { return e } catch { return nil }
+}
+
 // MARK: - Tests
 
 @Suite(.serialized)
@@ -190,6 +194,63 @@ struct SortServiceTests {
         try await drain(service.run(plan, mode: .move, journal: f.journal, stop: { false }))
         let entry = try #require(plan.entries.first)
         #expect(try LocalFileOps().modified(entry.destination) == entry.modified)
+    }
+
+    // MARK: - Organize in place (spec 7.2)
+
+    @Test func organizeMovesFilesIntoCategoryFoldersWithoutJournal() async throws {
+        let f = try SortFixture()
+        let service = SortService()
+        let before = try SortFixture.snapshot(f.source)
+        let plan = try service.planInPlace(try f.session(), source: f.source)
+        #expect(plan.entries.count == 5)
+
+        let result = try service.organize(plan, source: f.source)
+        #expect(result.failures.isEmpty)
+        #expect(Set(result.moves.map(\.to)) == Set(try SortFixture.files(in: f.source)))
+        // No journal: an organize cannot be undone.
+        #expect(!f.journal.exists)
+        #expect(try f.journal.lastIsComplete() == nil)
+        // Every file left the root and is renamed, but no bytes changed.
+        let files = try SortFixture.files(in: f.source)
+        #expect(files.count == 5)
+        #expect(files.filter { $0.hasPrefix("Food/") }.count == 3)
+        #expect(files.filter { $0.hasPrefix("Pets/") }.count == 2)
+        #expect(files.allSatisfy { $0.contains("_Food_") || $0.contains("_Pets_") })
+        #expect(Set(try SortFixture.snapshot(f.source).values) == Set(before.values))
+    }
+
+    @Test func organizeStopsIfAFileChangedSinceScan() async throws {
+        let f = try SortFixture()
+        let service = SortService()
+        let plan = try service.planInPlace(try f.session(), source: f.source)
+        try Data(repeating: 7, count: 9999).write(to: f.source.appending(path: "b.jpg"))
+
+        let error = organizeError { try service.organize(plan, source: f.source) }
+        #expect(error == .changedSinceScan(["b.jpg"]))
+        #expect(try SortFixture.files(in: f.source) == ["a.jpg", "b.jpg", "d.jpg", "e.jpg", "sub/c.jpg"])
+    }
+
+    @Test func organizeLeavesAnAlreadyOrganizedFolderAlone() async throws {
+        let f = try SortFixture()
+        let service = SortService()
+        let first = try service.organize(try service.planInPlace(try f.session(), source: f.source), source: f.source)
+        #expect(first.failures.isEmpty)
+
+        // A session that matches the new layout: each file's folder is its category.
+        let ops = LocalFileOps()
+        var media: [MediaFile] = []
+        var states: [MediaID: PhotoState] = [:]
+        for rel in try SortFixture.files(in: f.source) {
+            let url = f.source.appending(path: rel, directoryHint: .notDirectory)
+            media.append(MediaFile(id: rel, relativePath: rel, kind: .image,
+                                   size: try ops.size(url), modified: try ops.modified(url)))
+            states[rel] = rel.hasPrefix("Food/") ? .manual(f.food.id) : .manual(f.pets.id)
+        }
+        let organized = Session(
+            sourcePath: f.source.path, candidateList: .everyday, categories: [f.food, f.pets], states: states,
+            scan: ScanResult(media: media, dates: [:], skipped: [:]), sortedAt: nil)
+        #expect(try service.planInPlace(organized, source: f.source).entries.isEmpty)
     }
 
     @Test func stopsIfFileChangedSinceScan() async throws {

@@ -84,11 +84,41 @@ struct ReviewView: View {
         } message: {
             Text(model.saveErrorMessage ?? "")
         }
+        // A failed organize (spec 7.2).
+        .alert("Could not organize", isPresented: organizeErrorBinding) {
+            Button("OK", role: .cancel) { model.dismissOrganizeError() }
+        } message: {
+            Text(model.organizeErrorMessage ?? "")
+        }
         // The suggest sheet opens by itself once after a scan (spec 3.7).
         .task { model.suggestAfterScanIfNeeded() }
         .onChange(of: model.isNamingNewCategory) { if model.isNamingNewCategory { newCategoryName = "" } }
         // Edit > Undo and Redo act on this review (ReviewCommands).
         .focusedSceneValue(\.review, model)
+        .overlay { organizingOverlay }
+    }
+
+    /// A blocking overlay while **Done** moves the classified photos into category folders (spec 7.2).
+    @ViewBuilder private var organizingOverlay: some View {
+        if model.isOrganizing {
+            ZStack {
+                Color.black.opacity(0.12).ignoresSafeArea()
+                VStack(spacing: 10) {
+                    Text("Organizing photos…").font(.system(size: 13, weight: .semibold))
+                    if let progress = model.organizeProgress, progress.total > 0 {
+                        ProgressView(value: Double(progress.done), total: Double(progress.total))
+                            .frame(width: 240)
+                        Text("\(progress.done.formatted()) / \(progress.total.formatted())")
+                            .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary)
+                    } else {
+                        ProgressView().controlSize(.small)
+                    }
+                }
+                .padding(20)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .shadow(color: .black.opacity(0.2), radius: 14, y: 6)
+            }
+        }
     }
 
     @ViewBuilder private var detail: some View {
@@ -152,8 +182,12 @@ struct ReviewView: View {
                     .help("Move every Not sure photo to its best guess")
             }
             Button("Sort Photos…", action: openSort)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .disabled(isOpeningSort || !model.canSortOrRescan)
+            Button("Done", action: model.done)
+                .buttonStyle(.borderedProminent)
+                .disabled(!model.canDone)
+                .help("Create a folder for each category, move the photos into it, and rename them")
         }
     }
 
@@ -184,6 +218,10 @@ struct ReviewView: View {
 
     private var saveErrorBinding: Binding<Bool> {
         Binding(get: { model.saveErrorMessage != nil }, set: { _ in })
+    }
+
+    private var organizeErrorBinding: Binding<Bool> {
+        Binding(get: { model.organizeErrorMessage != nil }, set: { if !$0 { model.dismissOrganizeError() } })
     }
 
     private var chipTint: Color {

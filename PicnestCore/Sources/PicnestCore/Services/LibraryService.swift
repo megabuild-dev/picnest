@@ -246,6 +246,29 @@ public final class LibraryService: Sendable {
         if let error { throw error }
     }
 
+    // MARK: - Organize in place (spec 7.2)
+
+    /// **Done** on the Review screen: moves every classified photo into a category sub-folder of the
+    /// source folder and renames it to date + category + number. One-way: it writes no journal, so
+    /// **Undo Last Sort** cannot reverse it. Waits for the last review change and any sort to finish,
+    /// then re-keys the session, so the review work and the embedding cache survive. Returns the files
+    /// that moved and the ones that did not.
+    public func organizeInPlace(
+        review: ReviewService, progress: @escaping @Sendable (Int, Int) -> Void = { _, _ in }
+    ) async throws -> OrganizeResult {
+        await review.settled()
+        await sortService.waitUntilIdle()
+        let session = await review.session
+        let source = URL(filePath: session.sourcePath, directoryHint: .isDirectory)
+        let service = sortService
+        let result = try await Task.detached(priority: .userInitiated) {
+            let plan = try service.planInPlace(session, source: source, rename: true)
+            return try service.organize(plan, source: source, progress: progress)
+        }.value
+        await review.applyOrganize(result.moves)
+        return result
+    }
+
     /// Runs `SortService.undo` off the main actor. Waits first when another sort or undo is finishing,
     /// and tries 1 more time after a `.busy`. `cleared` is true when no last sort is left to undo:
     /// the undo ran, no journal exists, or the journal was archived with conflicts.

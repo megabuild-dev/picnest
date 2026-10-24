@@ -237,6 +237,28 @@ final class ReviewViewModel {
         }
     }
 
+    // MARK: - Done (organize in place, spec 7.2)
+
+    /// True while **Done** moves the classified photos into category folders in the source folder.
+    var isOrganizing: Bool { app.isOrganizing }
+    /// The files done and total of the running organize, or nil.
+    var organizeProgress: (done: Int, total: Int)? { app.organizeProgress }
+    /// The text of a failed organize, or nil.
+    var organizeErrorMessage: String? { app.organizeErrorMessage }
+
+    /// **Done** is on when there is at least 1 category and no sort, undo, or Trash move runs.
+    var canDone: Bool { !review.session.categories.isEmpty && canSortOrRescan && !app.isOrganizing }
+
+    /// **Done**: move every classified photo into a category sub-folder of the source folder, rename it,
+    /// and close the session (spec 7.2). One-way.
+    func done() {
+        guard canDone else { return }
+        app.organizeAndFinish()
+    }
+
+    /// **OK** in the organize error alert.
+    func dismissOrganizeError() { app.organizeErrorMessage = nil }
+
     // MARK: - Start Over… (spec 3.3)
 
     /// **Start Over…** is off when **Rescan** is off: while a sort, an undo of a sort, or a Trash move runs.

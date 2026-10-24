@@ -49,6 +49,39 @@ public final class SortService: Sendable {
         try SortPlanner().plan(session, source: source, options: options, existingNames: { self.fileOps.names(in: $0) })
     }
 
+    /// The in-place plan, with the names that exist in the target folders today.
+    public func planInPlace(_ session: Session, source: URL, rename: Bool = true) throws -> SortPlan {
+        try SortPlanner().planInPlace(
+            session, source: source, rename: rename, existingNames: { self.fileOps.names(in: $0) })
+    }
+
+    /// Moves the files of an in-place plan into the source folder's sub-folders (spec 7.2). Within one
+    /// volume this is a rename, so each move is atomic and never overwrites. There is no journal: an
+    /// organize cannot be undone. Throws `.busy`, `.changedSinceScan`, or `.destinationExists` before
+    /// any move. A file that cannot move is reported in `failures`; the other files still go on.
+    public func organize(
+        _ plan: SortPlan, source: URL, progress: @escaping @Sendable (Int, Int) -> Void = { _, _ in }
+    ) throws -> OrganizeResult {
+        guard begin() else { throw SortError.busy }
+        defer { end() }
+        try precheck(plan)
+        let total = plan.entries.count
+        var moves: [OrganizeMove] = []
+        var failures: [OrganizeFailure] = []
+        for (i, entry) in plan.entries.enumerated() {
+            do {
+                try makeFolders(entry.destination.deletingLastPathComponent())
+                try fileOps.move(entry.source, entry.destination)
+                moves.append(OrganizeMove(
+                    mediaID: entry.mediaID, to: Self.relativePath(of: entry.destination, in: source)))
+            } catch {
+                failures.append(OrganizeFailure(mediaID: entry.mediaID, message: error.localizedDescription))
+            }
+            progress(i + 1, total)
+        }
+        return OrganizeResult(moves: moves, failures: failures)
+    }
+
     /// Emits `.progress` after each file and `.finished` after the `done` line is written.
     /// `stop` is checked between files; cancelling the consumer works the same as Stop.
     public func run(_ plan: SortPlan, mode: SortMode, journal: JournalRepository,
@@ -292,6 +325,15 @@ public final class SortService: Sendable {
     private static func pair(_ e: JournalEntry) -> (URL, URL)? {
         guard let s = e.source, let d = e.destination else { return nil }
         return (URL(filePath: s, directoryHint: .notDirectory), URL(filePath: d, directoryHint: .notDirectory))
+    }
+
+    /// The path of `url` relative to `folder`, in Unicode NFC form (the form of a `MediaID`).
+    private static func relativePath(of url: URL, in folder: URL) -> String {
+        let base = folder.path(percentEncoded: false)
+        let full = url.path(percentEncoded: false)
+        let prefix = base.hasSuffix("/") ? base : base + "/"
+        let relative = full.hasPrefix(prefix) ? String(full.dropFirst(prefix.count)) : full
+        return relative.precomposedStringWithCanonicalMapping
     }
 
     private static func entry(_ op: JournalOp, _ src: URL, _ dst: URL) -> JournalEntry {

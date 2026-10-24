@@ -47,9 +47,35 @@ public struct SortPlanner: Sendable {
         return name.isEmpty ? "Untitled" : name
     }
 
+    /// The folder part of a relative path, or "" for a file at the source root.
+    private static func parentFolder(of relativePath: String) -> String {
+        (relativePath as NSString).deletingLastPathComponent
+    }
+
     public func plan(_ s: Session, source: URL, options: SortOptions, existingNames: (URL) -> Set<String>) throws -> SortPlan {
         try checkDestination(source: source, destination: options.destination)
+        return try build(
+            s, source: source, destination: options.destination, rename: options.rename,
+            dateFolders: options.dateFolders, notSureChoice: options.notSureChoice, inPlace: false,
+            existingNames: existingNames)
+    }
 
+    /// The in-place plan: every visible photo moves into `<source>/<category folder>` and is renamed to
+    /// date + category + number (spec 7.2). The folders live inside the source on purpose, so the
+    /// destination guards do not run. A photo that already sits directly in its target folder keeps its
+    /// place and name, so a second organize only handles photos that are still loose.
+    public func planInPlace(
+        _ s: Session, source: URL, rename: Bool = true, existingNames: (URL) -> Set<String>
+    ) throws -> SortPlan {
+        try build(
+            s, source: source, destination: source, rename: rename, dateFolders: false,
+            notSureChoice: .notSureFolder, inPlace: true, existingNames: existingNames)
+    }
+
+    private func build(
+        _ s: Session, source: URL, destination: URL, rename: Bool, dateFolders: Bool,
+        notSureChoice: NotSureChoice, inPlace: Bool, existingNames: (URL) -> Set<String>
+    ) throws -> SortPlan {
         let ordered = s.categories.sorted { $0.order < $1.order }
         var used: Set<String> = [Self.key(Self.notSureFolder), Self.key(Self.videosFolder), Self.key(Self.unreadableFolder)]
         var folderOf: [CategoryID: String] = [:]
@@ -67,10 +93,12 @@ public struct SortPlanner: Sendable {
         var items: [Item] = []
         var left = 0
         for m in s.visibleMedia {  // A trashed photo is in no sort (spec 7.4).
-            guard let folder = topFolder(for: m, state: s.states[m.id], folderOf: folderOf, choice: options.notSureChoice) else {
+            guard let folder = topFolder(for: m, state: s.states[m.id], folderOf: folderOf, choice: notSureChoice) else {
                 left += 1
                 continue
             }
+            // In place: a photo that is already in its target folder keeps its place and name.
+            if inPlace, Self.parentFolder(of: m.relativePath) == folder { continue }
             items.append(Item(media: m, folder: folder, date: s.scan.dates[m.id]?.date ?? m.modified))
         }
 
@@ -82,8 +110,8 @@ public struct SortPlanner: Sendable {
         var groupURL: [String: URL] = [:]
         var groupOrder: [String] = []
         for item in items {
-            var url = options.destination.appending(path: item.folder, directoryHint: .isDirectory)
-            if options.dateFolders {
+            var url = destination.appending(path: item.folder, directoryHint: .isDirectory)
+            if dateFolders {
                 url = url.appending(path: monthFormatter.string(from: item.date), directoryHint: .isDirectory)
             }
             let k = url.path
@@ -91,12 +119,12 @@ public struct SortPlanner: Sendable {
             groups[k, default: []].append(item)
         }
 
-        try checkFolders(groupOrder.compactMap { groupURL[$0] }, source: source)
+        if !inPlace { try checkFolders(groupOrder.compactMap { groupURL[$0] }, source: source) }
 
         var destOf: [MediaID: URL] = [:]
         for k in groupOrder {
             guard let folderURL = groupURL[k], var group = groups[k] else { continue }
-            if options.rename {
+            if rename {
                 group.sort { ($0.date, $0.media.relativePath) < ($1.date, $1.media.relativePath) }
             } else {
                 group.sort { $0.media.relativePath < $1.media.relativePath }
@@ -106,7 +134,7 @@ public struct SortPlanner: Sendable {
             for item in group {
                 let original = (item.media.relativePath as NSString).lastPathComponent
                 var name = original
-                if options.rename, item.folder != Self.unreadableFolder {
+                if rename, item.folder != Self.unreadableFolder {
                     let day = dayFormatter.string(from: item.date)
                     let n = counters[day, default: 0] + 1
                     counters[day] = n

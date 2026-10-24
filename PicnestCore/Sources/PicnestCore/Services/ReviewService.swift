@@ -138,6 +138,45 @@ public final class ReviewService {
         save()
     }
 
+    // MARK: - Organize in place
+
+    /// Re-keys the open session after an in-place organize (spec 7.2): the moved files get their new
+    /// paths in `scan.media` (id and relativePath), `scan.dates`, `states`, and every `exampleIDs`.
+    /// Duplicate-group keys are dropped, because a moved group is a new group. The embedding cache is
+    /// re-keyed, so the next open does not embed the photos again. Then the session is saved.
+    public func applyOrganize(_ moves: [OrganizeMove]) async {
+        guard !moves.isEmpty else { return }
+        var map: [MediaID: String] = [:]
+        for move in moves { map[move.mediaID] = move.to }
+
+        var media: [MediaFile] = []
+        media.reserveCapacity(session.scan.media.count)
+        var keyMap: [String: String] = [:]
+        for file in session.scan.media {
+            guard let to = map[file.id] else { media.append(file); continue }
+            let moved = MediaFile(id: to, relativePath: to, kind: file.kind, size: file.size, modified: file.modified)
+            keyMap[file.cacheKey] = moved.cacheKey
+            media.append(moved)
+        }
+        var dates: [MediaID: PhotoDate] = [:]
+        for (id, date) in session.scan.dates { dates[map[id] ?? id] = date }
+        var states: [MediaID: PhotoState] = [:]
+        for (id, state) in session.states { states[map[id] ?? id] = state }
+        var categories = session.categories
+        for i in categories.indices { categories[i].exampleIDs = categories[i].exampleIDs.map { map[$0] ?? $0 } }
+
+        session.scan.media = media.sorted { $0.id < $1.id }
+        session.scan.dates = dates
+        session.states = states
+        session.categories = categories
+        session.notDuplicateKeys = []
+        var vectors: [MediaID: Vector] = [:]
+        for (id, vector) in images { vectors[map[id] ?? id] = vector }
+        images = vectors
+        await embeddings.rekey(keyMap)
+        save()
+    }
+
     /// Stops all saves of the session (Start Over, spec 3.3). A change made after this stays in memory only,
     /// so it cannot write `session.json` again after the start over deletes it. Call `reopen()` if the start
     /// over fails.

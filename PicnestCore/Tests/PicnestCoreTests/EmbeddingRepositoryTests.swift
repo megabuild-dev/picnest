@@ -46,6 +46,31 @@ struct EmbeddingRepositoryTests {
         #expect(r2.vectors["b.jpg"] == [1, 1, 2])
     }
 
+    @Test func rekeyPointsAMovedFileAtItsCachedVector() async throws {
+        let src = try TempDir(), cache = try TempDir()
+        let names = ["a.jpg", "b.jpg"]
+        let media = try makeMedia(names, in: src.url)
+        _ = try await EmbeddingRepository(embedder: FakeEmbedder(dimension: 3, images: table(names)),
+                                          cacheDirectory: cache.url)
+            .embeddings(for: media, source: src.url, progress: { _, _ in })
+
+        // Move a.jpg into a sub-folder and re-key the cache by hand (an in-place organize, spec 7.2).
+        let folder = src.url.appending(path: "Food", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: src.url.appending(path: "a.jpg"), to: folder.appending(path: "a.jpg"))
+        var moved = media[0]
+        moved.id = "Food/a.jpg"
+        moved.relativePath = "Food/a.jpg"
+        await EmbeddingRepository(embedder: FakeEmbedder(dimension: 3, images: table(names)), cacheDirectory: cache.url)
+            .rekey([media[0].cacheKey: moved.cacheKey])
+
+        let second = FakeEmbedder(dimension: 3, images: table(names))
+        let r = try await EmbeddingRepository(embedder: second, cacheDirectory: cache.url)
+            .embeddings(for: [moved], source: src.url, progress: { _, _ in })
+        #expect(second.imageCallCount == 0)  // The re-keyed row was found: no embedding ran.
+        #expect(r.vectors["Food/a.jpg"] == [0, 1, 2])
+    }
+
     @Test func changedFileIsEmbeddedAgain() async throws {
         let src = try TempDir(), cache = try TempDir()
         let names = ["a.jpg", "b.jpg", "c.jpg"]

@@ -98,6 +98,24 @@ public actor EmbeddingRepository {
         return result
     }
 
+    /// Points cached rows at new keys after their files moved (an in-place organize). Rows with no
+    /// mapping are untouched. Rewrites `embeddings.index.json`; the `embeddings.f32` data does not change.
+    public func rekey(_ mapping: [String: String]) {
+        guard !mapping.isEmpty else { return }
+        var updated = index
+        for (old, new) in mapping {
+            guard let row = updated.rows.removeValue(forKey: old) else { continue }
+            updated.rows[new] = row
+        }
+        guard updated.rows != index.rows else { return }
+        do {
+            try JSONEncoder().encode(updated).write(to: indexURL, options: .atomic)
+            index = updated
+        } catch {
+            // The cache is an optimization. Keep going without it.
+        }
+    }
+
     private func readRow(_ row: Int?) -> Vector? {
         guard let row, let handle = try? FileHandle(forReadingFrom: dataURL) else { return nil }
         defer { try? handle.close() }

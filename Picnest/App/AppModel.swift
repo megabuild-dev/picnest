@@ -102,7 +102,7 @@ final class AppModel {
     /// Waits until the last review change is saved, then drops the `ReviewService`, so the scan
     /// is the only writer of the session. `finishScan` opens the review again.
     func rescan() {
-        guard case .review(let review, _) = screen, !isStartingOver else { return }
+        guard case .review(let review, _) = screen, !isStartingOver, !isOrganizing else { return }
         let source = URL(filePath: review.session.sourcePath, directoryHint: .isDirectory)
         guard !isScanning(source) else { return }
         cancelPending()
@@ -121,7 +121,7 @@ final class AppModel {
     /// Review, if the last sort did not finish. The review saves nothing while the start over runs, and saves
     /// again if it throws. Does nothing while a start over already runs. `settled()` waits for it.
     func startOver() async throws {
-        guard case .review(let review, _) = screen, !isStartingOver else { return }
+        guard case .review(let review, _) = screen, !isStartingOver, !isOrganizing else { return }
         let source = URL(filePath: review.session.sourcePath, directoryHint: .isDirectory)
         guard !isScanning(source) else { return }
         cancelPending()
@@ -149,7 +149,7 @@ final class AppModel {
     /// **Done** after a sort (spec 9.1): waits until the review is saved, records the sort in the recent
     /// folder list, and closes the session. The app goes back to the Welcome screen.
     func done() {
-        guard case .review(let review, _) = screen else { return }
+        guard case .review(let review, _) = screen, !isOrganizing else { return }
         cancelPending()
         let current = generation
         let library = self.library
@@ -159,6 +159,55 @@ final class AppModel {
             library.finishSort(review.session)
             screen = .welcome
         }
+    }
+
+    // MARK: - Done (organize in place, spec 7.2)
+
+    /// True while **Done** moves the classified photos into category folders. Every window sees it.
+    private(set) var isOrganizing = false
+    /// The files done and total of the running organize, or nil.
+    private(set) var organizeProgress: (done: Int, total: Int)?
+    /// The text of a failed organize, or nil. The Review screen shows it.
+    var organizeErrorMessage: String?
+
+    /// **Done** on the Review screen (spec 7.2): moves every classified photo into a category sub-folder
+    /// of the source folder and renames it to date + category + number, then closes the session.
+    /// One-way. Waits for the last review change and any sort to finish. A photo that cannot move stays
+    /// where it is and is counted in the Welcome error.
+    func organizeAndFinish() {
+        guard case .review(let review, _) = screen, !isOrganizing else { return }
+        cancelPending()
+        let current = generation
+        let library = self.library
+        isOrganizing = true
+        organizeProgress = nil
+        organizeErrorMessage = nil
+        pending = Task {
+            await review.settled()
+            await library.waitUntilSortIdle()
+            guard current == generation, !Task.isCancelled else { isOrganizing = false; return }
+            do {
+                let result = try await library.organizeInPlace(review: review) { [weak self] done, total in
+                    Task { @MainActor in self?.organizeProgress = (done, total) }
+                }
+                guard current == generation, !Task.isCancelled else { isOrganizing = false; return }
+                isOrganizing = false
+                organizeProgress = nil
+                if !result.failures.isEmpty { errorMessage = Self.organizeFailureMessage(result.failures.count) }
+                library.finishSort(review.session)
+                screen = .welcome
+            } catch {
+                guard current == generation else { return }
+                isOrganizing = false
+                organizeProgress = nil
+                organizeErrorMessage = SortMessages.text(for: error)
+            }
+        }
+    }
+
+    private static func organizeFailureMessage(_ count: Int) -> String {
+        count == 1 ? "1 photo could not be moved. It stays where it was." :
+            "\(count) photos could not be moved. They stay where they were."
     }
 
     /// Goes back to the Welcome screen and stops a session that is still loading.

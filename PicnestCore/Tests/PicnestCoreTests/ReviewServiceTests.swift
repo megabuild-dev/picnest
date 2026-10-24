@@ -145,6 +145,30 @@ struct ReviewServiceTests {
         #expect(try f.sessions.load(source: f.source)?.sortedAt == date)
     }
 
+    // MARK: - Organize in place
+
+    @Test func applyOrganizeReKeysTheSession() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.move(["a2.jpg"], to: catA.id)  // a2 becomes an example of A.
+        await s.settled()
+        #expect(category(catA.id, s)?.exampleIDs == ["a2.jpg"])
+
+        await s.applyOrganize([
+            OrganizeMove(mediaID: "a1.jpg", to: "A/2024-05-12_A_001.jpg"),
+            OrganizeMove(mediaID: "a2.jpg", to: "A/2024-05-12_A_002.jpg"),
+        ])
+
+        #expect(s.session.states["a1.jpg"] == nil)
+        #expect(s.session.states["A/2024-05-12_A_001.jpg"] != nil)
+        #expect(s.session.states["A/2024-05-12_A_002.jpg"] == .manual(catA.id))
+        #expect(category(catA.id, s)?.exampleIDs == ["A/2024-05-12_A_002.jpg"])
+        #expect(s.session.scan.media.contains {
+            $0.id == "A/2024-05-12_A_001.jpg" && $0.relativePath == "A/2024-05-12_A_001.jpg"
+        })
+        #expect(try f.sessions.load(source: f.source) == s.session)
+    }
+
     /// Final review I4: a failed save sets `saveError`, and `retrySave` saves again.
     @Test func failedSaveCanBeRetried() async throws {
         let f = try fixture()
