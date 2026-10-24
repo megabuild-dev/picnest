@@ -20,6 +20,20 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>PicnestModelStem</key>
 	<string>$(PICNEST_MODEL_STEM)</string>
+	<key>SUAllowsAutomaticUpdates</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://megabuild-dev.github.io/picnest/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>GoGJ8EBZg4rw2V4p4cFtSbdq7GKhMWuIOIHILLZSK/s=</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

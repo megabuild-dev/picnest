@@ -12,7 +12,7 @@ Point it at a folder of photos with names like `z7913505267117_a3f.jpg`. The app
 - **Copy or move.** 1 batch sorts all photos. Date sub-folders and new file names (date, category, number) are optional.
 - **Undo.** Undo Last Sort puts the folder back the way it was.
 - **Duplicates.** Find exact copies and similar photos, keep 1, and move the others to the Trash.
-- **Private.** No account, no upload, no network after the install.
+- **Private.** No account, no upload. The app touches the network only to check for a new version.
 
 ## Install
 
@@ -29,6 +29,14 @@ The app does not have an Apple notarization. The first time, macOS shows "Apple 
 3. Scroll to the Picnest message and click **Open Anyway**. Type your Mac password.
 
 You do this 1 time only. If you prefer, build the app from the source code yourself. See [Build from source](#build-from-source).
+
+## Update
+
+Picnest checks the network 1 time a day for a new version, and asks you before it installs 1. You can also
+check by hand: open **Picnest > Check for Updates…**.
+
+You do not download a new DMG or move the app again. Picnest replaces the app in `/Applications` and starts
+it again. Your sessions are not changed.
 
 ## Use
 

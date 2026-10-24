@@ -23,6 +23,12 @@ struct PicnestApp: App {
         .commands {
             // No File > New Window.
             CommandGroup(replacing: .newItem) {}
+            // Picnest > Check for Updates… (spec 8). Nothing in the test host, which has no updater.
+            CommandGroup(after: .appInfo) {
+                if let updater = delegate.updater {
+                    CheckForUpdatesView(updater: updater)
+                }
+            }
             ReviewCommands()
         }
     }

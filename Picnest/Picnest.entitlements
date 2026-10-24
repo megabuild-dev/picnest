@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Library validation is part of the hardened runtime: it loads only a framework that the same
+	     Developer ID signed. No Developer ID signs Sparkle.framework here, so this entitlement keeps
+	     the app able to load it for in-app updates (spec 8). Xcode turns the hardened runtime off for
+	     an ad-hoc signature, so this is inactive until the runtime is on. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>
