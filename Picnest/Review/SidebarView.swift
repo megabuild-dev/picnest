@@ -89,6 +89,9 @@ struct SidebarView: View {
                 }
                 .disabled(model.mergeTargets(for: id).isEmpty)
                 Divider()
+                Button("Reveal in Finder") { model.showCategoryInFinder(id) }
+                    .disabled(model.count(of: .category(id)) == 0)
+                Divider()
                 Button("Delete…", role: .destructive) { deleting = id }
                     .disabled(!model.canDeleteCategory)
             }
