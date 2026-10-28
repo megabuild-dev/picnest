@@ -21,7 +21,7 @@
 	<key>PicnestModelStem</key>
 	<string>$(PICNEST_MODEL_STEM)</string>
 	<key>SUAllowsAutomaticUpdates</key>
-	<true/>
+	<false/>
 	<key>SUAutomaticallyUpdate</key>
 	<false/>
 	<key>SUEnableAutomaticChecks</key>

@@ -1,5 +1,4 @@
 import AppKit
-import Sparkle
 
 /// Owns the 1 app environment, the 1 `AppModel`, and the 1 Sparkle updater, and stops a quit while a
 /// sort or an undo changes files (final review M4). A quit in the middle of a copy leaves a part file
@@ -15,29 +14,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let environment: AppEnvironment?
     let app: AppModel?
 
-    /// The updater, or nil in the test host, which must not read the network or the login Keychain.
-    private(set) var updaterController: SPUStandardUpdaterController?
-
-    /// The updater behind Picnest > Check for Updates… (spec 8). Nil in the test host.
-    var updater: SPUUpdater? { updaterController?.updater }
+    /// The updater behind Picnest > Check for Updates… (spec 8). Nil in the test host, which must not read
+    /// the network or the login Keychain.
+    let updater: (any AppUpdater)?
 
     /// The app: the bundled model, Application Support, standard defaults, and the updater.
     /// The test host must not read the real Application Support or standard defaults, or use the
     /// network, so it gets neither.
     override convenience init() {
         let isTestHost = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-        self.init(environment: isTestHost ? nil : AppEnvironment(), startsUpdater: !isTestHost)
+        self.init(
+            environment: isTestHost ? nil : AppEnvironment(),
+            makeUpdater: isTestHost ? nil : { SparkleAppUpdater() })
     }
 
-    init(environment: AppEnvironment?, startsUpdater: Bool = false) {
+    init(environment: AppEnvironment?, makeUpdater: (() -> any AppUpdater)? = nil) {
         self.environment = environment
         app = environment.map { AppModel(environment: $0) }
-        super.init()
         // Checks the appcast on a schedule and installs a new version at quit.
-        if startsUpdater {
-            updaterController = SPUStandardUpdaterController(
-                startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
-        }
+        updater = makeUpdater?()
+        super.init()
     }
 
     /// True while a sort or an undo changes files.

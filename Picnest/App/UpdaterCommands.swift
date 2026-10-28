@@ -1,25 +1,29 @@
-import Foundation
 import Observation
-import Sparkle
 import SwiftUI
 
-/// Mirrors `SPUUpdater.canCheckForUpdates` for the menu item (spec 8). Sparkle turns checks off while
+/// Mirrors `AppUpdater.canCheckForUpdates` for the menu item (spec 8). Sparkle turns checks off while
 /// a check runs, and the item must follow.
 @MainActor
 @Observable
 final class UpdaterViewModel {
     private(set) var canCheckForUpdates: Bool
 
-    /// The KVO subscription. Held so it stays alive, and released with this object.
-    @ObservationIgnored private var observation: NSKeyValueObservation?
+    @ObservationIgnored private let updater: any AppUpdater
 
-    init(updater: SPUUpdater) {
+    /// The subscription. Held so it stays alive, and released with this object.
+    @ObservationIgnored private var observation: AnyObject?
+
+    init(updater: any AppUpdater) {
+        self.updater = updater
         canCheckForUpdates = updater.canCheckForUpdates
-        observation = updater.observe(\.canCheckForUpdates, options: [.new]) { [weak self] updater, _ in
-            let canCheck = updater.canCheckForUpdates
-            // Sparkle changes this on the main thread. The hop keeps the code correct if that changes.
-            Task { @MainActor in self?.canCheckForUpdates = canCheck }
+        observation = updater.observeCanCheckForUpdates { [weak self] canCheck in
+            self?.canCheckForUpdates = canCheck
         }
+    }
+
+    /// The user chose **Check for Updates…**.
+    func checkForUpdates() {
+        updater.checkForUpdates()
     }
 }
 
@@ -28,15 +32,12 @@ final class UpdaterViewModel {
 struct CheckForUpdatesView: View {
     @State private var model: UpdaterViewModel
 
-    private let updater: SPUUpdater
-
-    init(updater: SPUUpdater) {
-        self.updater = updater
+    init(updater: any AppUpdater) {
         _model = State(initialValue: UpdaterViewModel(updater: updater))
     }
 
     var body: some View {
-        Button("Check for Updates…") { updater.checkForUpdates() }
+        Button("Check for Updates…") { model.checkForUpdates() }
             .disabled(!model.canCheckForUpdates)
     }
 }

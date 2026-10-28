@@ -54,7 +54,7 @@ targets:
         SUPublicEDKey: "GoGJ8EBZg4rw2V4p4cFtSbdq7GKhMWuIOIHILLZSK/s="
         SUEnableAutomaticChecks: true
         SUScheduledCheckInterval: 86400
-        SUAllowsAutomaticUpdates: true
+        SUAllowsAutomaticUpdates: false
         SUAutomaticallyUpdate: false
         SUVerifyUpdateBeforeExtraction: true
         # The private type of a photo drag from the grid to a sidebar category (MediaIDs).
@@ -78,15 +78,17 @@ targets:
         # for an ad-hoc signature, and it says so: "Disabling hardened runtime with ad-hoc codesigning".
         ENABLE_HARDENED_RUNTIME: YES
         ENABLE_APP_SANDBOX: NO
-        # Library validation is part of the hardened runtime: it loads only a framework that the same
-        # Developer ID signed. Sparkle.framework has no Developer ID here (spec 8), so this entitlement
-        # keeps the app able to load it whenever the hardened runtime is active.
+        # Library validation stays on in Release: a Developer ID build signs Sparkle.framework with the
+        # app's identity. Only the ad-hoc Debug build turns it off, to load Sparkle (spec 8).
         CODE_SIGN_ENTITLEMENTS: Picnest/Picnest.entitlements
         # The model scripts read and write folders, which the script sandbox does not allow.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         # The 1 place that sets the model size (a MobileCLIPSize.modelStem). The scripts below copy
         # its 2 packages, and AppEnvironment reads it from the Info.plist key PicnestModelStem.
         PICNEST_MODEL_STEM: mobileclip_s2
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: Picnest/Picnest.Debug.entitlements
     preBuildScripts:
       - name: Check models
         basedOnDependencyAnalysis: false

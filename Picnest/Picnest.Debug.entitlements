@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Debug builds only. Library validation is part of the hardened runtime: it loads only a framework
+	     that the same Team ID signed. An ad-hoc Debug build has no Team ID, so this entitlement lets it
+	     load Sparkle.framework. Release builds do not use it (spec 8). -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

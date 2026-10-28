@@ -39,6 +39,7 @@
 		C0D6276346C37C0D994D1657 /* ReviewCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */; };
 		C85B93CBA4C456D7B1094A35 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8720DD050E7DEC881184656B /* AppModelTests.swift */; };
 		C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0629FE80B349DDD9DC93B874 /* AppDelegate.swift */; };
+		CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */; };
 		D107C155337D4DE5FBBF567E /* SortViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0977699F69AB7452B6F56650 /* SortViewModelTests.swift */; };
 		D54CFD0B3713BDC63BE47DEE /* SortSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A0384D25A40836DB152C65 /* SortSheet.swift */; };
 		D5E02ACC4D238BF7ACF5EEBE /* SortMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70654CE25C0D4A3AEB26F66C /* SortMessages.swift */; };
@@ -74,6 +75,7 @@
 		2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestViewModel.swift; sourceTree = "<group>"; };
 		2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestSheet.swift; sourceTree = "<group>"; };
 		35166FEF0689ABA60577363E /* PhotoTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoTile.swift; sourceTree = "<group>"; };
+		3A4F291B7B0D7F2F894B589E /* Picnest.Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Picnest.Debug.entitlements; sourceTree = "<group>"; };
 		501266281830058D97AF399D /* DuplicatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesView.swift; sourceTree = "<group>"; };
 		57D74193AE5CCDEA74C74B46 /* Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support.swift; sourceTree = "<group>"; };
 		5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 		A23A226DCC3C8650C439A15E /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		A5F10389CA705A630CD7876B /* ReviewStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewStyle.swift; sourceTree = "<group>"; };
 		A7C2B7BBF113F2DC262B2B68 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		BC73950B912E76D04662E063 /* PicnestCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PicnestCore; path = PicnestCore; sourceTree = SOURCE_ROOT; };
 		C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCommands.swift; sourceTree = "<group>"; };
 		C5040C0826039EBEC8EDE68A /* ReviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModel.swift; sourceTree = "<group>"; };
@@ -168,6 +171,7 @@
 			children = (
 				D594434602636BD2EEEFF69E /* Assets.xcassets */,
 				1A5B92C09D222C1D48568576 /* Info.plist */,
+				3A4F291B7B0D7F2F894B589E /* Picnest.Debug.entitlements */,
 				03B644AB4BC12B0942135B63 /* Picnest.entitlements */,
 				900ACE24C78A981403F67AD7 /* App */,
 				A48ADFC30BF399456D9B75AE /* Review */,
@@ -193,6 +197,7 @@
 				0629FE80B349DDD9DC93B874 /* AppDelegate.swift */,
 				08D2B7C9420C231204BC494F /* AppEnvironment.swift */,
 				EC9F57247BA22021E463784C /* AppModel.swift */,
+				BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */,
 				DE5C538024D2F93601A43E4D /* PicnestApp.swift */,
 				A7C2B7BBF113F2DC262B2B68 /* RootView.swift */,
 				EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */,
@@ -403,6 +408,7 @@
 				C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */,
 				78EC7D52544D30719D020C2A /* AppEnvironment.swift in Sources */,
 				4389658CBA389E3956766A27 /* AppModel.swift in Sources */,
+				CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */,
 				8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */,
 				219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */,
 				F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */,
@@ -588,7 +594,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Picnest/Picnest.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Picnest/Picnest.Debug.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;

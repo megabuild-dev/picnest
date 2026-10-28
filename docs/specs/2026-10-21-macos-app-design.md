@@ -438,7 +438,7 @@ Move mode deletes the source file with `FileManager.removeItem`, not to the Tras
 ## 8. Permissions and distribution
 
 - Do not use App Sandbox. The app is not for the App Store. Without the sandbox, the app can make the default destination next to the source folder. (Builder decision, made during the spec review.)
-- Turn on the hardened runtime. Xcode turns it off again for an ad-hoc signature ("Disabling hardened runtime with ad-hoc codesigning"), so it is not active in a release build today. The app keeps the `com.apple.security.cs.disable-library-validation` entitlement for a build where the runtime is active, because no Developer ID signs `Sparkle.framework`.
+- Turn on the hardened runtime. Xcode turns it off again for an ad-hoc signature ("Disabling hardened runtime with ad-hoc codesigning"), so it is not active in a release build today. Only the Debug build has the `com.apple.security.cs.disable-library-validation` entitlement (`Picnest.Debug.entitlements`), so an ad-hoc build can load `Sparkle.framework`. The Release build keeps library validation on. A Developer ID build signs `Sparkle.framework` with the identity of the app.
 - macOS asks the user one time for access to Desktop, Documents, or Downloads. The app must continue correctly after the user approves.
 - Save a bookmark for each recent folder, so the app can find the folder after a rename or a move.
 - The project is open source under the MIT license (user decision, 2026-10-23). There is no App Store release.
