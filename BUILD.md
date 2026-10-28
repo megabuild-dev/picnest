@@ -126,7 +126,11 @@ gh release upload updates build/updates/* --clobber
    not the whole 180 MB.
 6. Commit `docs/appcast.xml`. Publish the feed last: the feed points at the new files, so the files must be
    there first.
-7. Make the release for the user with the DMG and the notes. See [Publish a release on GitHub](#publish-a-release-on-github).
+7. After Pages deploys the feed (about 1 minute), run `scripts/check-appcast.sh`. It fails when the appcast or
+   any archive or delta URL in it returns an error. Do not tell users about the release until it passes.
+8. Test 1 update from an older build: install the previous release in `/Applications`, open **Picnest > Check
+   for Updates…**, and make sure the new version installs and starts with the sessions intact.
+9. Make the release for the user with the DMG and the notes. See [Publish a release on GitHub](#publish-a-release-on-github).
 
 Keep the signing key off a Mac that can publish a release. The key is the only proof that an update comes
 from this project, because macOS cannot check an ad-hoc signature.
