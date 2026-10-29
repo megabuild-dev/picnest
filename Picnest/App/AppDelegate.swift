@@ -1,7 +1,11 @@
 import AppKit
 
-/// Owns the 1 app environment and the 1 `AppModel`, and stops a quit while a sort or an undo changes files
-/// (final review M4). A quit in the middle of a copy leaves a part file that the journal does not know.
+/// Owns the 1 app environment, the 1 `AppModel`, and the 1 Sparkle updater, and stops a quit while a
+/// sort or an undo changes files (final review M4). A quit in the middle of a copy leaves a part file
+/// that the journal does not know.
+///
+/// Sparkle installs a new version at quit, so the same guard already stops an install while a sort runs:
+/// the app refuses to quit, and Sparkle keeps the update for the next quit.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     static let sortRunningMessage = "A sort is running. Stop it first, then quit."
@@ -10,16 +14,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let environment: AppEnvironment?
     let app: AppModel?
 
-    /// The app: the bundled model, Application Support, and standard defaults. The test host must not read
-    /// the real Application Support or standard defaults, so it gets no environment.
+    /// The updater behind Picnest > Check for Updates… (spec 8). Nil in the test host, which must not read
+    /// the network or the login Keychain.
+    let updater: (any AppUpdater)?
+
+    /// The app: the bundled model, Application Support, standard defaults, and the updater.
+    /// The test host must not read the real Application Support or standard defaults, or use the
+    /// network, so it gets neither.
     override convenience init() {
         let isTestHost = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-        self.init(environment: isTestHost ? nil : AppEnvironment())
+        self.init(
+            environment: isTestHost ? nil : AppEnvironment(),
+            makeUpdater: isTestHost ? nil : { SparkleAppUpdater() })
     }
 
-    init(environment: AppEnvironment?) {
+    init(environment: AppEnvironment?, makeUpdater: (() -> any AppUpdater)? = nil) {
         self.environment = environment
         app = environment.map { AppModel(environment: $0) }
+        // Checks the appcast on a schedule and installs a new version at quit.
+        updater = makeUpdater?()
         super.init()
     }
 

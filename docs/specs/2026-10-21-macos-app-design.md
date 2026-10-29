@@ -438,12 +438,16 @@ Move mode deletes the source file with `FileManager.removeItem`, not to the Tras
 ## 8. Permissions and distribution
 
 - Do not use App Sandbox. The app is not for the App Store. Without the sandbox, the app can make the default destination next to the source folder. (Builder decision, made during the spec review.)
-- Turn on the hardened runtime.
+- Turn on the hardened runtime. Xcode turns it off again for an ad-hoc signature ("Disabling hardened runtime with ad-hoc codesigning"), so it is not active in a release build today. Only the Debug build has the `com.apple.security.cs.disable-library-validation` entitlement (`Picnest.Debug.entitlements`), so an ad-hoc build can load `Sparkle.framework`. The Release build keeps library validation on. A Developer ID build signs `Sparkle.framework` with the identity of the app.
 - macOS asks the user one time for access to Desktop, Documents, or Downloads. The app must continue correctly after the user approves.
 - Save a bookmark for each recent folder, so the app can find the folder after a rename or a move.
 - The project is open source under the MIT license (user decision, 2026-10-23). There is no App Store release.
 - The project signs with "Sign to Run Locally". A builder does not need a paid Apple Developer account.
 - `scripts/make-dmg.sh` makes a DMG for the GitHub release page. Without a Developer ID, the DMG has an ad hoc signature, and users click Open Anyway one time. With a Developer ID and a notary profile, the script signs, notarizes, and staples the DMG.
+- The app updates itself with the Swift package Sparkle 2 (user decision, 2026-10-24). The user opens **Picnest > Check for Updates…**, or the app checks 1 time a day and asks before the install. Sparkle replaces the app in `/Applications` and starts it again. An update keeps the sessions in Application Support.
+- `scripts/make-appcast.sh` signs each update archive and writes `docs/appcast.xml`, the feed that Sparkle reads. GitHub Pages serves the feed, and the GitHub release with the tag `updates` holds the archives. The first install still needs Open Anyway; an update does not, because Sparkle does not quarantine its download.
+- Each archive carries an EdDSA signature. The public key is `SUPublicEDKey` in the Info.plist, and the private key is in the login Keychain. Save the private key outside the Mac: with no Developer ID, Sparkle cannot replace a lost key, and each user must then install the app again by hand.
+- The app touches the network only for the update check. The README states this, and the "Private" feature line must stay true.
 - Write a short guide: install Xcode, open the project, select the Mac as the run target, and click Run. The guide also tells how to copy the built app to `/Applications`, and how to make and publish a DMG.
 - If a free-team signature stops the app from opening, build it again on that Mac.
 
@@ -549,9 +553,10 @@ The implementation plan breaks these phases into tasks. Each phase ends with a w
 | 5 | Swift rewrite takes longer than planned. | Late app. | Small phases. Phase 0 and phase 1 have no interface. The CLI spec is the reference for all file rules. |
 | 6 | Wrong dates for files without EXIF. | Photos in the wrong date folder. | Date folders are off by default. Tiles show "no date" for modification-time dates. |
 | 7 | The model makes the app large. | Download size of 100 MB to 600 MB. | Accept it for version 1. The phase 0 model choice includes size. |
-| 8 | No notarization (no paid account). | The app cannot be sent as a file. A free-team signature can stop working. | Build on each Mac with Xcode. Section 8 guide. |
+| 8 | No notarization (no paid account). | The first install needs Open Anyway. A free-team signature can stop working. | Build on each Mac with Xcode. Section 8 guide. An update replaces the app in place, and Sparkle does not quarantine its download, so only the first install prompts. |
 | 9 | Similar-photo groups join photos that the user sees as different. | The user could trash a photo by mistake. | Only a user action trashes photos. Keep is pre-marked, the user checks each group, Clean Up All asks for confirmation, and undo and the Trash can put photos back. |
 | 10 | Hashing a large folder takes time. | Slow Duplicates view. | Hash only files whose size is not unique. Cache the hashes. |
+| 11 | The EdDSA update key is lost, and the project has no Developer ID. | Sparkle cannot replace the key. Every user must install the app again by hand. | Save the private key outside the Mac on the day the project makes it. Section 8 and BUILD.md. |
 
 ## 13. New terms
 

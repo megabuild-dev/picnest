@@ -12,10 +12,12 @@
 		219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */; };
 		21ABC7AB273C92070EBEBE84 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989FD2A75D20A49C2832027B /* ScanView.swift */; };
 		2AA7F661CDC1E5AF2268CA06 /* DuplicatesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */; };
+		3326E5A71671FEF75E42A951 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE520B57AC25EFFC86499E5 /* Sparkle */; };
 		3701C843F134677B347B048F /* SelectionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBC5504915550647169DBD7 /* SelectionBar.swift */; };
 		40DF2F882721EFAE00B7D586 /* ReviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5040C0826039EBEC8EDE68A /* ReviewViewModel.swift */; };
 		4389658CBA389E3956766A27 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC9F57247BA22021E463784C /* AppModel.swift */; };
 		45D05A0645B36215E4861488 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F58180671D305DA5D5D04A /* SidebarView.swift */; };
+		46ACE4979DEE77644A8B5CF6 /* UpdaterCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */; };
 		556D4B5EA4DD80A6FE2C8D07 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A23A226DCC3C8650C439A15E /* ReviewView.swift */; };
 		5E5EBEB4613086D0FD6C9433 /* ReviewViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */; };
 		5EC0A2D59907C15FB0D2604A /* ScanViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D61409C47FE261863147401E /* ScanViewModelTests.swift */; };
@@ -37,6 +39,7 @@
 		C0D6276346C37C0D994D1657 /* ReviewCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */; };
 		C85B93CBA4C456D7B1094A35 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8720DD050E7DEC881184656B /* AppModelTests.swift */; };
 		C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0629FE80B349DDD9DC93B874 /* AppDelegate.swift */; };
+		CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */; };
 		D107C155337D4DE5FBBF567E /* SortViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0977699F69AB7452B6F56650 /* SortViewModelTests.swift */; };
 		D54CFD0B3713BDC63BE47DEE /* SortSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A0384D25A40836DB152C65 /* SortSheet.swift */; };
 		D5E02ACC4D238BF7ACF5EEBE /* SortMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70654CE25C0D4A3AEB26F66C /* SortMessages.swift */; };
@@ -58,6 +61,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		03B644AB4BC12B0942135B63 /* Picnest.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Picnest.entitlements; sourceTree = "<group>"; };
 		05B56D8F8749FFD9F550296D /* SuggestViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestViewModelTests.swift; sourceTree = "<group>"; };
 		05F58180671D305DA5D5D04A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		0629FE80B349DDD9DC93B874 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -71,6 +75,7 @@
 		2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestViewModel.swift; sourceTree = "<group>"; };
 		2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestSheet.swift; sourceTree = "<group>"; };
 		35166FEF0689ABA60577363E /* PhotoTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoTile.swift; sourceTree = "<group>"; };
+		3A4F291B7B0D7F2F894B589E /* Picnest.Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Picnest.Debug.entitlements; sourceTree = "<group>"; };
 		501266281830058D97AF399D /* DuplicatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesView.swift; sourceTree = "<group>"; };
 		57D74193AE5CCDEA74C74B46 /* Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support.swift; sourceTree = "<group>"; };
 		5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
@@ -89,6 +94,7 @@
 		A23A226DCC3C8650C439A15E /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		A5F10389CA705A630CD7876B /* ReviewStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewStyle.swift; sourceTree = "<group>"; };
 		A7C2B7BBF113F2DC262B2B68 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		BC73950B912E76D04662E063 /* PicnestCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PicnestCore; path = PicnestCore; sourceTree = SOURCE_ROOT; };
 		C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCommands.swift; sourceTree = "<group>"; };
 		C5040C0826039EBEC8EDE68A /* ReviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModel.swift; sourceTree = "<group>"; };
@@ -98,6 +104,7 @@
 		D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
 		DE5C538024D2F93601A43E4D /* PicnestApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PicnestApp.swift; sourceTree = "<group>"; };
 		EC9F57247BA22021E463784C /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterCommands.swift; sourceTree = "<group>"; };
 		FCD14299CCEEDDCB5B11ACF7 /* Picnest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Picnest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -107,6 +114,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C0C910198431EECC707F81BE /* PicnestCore in Frameworks */,
+				3326E5A71671FEF75E42A951 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -163,6 +171,8 @@
 			children = (
 				D594434602636BD2EEEFF69E /* Assets.xcassets */,
 				1A5B92C09D222C1D48568576 /* Info.plist */,
+				3A4F291B7B0D7F2F894B589E /* Picnest.Debug.entitlements */,
+				03B644AB4BC12B0942135B63 /* Picnest.entitlements */,
 				900ACE24C78A981403F67AD7 /* App */,
 				A48ADFC30BF399456D9B75AE /* Review */,
 				0DF81434DB1AA03046151114 /* Scan */,
@@ -187,8 +197,10 @@
 				0629FE80B349DDD9DC93B874 /* AppDelegate.swift */,
 				08D2B7C9420C231204BC494F /* AppEnvironment.swift */,
 				EC9F57247BA22021E463784C /* AppModel.swift */,
+				BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */,
 				DE5C538024D2F93601A43E4D /* PicnestApp.swift */,
 				A7C2B7BBF113F2DC262B2B68 /* RootView.swift */,
+				EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -252,6 +264,7 @@
 			name = Picnest;
 			packageProductDependencies = (
 				30B03628CE17F8732AD5C557 /* PicnestCore */,
+				8CE520B57AC25EFFC86499E5 /* Sparkle */,
 			);
 			productName = Picnest;
 			productReference = FCD14299CCEEDDCB5B11ACF7 /* Picnest.app */;
@@ -304,6 +317,7 @@
 			mainGroup = 3807D8D8DFC5F208A36BFFB6;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				AE01D1BFB8A12997D58C6A58 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				A6C687020CB97FEDFE2BCA1B /* XCLocalSwiftPackageReference "PicnestCore" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -394,6 +408,7 @@
 				C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */,
 				78EC7D52544D30719D020C2A /* AppEnvironment.swift in Sources */,
 				4389658CBA389E3956766A27 /* AppModel.swift in Sources */,
+				CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */,
 				8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */,
 				219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */,
 				F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */,
@@ -415,6 +430,7 @@
 				689A81B87787FDF696696773 /* SortViewModel.swift in Sources */,
 				73B91E90E6553F5DEAB35D9A /* SuggestSheet.swift in Sources */,
 				16DC62252371603DC3D9DD17 /* SuggestViewModel.swift in Sources */,
+				46ACE4979DEE77644A8B5CF6 /* UpdaterCommands.swift in Sources */,
 				6F90566DA29FC4725D1FDB85 /* WelcomeView.swift in Sources */,
 				66083AC05E13E723E2A46072 /* WelcomeViewModel.swift in Sources */,
 			);
@@ -578,6 +594,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Picnest/Picnest.Debug.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
@@ -605,6 +622,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Picnest/Picnest.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
@@ -683,10 +701,26 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		AE01D1BFB8A12997D58C6A58 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		30B03628CE17F8732AD5C557 /* PicnestCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PicnestCore;
+		};
+		8CE520B57AC25EFFC86499E5 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AE01D1BFB8A12997D58C6A58 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

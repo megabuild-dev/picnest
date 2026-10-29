@@ -20,6 +20,11 @@ settings:
 packages:
   PicnestCore:
     path: PicnestCore
+  # In-app updates. The public key below is the EdDSA key that signs each update archive
+  # (`scripts/make-appcast.sh`). Its private key is in the login Keychain, not in git.
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.10.0
 
 targets:
   Picnest:
@@ -32,6 +37,8 @@ targets:
     dependencies:
       - package: PicnestCore
         product: PicnestCore
+      - package: Sparkle
+        product: Sparkle
     # XcodeGen writes this partial Info.plist. Xcode merges it with the generated keys.
     info:
       path: Picnest/Info.plist
@@ -40,6 +47,16 @@ targets:
         # The version comes from MARKETING_VERSION and CURRENT_PROJECT_VERSION below, not from 2 copies.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # In-app updates (Sparkle). The app checks for a new version, the user approves the install,
+        # and Sparkle replaces the app in /Applications. The feed is the appcast on GitHub Pages.
+        # The public key matches the EdDSA private key in the login Keychain.
+        SUFeedURL: https://megabuild-dev.github.io/picnest/appcast.xml
+        SUPublicEDKey: "GoGJ8EBZg4rw2V4p4cFtSbdq7GKhMWuIOIHILLZSK/s="
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        SUAllowsAutomaticUpdates: false
+        SUAutomaticallyUpdate: false
+        SUVerifyUpdateBeforeExtraction: true
         # The private type of a photo drag from the grid to a sidebar category (MediaIDs).
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: dev.megabuild.picnest.media-ids
@@ -57,14 +74,21 @@ targets:
         INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Tinh Nguyen. MIT License."
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        # Hardened runtime on, App Sandbox off (spec 8). No entitlements file.
+        # Hardened runtime on, App Sandbox off (spec 8). Xcode turns the hardened runtime off again
+        # for an ad-hoc signature, and it says so: "Disabling hardened runtime with ad-hoc codesigning".
         ENABLE_HARDENED_RUNTIME: YES
         ENABLE_APP_SANDBOX: NO
+        # Library validation stays on in Release: a Developer ID build signs Sparkle.framework with the
+        # app's identity. Only the ad-hoc Debug build turns it off, to load Sparkle (spec 8).
+        CODE_SIGN_ENTITLEMENTS: Picnest/Picnest.entitlements
         # The model scripts read and write folders, which the script sandbox does not allow.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         # The 1 place that sets the model size (a MobileCLIPSize.modelStem). The scripts below copy
         # its 2 packages, and AppEnvironment reads it from the Info.plist key PicnestModelStem.
         PICNEST_MODEL_STEM: mobileclip_s2
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: Picnest/Picnest.Debug.entitlements
     preBuildScripts:
       - name: Check models
         basedOnDependencyAnalysis: false

@@ -91,6 +91,50 @@ gh release create v1.0 "build/Picnest 1.0.dmg" --title "Picnest 1.0" --notes "Fi
 
 GitHub accepts files up to 2 GB. The DMG with the S2 model is 180 MB.
 
+## Publish an update for the app
+
+An installed app reads an appcast file to find a new version. Sparkle, a Swift package, does the check, the
+download, and the install. The appcast is at <https://megabuild-dev.github.io/picnest/appcast.xml>.
+
+### Do these steps 1 time
+
+1. Get the Sparkle tools. Run `xcodebuild -resolvePackageDependencies -project Picnest.xcodeproj -scheme Picnest`.
+   The tools are then in the `Sparkle/bin` folder of the package artifacts in Xcode's build folder.
+2. Make the signing key: run `generate_keys` from that folder. It saves the private key in the login Keychain.
+3. Copy the public key that it prints to `SUPublicEDKey` in `project.yml`. Run `xcodegen generate`.
+4. Save the private key to a file outside this Mac: `generate_keys -x <file>`. Keep the file safe. The project
+   has no Developer ID, so Sparkle cannot replace a lost key. If the key is lost, every user must install the
+   app again by hand.
+5. Turn on GitHub Pages: **Settings > Pages > Source: Deploy from a branch**, branch `main`, folder `/docs`.
+
+### Do these steps for each release
+
+1. Write the release notes in `build/updates/Picnest <version>.md`.
+2. Set `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`, then run `xcodegen generate`.
+   `CURRENT_PROJECT_VERSION` must be higher than the last release. Sparkle compares it, not `MARKETING_VERSION`.
+3. Make the DMG: `scripts/make-dmg.sh`.
+4. Make the appcast: `scripts/make-appcast.sh`. It signs each archive and writes `docs/appcast.xml`.
+5. Upload the files in `build/updates/` to the release with the tag `updates`:
+
+```bash
+# The first time only. The tag keeps it out of "Latest", so the README link still works.
+gh release create updates --title "Update archives" --notes "Sparkle archives. Do not delete." --prerelease
+gh release upload updates build/updates/* --clobber
+```
+
+   Do not delete the old DMGs. Sparkle builds the delta updates from them, so a user downloads a few MB and
+   not the whole 180 MB.
+6. Commit `docs/appcast.xml`. Publish the feed last: the feed points at the new files, so the files must be
+   there first.
+7. After Pages deploys the feed (about 1 minute), run `scripts/check-appcast.sh`. It fails when the appcast or
+   any archive or delta URL in it returns an error. Do not tell users about the release until it passes.
+8. Test 1 update from an older build: install the previous release in `/Applications`, open **Picnest > Check
+   for Updates…**, and make sure the new version installs and starts with the sessions intact.
+9. Make the release for the user with the DMG and the notes. See [Publish a release on GitHub](#publish-a-release-on-github).
+
+Keep the signing key off a Mac that can publish a release. The key is the only proof that an update comes
+from this project, because macOS cannot check an ad-hoc signature.
+
 ## If macOS blocks the app
 
 - If you built the app and macOS does not open it, build it again on this Mac. Then copy it to `/Applications` again.
@@ -101,12 +145,19 @@ GitHub accepts files up to 2 GB. The DMG with the S2 model is 180 MB.
 
 ## Update the app
 
+An installed app updates itself with Sparkle. The user opens **Picnest > Check for Updates…**, or the app
+checks 1 time a day and asks. Sparkle replaces the app in `/Applications` and starts it again. The app must
+run from a folder the user can write, for example `/Applications`. Sparkle cannot replace an app that runs
+from the DMG.
+
+Sessions stay in `~/Library/Application Support/dev.megabuild.picnest/`. An update does not change them.
+
+To work on the code instead:
+
 1. Get the new project files.
 2. Run `scripts/fetch-models.sh s2` again. It downloads only missing files.
 3. In Xcode, click **Run**.
 4. Copy the new `Picnest.app` to `/Applications`. Replace the old app.
-
-Your sessions stay in `~/Library/Application Support/dev.megabuild.picnest/`. An update does not change them.
 
 ## Run the tests
 

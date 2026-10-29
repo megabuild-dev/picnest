@@ -309,10 +309,12 @@ final class LibraryServiceTests {
         let blocker = sortService.run(plan, mode: .copy, journal: library.journal(for: other),
                                       stop: { Thread.sleep(forTimeInterval: 0.3); return true })
         let drain = Task { for try await _ in blocker {} }
-        try await Task.sleep(for: .milliseconds(50))
-        let start = ContinuousClock.now
+        // Wait until the blocker holds the service. A fixed sleep is not enough on a slow CI runner.
+        for _ in 0..<200 where !library.isSortRunning { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(library.isSortRunning)
         try await library.startNewSort(source)
-        #expect(ContinuousClock.now - start >= .milliseconds(150))
+        // startNewSort returns only after the other sort ends.
+        #expect(!library.isSortRunning)
         #expect(try sessions.load(source: source) == nil)
         _ = await drain.result
     }
