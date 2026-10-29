@@ -470,6 +470,16 @@ final class ReviewViewModel {
         revealURLs(urls)
     }
 
+    /// Shows the photos of category `c` in Finder. Does nothing if the category has no photos.
+    func showCategoryInFinder(_ c: CategoryID) {
+        let session = review.session
+        let urls = session.visibleMedia
+            .filter { Self.includes($0, state: session.states[$0.id], in: .category(c)) }
+            .map(url(of:))
+        guard !urls.isEmpty else { return }
+        revealURLs(urls)
+    }
+
     func selectAll() { selection = Set(visibleIDs) }
 
     func clearSelection() {
