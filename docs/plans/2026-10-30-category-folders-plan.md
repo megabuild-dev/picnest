@@ -26,7 +26,7 @@ A category has a folder in the source folder. The folder follows the category wh
 
 ## Branches
 
-Main feature branch: `feature/category-folders`. Each phase uses the sub-branch `feature/category-folders/phase-<n>-<description>`. The work starts from `fix/reveal-category-in-finder`, because it needs `SortPlanner.folderNames`.
+Main feature branch: `category-folders`. Each phase uses the sub-branch `feature/category-folders/phase-<n>-<description>`. The work starts from `fix/reveal-category-in-finder`, because it needs `SortPlanner.folderNames`.
 
 ## Phases
 
