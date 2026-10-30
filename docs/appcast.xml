@@ -1,0 +1,25 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Picnest</title>
+        <item>
+            <title>1.1</title>
+            <pubDate>Fri, 30 Oct 2026 07:53:48 +0700</pubDate>
+            <link>https://github.com/megabuild-dev/picnest</link>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:releaseNotesLink>https://megabuild-dev.github.io/picnest/Picnest%201.1.md</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/megabuild-dev/picnest/releases/download/updates/Picnest%201.1.dmg" length="191791701" type="application/octet-stream" sparkle:edSignature="k+h57j03ZhjiOHkxlTO0cHy3dhYIeTU8bj18VmnHQBrLKFJYE1EcmDv1Dh2PSTMxg4ANpV8X4+bpXYx+n2h/DA=="/>
+        </item>
+        <item>
+            <title>1.0</title>
+            <pubDate>Fri, 30 Oct 2026 07:53:47 +0700</pubDate>
+            <link>https://github.com/megabuild-dev/picnest</link>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/megabuild-dev/picnest/releases/download/updates/Picnest%201.0.dmg" length="188323600" type="application/octet-stream"/>
+        </item>
+    </channel>
+</rss>
