@@ -67,6 +67,9 @@ public final class TrashService: Sendable {
         let trashURL = URL(filePath: t.trashPath, directoryHint: .notDirectory)
         guard fileOps.exists(trashURL) else { return .cannotPutBack(t.mediaID, Self.goneReason) }
         guard !fileOps.exists(original) else { return .cannotPutBack(t.mediaID, Self.takenReason) }
+        // The folder can be gone: deleting a category removes its empty folder.
+        let folder = original.deletingLastPathComponent()
+        if !fileOps.exists(folder) { try? fileOps.makeFolder(folder) }
         do {
             try fileOps.move(trashURL, original)  // Also refuses a file that appeared at `original` just now.
             return nil

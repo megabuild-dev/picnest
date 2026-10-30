@@ -77,6 +77,11 @@ struct ReviewView: View {
         } message: {
             Text(model.trashMessage ?? "")
         }
+        .alert("Category Folder", isPresented: folderErrorBinding) {
+            Button("OK", role: .cancel) { model.dismissFolderError() }
+        } message: {
+            Text(model.folderErrorMessage ?? "")
+        }
         // A failed save (final review I4). Both buttons clear or replace the error themselves.
         .alert("Picnest could not save", isPresented: saveErrorBinding) {
             Button("Try Again") { model.retrySave() }
@@ -214,6 +219,10 @@ struct ReviewView: View {
 
     private var trashMessageBinding: Binding<Bool> {
         Binding(get: { model.trashMessage != nil }, set: { if !$0 { model.trashMessage = nil } })
+    }
+
+    private var folderErrorBinding: Binding<Bool> {
+        Binding(get: { model.folderErrorMessage != nil }, set: { if !$0 { model.dismissFolderError() } })
     }
 
     private var saveErrorBinding: Binding<Bool> {

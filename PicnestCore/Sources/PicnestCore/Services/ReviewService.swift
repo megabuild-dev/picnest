@@ -20,6 +20,12 @@ public final class ReviewService {
     /// True while a Move to Trash, a clean-up, or a Trash undo or redo runs (final review I1). The app turns
     /// off Sort, Rescan, Done, and Undo Last Sort meanwhile; `settled()` waits until it is false.
     public private(set) var isMovingFiles = false
+    /// Every scanned photo, trashed ones too, by id. It changes only when photos get new paths
+    /// (`mediaRevision` goes up then): a folder rename or Done.
+    public private(set) var mediaByID: [MediaID: MediaFile]
+    public private(set) var mediaRevision = 0
+    /// Why the last category folder rename failed, or nil. The category keeps its name then.
+    public private(set) var folderError: String?
 
     /// False when only 1 category is left. `delete` ignores the last category.
     public var canDeleteCategory: Bool { session.categories.count > 1 }
@@ -31,6 +37,7 @@ public final class ReviewService {
     @ObservationIgnored private let sessions: SessionRepository
     @ObservationIgnored private let embeddings: EmbeddingRepository
     @ObservationIgnored private let trash: TrashService
+    @ObservationIgnored private let folders: CategoryFolderService
     @ObservationIgnored private let candidates: CandidateRepository
     @ObservationIgnored private let hashes: HashRepository
     @ObservationIgnored private let imageFiles: ImageRepository
@@ -73,9 +80,12 @@ public final class ReviewService {
         session: Session, source: URL, images: [MediaID: Vector], prompts: [CategoryID: [Vector]],
         classify: ClassifyService, sessions: SessionRepository, embeddings: EmbeddingRepository,
         trash: TrashService = TrashService(), candidates: CandidateRepository = CandidateRepository(),
-        hashes: HashRepository? = nil, imageFiles: ImageRepository = ImageRepository()
+        hashes: HashRepository? = nil, imageFiles: ImageRepository = ImageRepository(),
+        folders: CategoryFolderService = CategoryFolderService()
     ) {
+        self.folders = folders
         self.session = session
+        mediaByID = Self.index(session.scan.media)
         self.source = source
         self.images = images
         self.prompts = prompts
@@ -94,7 +104,7 @@ public final class ReviewService {
         session: Session, source: URL, embeddings: EmbeddingRepository, classify: ClassifyService,
         sessions: SessionRepository, trash: TrashService = TrashService(),
         candidates: CandidateRepository = CandidateRepository(), hashes: HashRepository? = nil,
-        imageFiles: ImageRepository = ImageRepository()
+        imageFiles: ImageRepository = ImageRepository(), folders: CategoryFolderService = CategoryFolderService()
     ) async throws -> ReviewService {
         let files = session.readableImages
         let (vectors, _) = try await embeddings.embeddings(for: files, source: source) { _, _ in }
@@ -105,7 +115,7 @@ public final class ReviewService {
         return ReviewService(
             session: session, source: source, images: vectors, prompts: prompts,
             classify: classify, sessions: sessions, embeddings: embeddings, trash: trash, candidates: candidates,
-            hashes: hashes, imageFiles: imageFiles)
+            hashes: hashes, imageFiles: imageFiles, folders: folders)
     }
 
     /// Waits until no file moves (Move to Trash, clean-up, Trash undo or redo), and the background
@@ -148,7 +158,13 @@ public final class ReviewService {
         guard !moves.isEmpty else { return }
         var map: [MediaID: String] = [:]
         for move in moves { map[move.mediaID] = move.to }
+        await rekey(map)
+    }
 
+    /// Gives photos new paths: `map` holds the new path of each moved photo. Re-keys `scan.media` (id and
+    /// relativePath), `dates`, `states`, `trashed`, every `exampleIDs`, the image vectors, and the embedding
+    /// cache. Drops the duplicate state, because a moved group is a new group. Then saves the session.
+    private func rekey(_ map: [MediaID: String]) async {
         var media: [MediaFile] = []
         media.reserveCapacity(session.scan.media.count)
         var keyMap: [String: String] = [:]
@@ -169,12 +185,25 @@ public final class ReviewService {
         session.scan.dates = dates
         session.states = states
         session.categories = categories
+        session.trashed = session.trashed.map { record in
+            var moved = record
+            moved.mediaID = map[record.mediaID] ?? record.mediaID
+            return moved
+        }
         session.notDuplicateKeys = []
+        lastDuplicates = []
+        pixelSizes = [:]
         var vectors: [MediaID: Vector] = [:]
         for (id, vector) in images { vectors[map[id] ?? id] = vector }
         images = vectors
+        mediaByID = Self.index(session.scan.media)
+        mediaRevision += 1
         await embeddings.rekey(keyMap)
         save()
+    }
+
+    private static func index(_ media: [MediaFile]) -> [MediaID: MediaFile] {
+        Dictionary(media.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// Stops all saves of the session (Start Over, spec 3.3). A change made after this stays in memory only,
@@ -263,6 +292,7 @@ public final class ReviewService {
     public func addCategory(name: String, emoji: String) -> CategoryID {
         let id = CategoryID()
         let prompt = "a photo of \(name)"
+        let folder = SortPlanner.uniqueFolderName(for: name, among: session.categories)
         let embeddings = embeddings
         perform(prepare: { [weak self] in
             guard let vectors = try? await embeddings.textEmbeddings([prompt]) else { return }
@@ -270,13 +300,59 @@ public final class ReviewService {
         }) { categories, _ in
             let order = (categories.map(\.order).max() ?? -1) + 1
             categories.append(Category(
-                id: id, displayName: name, emoji: emoji, prompts: [prompt], exampleIDs: [], order: order))
+                id: id, displayName: name, emoji: emoji, prompts: [prompt], exampleIDs: [], order: order,
+                folderName: folder))
         }
+        makeFolders([folder])
         return id
     }
 
+    /// Renames `c`, and its folder if the folder is on disk. A folder rename is not undoable: the photos
+    /// in it get new paths, so old undo steps do not fit any more. It clears the undo history. If the
+    /// folder cannot move, the category keeps its name and `folderError` says why.
     public func rename(_ c: CategoryID, to name: String) {
-        editCategory(c) { $0.displayName = name }
+        guard let category = session.categories.first(where: { $0.id == c }) else { return }
+        let old = SortPlanner.folderNames(for: session.categories)[c] ?? SortPlanner.folderName(for: category.displayName)
+        let new = SortPlanner.uniqueFolderName(for: name, among: session.categories, excluding: c)
+        guard old != new, folders.exists(old, in: source) else {
+            editCategory(c) { $0.displayName = name; $0.folderName = new }
+            return
+        }
+        runFileTask { await $0.renameFolder(c, to: name, from: old, newFolder: new) }
+    }
+
+    public func dismissFolderError() {
+        folderError = nil
+    }
+
+    private func renameFolder(_ c: CategoryID, to name: String, from old: String, newFolder new: String) async {
+        let folders = folders, source = source
+        let result = await Task.detached(priority: .userInitiated) {
+            Result { try folders.rename(old, to: new, in: source) }
+        }.value
+        switch result {
+        case .failure(let error):
+            folderError = "The folder \"\(old)\" could not be renamed to \"\(new)\": \(error.localizedDescription)"
+        case .success(let moved):
+            guard let i = session.categories.firstIndex(where: { $0.id == c }) else { return }
+            session.categories[i].displayName = name
+            session.categories[i].folderName = new
+            guard moved else { save(); return }
+            undoStack.removeAll()
+            redoStack.removeAll()
+            redoEpoch += 1
+            await rekey(Self.pathChanges(in: session.scan.media, from: old, to: new))
+        }
+    }
+
+    /// The new path of each photo in the folder `old` when that folder becomes `new`.
+    private static func pathChanges(in media: [MediaFile], from old: String, to new: String) -> [MediaID: String] {
+        let prefix = old + "/"
+        var map: [MediaID: String] = [:]
+        for file in media where file.relativePath.hasPrefix(prefix) {
+            map[file.id] = new + "/" + file.relativePath.dropFirst(prefix.count)
+        }
+        return map
     }
 
     public func setEmoji(_ c: CategoryID, _ e: String) {
@@ -321,6 +397,36 @@ public final class ReviewService {
             categories.removeAll { $0.id == from }
             Self.renumber(&categories)
         }
+    }
+
+    /// The photos that show in category `c`: manual picks and certain guesses. Trashed photos are not in it.
+    public func photoIDs(in c: CategoryID) -> [MediaID] {
+        session.visibleMedia.map(\.id).filter { id in
+            switch session.states[id] {
+            case .manual(c): true
+            case .auto(let a): a.categoryID == c && !a.uncertain
+            default: false
+            }
+        }
+    }
+
+    /// **Delete** with a confirmation: the photos of `c` go to the Trash, then `c` is deleted, then its folder
+    /// is removed if it is empty. Each of the 2 steps can be undone (the photos come back from the Trash;
+    /// the category comes back, its folder is made again when a photo returns). A photo that cannot move
+    /// stays and goes to Not sure, and its folder stays: `folderError` says so. Does nothing for the last
+    /// category.
+    public func deleteCategoryAndPhotos(_ c: CategoryID) async -> [TrashError] {
+        guard canDeleteCategory, let folder = SortPlanner.folderNames(for: session.categories)[c] else { return [] }
+        let errors = await trashFiles(photoIDs(in: c), newAction: true)
+        delete(c)
+        let folders = folders, source = source
+        let removal = await Task.detached(priority: .userInitiated) { folders.removeIfEmpty(folder, in: source) }.value
+        if case .kept(let others) = removal {
+            folderError = others > 0
+                ? "The folder \"\(folder)\" stays, because it holds \(others) file\(others == 1 ? "" : "s") that were not in this category."
+                : "The folder \"\(folder)\" could not be removed."
+        }
+        return errors
     }
 
     /// All photos of `c`, also manual picks, go to Not sure and stay there (spec 3.3).
@@ -412,6 +518,13 @@ public final class ReviewService {
                 return (CategoryID(), suggestion, prompts, ids)
             }
         guard !added.isEmpty else { return [] }
+        var taken = session.categories
+        let folderOf: [CategoryID: String] = Dictionary(uniqueKeysWithValues: added.map { item in
+            let folder = SortPlanner.uniqueFolderName(for: item.suggestion.name, among: taken)
+            taken.append(Category(id: item.id, displayName: item.suggestion.name, emoji: "", prompts: [], exampleIDs: [],
+                                  order: taken.count, folderName: folder))
+            return (item.id, folder)
+        })
         let picks: [(MediaID, CategoryID)] = added.flatMap { item in item.ids.map { ($0, item.id) } }
         let embeddings = embeddings
         perform(prepare: { [weak self] in
@@ -424,12 +537,26 @@ public final class ReviewService {
             for item in added {
                 categories.append(Category(
                     id: item.id, displayName: item.suggestion.name, emoji: item.suggestion.emoji,
-                    prompts: item.prompts, exampleIDs: [], order: order))
+                    prompts: item.prompts, exampleIDs: [], order: order, folderName: folderOf[item.id]))
                 order += 1
             }
             Self.pick(picks, categories: &categories, states: &states)
         }
+        makeFolders(Array(folderOf.values))
         return added.map(\.id)
+    }
+
+    /// Makes the folders of new categories off the main actor. A folder that cannot be made is not an
+    /// error: Done makes it when it moves the photos.
+    private func makeFolders(_ names: [String]) {
+        movingFiles += 1
+        let folders = folders, source = source
+        Task { [weak self] in
+            await Task.detached(priority: .userInitiated) {
+                for name in names { try? folders.ensure(name, in: source) }
+            }.value
+            self?.movingFiles -= 1
+        }
     }
 
     // MARK: - Duplicates

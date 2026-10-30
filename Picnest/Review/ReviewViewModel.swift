@@ -96,12 +96,16 @@ final class ReviewViewModel {
     /// Open a photo in its default app, and show photos in Finder. `NSWorkspace` by default; tests replace them.
     @ObservationIgnored private let openURL: @MainActor (URL) -> Void
     @ObservationIgnored private let revealURLs: @MainActor ([URL]) -> Void
+    @ObservationIgnored private let folderExists: (URL) -> Bool
     /// A lookup of every scanned photo, trashed ones too: a photo that comes back from the Trash needs its
     /// entry. Lists use `session.visibleMedia`. The scan does not change while this review is open: a rescan
     /// makes a new `ReviewService`.
     /// The latest task that waits for an undo or redo of the Trash and then shows its errors.
     @ObservationIgnored private var undoWatch: Task<Void, Never>?
-    @ObservationIgnored private let mediaByID: [MediaID: MediaFile]
+    /// A lookup of every scanned photo, trashed ones too: a photo that comes back from the Trash needs its
+    /// entry. Lists use `session.visibleMedia`. It changes only when a folder rename gives photos new paths.
+    private var mediaByID: [MediaID: MediaFile] { review.mediaByID }
+    @ObservationIgnored private var seenMediaRevision: Int
 
     /// The cached `visibleIDs`, for the item and order they were made for. Selection changes re-render the
     /// grid, so the list must not be filtered and sorted again then (spec 12, risk 3).
@@ -125,7 +129,9 @@ final class ReviewViewModel {
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
          app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
-         revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }) {
+         revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
+         folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) {
+        self.folderExists = folderExists
         self.openURL = openURL
         self.revealURLs = revealURLs
         self.review = review
@@ -136,12 +142,12 @@ final class ReviewViewModel {
         self.onRescan = onRescan
         suggestAfterScanPending = afterScan
         source = URL(filePath: review.session.sourcePath, directoryHint: .isDirectory)
-        mediaByID = Dictionary(review.session.scan.media.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let media = mediaByID, source = source
+        seenMediaRevision = review.mediaRevision
+        let source = source
         duplicates = DuplicatesViewModel(
             review: review,
-            thumbnail: { id, maxPixel in
-                guard let file = media[id] else { return nil }
+            thumbnail: { [review] id, maxPixel in
+                guard let file = await review.mediaByID[id] else { return nil }
                 return await thumbnails.thumbnail(for: file, source: source, maxPixel: maxPixel)
             },
             onTrashErrors: { [weak self] in self?.showTrashErrors($0) })
@@ -329,11 +335,11 @@ final class ReviewViewModel {
     /// Shows the Not sure view and opens the suggest sheet.
     func openSuggest() {
         selectedItem = .notSure
-        let thumbnails = thumbnails, media = mediaByID, source = source
+        let thumbnails = thumbnails, review = review, source = source
         suggest = SuggestViewModel(
             review: review,
             thumbnail: { id, maxPixel in
-                guard let file = media[id] else { return nil }
+                guard let file = await review.mediaByID[id] else { return nil }
                 return await thumbnails.thumbnail(for: file, source: source, maxPixel: maxPixel)
             },
             onAdded: { [weak self] _ in self?.suggest = nil })
@@ -465,19 +471,29 @@ final class ReviewViewModel {
 
     /// Shows the selected photos in Finder.
     func showInFinder() {
-        let urls = selectedURLs()
-        guard !urls.isEmpty else { return }
-        revealURLs(urls)
+        reveal(selectedURLs())
     }
 
-    /// Shows the photos of category `c` in Finder. Does nothing if the category has no photos.
+    /// The folder that Done made for category `c` (`<source>/<category folder>`), or nil if it is not on disk yet.
+    func categoryFolder(_ c: CategoryID) -> URL? {
+        guard let name = SortPlanner.folderNames(for: review.session.categories)[c] else { return nil }
+        let folder = source.appending(path: name, directoryHint: .isDirectory)
+        return folderExists(folder) ? folder : nil
+    }
+
+    /// Opens the folder of category `c` in Finder, without selecting any photo. Does nothing if the folder
+    /// is not on disk yet.
     func showCategoryInFinder(_ c: CategoryID) {
-        let session = review.session
-        let urls = session.visibleMedia
-            .filter { Self.includes($0, state: session.states[$0.id], in: .category(c)) }
-            .map(url(of:))
-        guard !urls.isEmpty else { return }
-        revealURLs(urls)
+        guard let folder = categoryFolder(c) else { return }
+        openURL(folder)
+    }
+
+    /// Reveals `urls` in 1 Finder window. Finder opens 1 window per parent folder, so it keeps only
+    /// the files in the folder of the first URL.
+    private func reveal(_ urls: [URL]) {
+        guard let first = urls.first else { return }
+        let folder = first.deletingLastPathComponent()
+        revealURLs(urls.filter { $0.deletingLastPathComponent() == folder })
     }
 
     func selectAll() { selection = Set(visibleIDs) }
@@ -595,19 +611,37 @@ final class ReviewViewModel {
 
     // MARK: - Category edits
 
+    /// Why the last folder rename failed, or nil. The alert of the review screen shows it.
+    var folderErrorMessage: String? { review.folderError }
+
+    func dismissFolderError() { review.dismissFolderError() }
+
     var canDeleteCategory: Bool { review.canDeleteCategory }
 
-    /// The text of the confirmation dialog before a delete (spec 3.3).
+    /// The title of the confirmation dialog before a delete (spec 3.3).
     func deleteConfirmation(for c: CategoryID) -> String {
-        let name = review.session.categories.first { $0.id == c }?.displayName ?? ""
-        return "Delete \(name)? Its \(count(of: .category(c))) photos go to Not sure."
+        "Delete \(categoryName(c))?"
     }
 
-    /// Deletes `c`. Its photos go to "Not sure", so that list shows if `c` was showing.
-    func deleteCategory(_ c: CategoryID) {
+    /// The warning of that dialog: the photos go to the Trash and the folder goes too.
+    func deleteMessage(for c: CategoryID) -> String {
+        let folder = SortPlanner.folderNames(for: review.session.categories)[c] ?? categoryName(c)
+        let photos = review.photoIDs(in: c).count
+        return "\(photos) \(photos == 1 ? "photo" : "photos") in this category move to the Trash, "
+            + "and the folder \"\(folder)\" is deleted. "
+            + "Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder."
+    }
+
+    private func categoryName(_ c: CategoryID) -> String {
+        review.session.categories.first { $0.id == c }?.displayName ?? ""
+    }
+
+    /// Deletes `c`: its photos go to the Trash, and its folder goes. The Not sure list shows if `c` was showing.
+    func deleteCategory(_ c: CategoryID) async {
         guard canDeleteCategory else { return }
-        review.delete(c)
         if selectedItem == .category(c) { selectedItem = .notSure }
+        clearSelection()
+        showTrashErrors(await review.deleteCategoryAndPhotos(c))
     }
 
     /// The categories that `c` can merge into, in sidebar order.
@@ -695,6 +729,12 @@ final class ReviewViewModel {
         watchSession()
         cache = nil
         groupsCache = nil
+        // A folder rename gave photos new paths, so the ids of the selection are old.
+        if seenMediaRevision != review.mediaRevision {
+            seenMediaRevision = review.mediaRevision
+            selection = []
+            anchor = nil
+        }
     }
 
     /// Marks the list as old at the next change of `review.session`. The tracking fires 1 time, so
