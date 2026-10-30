@@ -96,6 +96,7 @@ final class ReviewViewModel {
     /// Open a photo in its default app, and show photos in Finder. `NSWorkspace` by default; tests replace them.
     @ObservationIgnored private let openURL: @MainActor (URL) -> Void
     @ObservationIgnored private let revealURLs: @MainActor ([URL]) -> Void
+    @ObservationIgnored private let folderExists: (URL) -> Bool
     /// A lookup of every scanned photo, trashed ones too: a photo that comes back from the Trash needs its
     /// entry. Lists use `session.visibleMedia`. The scan does not change while this review is open: a rescan
     /// makes a new `ReviewService`.
@@ -125,7 +126,9 @@ final class ReviewViewModel {
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
          app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
-         revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }) {
+         revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
+         folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) {
+        self.folderExists = folderExists
         self.openURL = openURL
         self.revealURLs = revealURLs
         self.review = review
@@ -468,21 +471,18 @@ final class ReviewViewModel {
         reveal(selectedURLs())
     }
 
-    /// Opens the folder of category `c` in Finder, without selecting any photo. That is the subfolder of the
-    /// source that holds most of its photos, so photos that are still loose in the source do not pull it
-    /// to the source root. It is the source root only if no photo of the category is in a subfolder.
-    /// Does nothing if the category has no photos.
+    /// The folder that Done made for category `c` (`<source>/<category folder>`), or nil if it is not on disk yet.
+    func categoryFolder(_ c: CategoryID) -> URL? {
+        guard let name = SortPlanner.folderNames(for: review.session.categories)[c] else { return nil }
+        let folder = source.appending(path: name, directoryHint: .isDirectory)
+        return folderExists(folder) ? folder : nil
+    }
+
+    /// Opens the folder of category `c` in Finder, without selecting any photo. Does nothing if the folder
+    /// is not on disk yet.
     func showCategoryInFinder(_ c: CategoryID) {
-        let session = review.session
-        let parents = session.visibleMedia
-            .filter { Self.includes($0, state: session.states[$0.id], in: .category(c)) }
-            .map { url(of: $0).deletingLastPathComponent() }
-        guard !parents.isEmpty else { return }
-        let root = source.standardizedFileURL
-        let subfolders = parents.filter { $0.standardizedFileURL != root }
-        let counts = Dictionary(grouping: subfolders, by: \.path).mapValues(\.count)
-        let best = counts.max { ($0.value, $1.key) < ($1.value, $0.key) }
-        openURL(best.map { URL(filePath: $0.key, directoryHint: .isDirectory) } ?? root)
+        guard let folder = categoryFolder(c) else { return }
+        openURL(folder)
     }
 
     /// Reveals `urls` in 1 Finder window. Finder opens 1 window per parent folder, so it keeps only

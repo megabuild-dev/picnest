@@ -70,7 +70,8 @@ struct ReviewViewModelTests {
 
     private func makeModelAndReview(
         onRescan: @escaping () -> Void = {}, trashOps: FakeTrashFileOps = FakeTrashFileOps(), openURL: @escaping @MainActor (URL) -> Void = { _ in },
-        revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in }) throws -> (model: ReviewViewModel, review: ReviewService) {
+        revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in },
+        folderExists: @escaping (URL) -> Bool = { _ in true }) throws -> (model: ReviewViewModel, review: ReviewService) {
         let source = try temp.folder("Photos")
         let review = ReviewService(
             session: makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
@@ -81,7 +82,7 @@ struct ReviewViewModelTests {
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
             library: environment.library, app: AppModel(environment: environment), onRescan: onRescan,
-            openURL: openURL, revealURLs: revealURLs)
+            openURL: openURL, revealURLs: revealURLs, folderExists: folderExists)
         return (model, review)
     }
 
@@ -496,13 +497,21 @@ struct ReviewViewModelTests {
         #expect(Set(revealed[0].map(\.lastPathComponent)) == ["a.jpg", "c.jpg"])
     }
 
-    @Test func showCategoryInFinderOpensTheFolderWithoutSelectingPhotos() throws {
+    @Test func showCategoryInFinderOpensTheCategoryFolderWithoutSelectingPhotos() throws {
         var opened: [URL] = []
         var revealed: [[URL]] = []
         let model = try makeModelAndReview(openURL: { opened.append($0) }, revealURLs: { revealed.append($0) }).model
         model.showCategoryInFinder(food.id)
         #expect(revealed.isEmpty)
-        #expect(opened.map(\.lastPathComponent) == ["Photos"])
+        #expect(opened.map(\.lastPathComponent) == [SortPlanner.folderName(for: food.displayName)])
+    }
+
+    @Test func showCategoryInFinderDoesNothingWhenTheFolderIsNotOnDisk() throws {
+        var opened: [URL] = []
+        let model = try makeModelAndReview(openURL: { opened.append($0) }, folderExists: { _ in false }).model
+        model.showCategoryInFinder(food.id)
+        #expect(opened.isEmpty)
+        #expect(model.categoryFolder(food.id) == nil)
     }
 
     @Test func selectedURLsAreTheSelection() throws {

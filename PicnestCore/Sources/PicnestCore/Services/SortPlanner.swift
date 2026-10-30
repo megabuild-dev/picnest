@@ -47,6 +47,22 @@ public struct SortPlanner: Sendable {
         return name.isEmpty ? "Untitled" : name
     }
 
+    /// The folder name of each category: its safe display name, with " 2", " 3"... added to a name that
+    /// another category or a reserved folder already uses (spec 7.2).
+    public static func folderNames(for categories: [Category]) -> [CategoryID: String] {
+        var used: Set<String> = [key(notSureFolder), key(videosFolder), key(unreadableFolder)]
+        var folderOf: [CategoryID: String] = [:]
+        for c in categories.sorted(by: { $0.order < $1.order }) {
+            let base = folderName(for: c.displayName)
+            var candidate = base
+            var n = 2
+            while used.contains(key(candidate)) { candidate = "\(base) \(n)"; n += 1 }
+            used.insert(key(candidate))
+            folderOf[c.id] = candidate
+        }
+        return folderOf
+    }
+
     /// The folder part of a relative path, or "" for a file at the source root.
     private static func parentFolder(of relativePath: String) -> String {
         (relativePath as NSString).deletingLastPathComponent
@@ -77,16 +93,7 @@ public struct SortPlanner: Sendable {
         notSureChoice: NotSureChoice, inPlace: Bool, existingNames: (URL) -> Set<String>
     ) throws -> SortPlan {
         let ordered = s.categories.sorted { $0.order < $1.order }
-        var used: Set<String> = [Self.key(Self.notSureFolder), Self.key(Self.videosFolder), Self.key(Self.unreadableFolder)]
-        var folderOf: [CategoryID: String] = [:]
-        for c in ordered {
-            let base = Self.folderName(for: c.displayName)
-            var candidate = base
-            var n = 2
-            while used.contains(Self.key(candidate)) { candidate = "\(base) \(n)"; n += 1 }
-            used.insert(Self.key(candidate))
-            folderOf[c.id] = candidate
-        }
+        let folderOf = Self.folderNames(for: s.categories)
 
         // Decide the top-level folder of each media file. nil means it stays in the source.
         struct Item { var media: MediaFile; var folder: String; var date: Date }
