@@ -667,16 +667,24 @@ struct ReviewViewModelTests {
 
     // MARK: - Category edits
 
-    @Test func deleteConfirmationTextAndLastCategory() throws {
+    @Test func deleteConfirmationWarnsAboutThePhotosAndTheFolder() throws {
+        let model = try makeModel()
+        #expect(model.deleteConfirmation(for: food.id) == "Delete Food?")
+        let message = model.deleteMessage(for: food.id)
+        #expect(message.hasPrefix("2 photos in this category move to the Trash"))
+        #expect(message.contains("the folder \"Food\" is deleted"))
+    }
+
+    @Test func deleteTrashesThePhotosAndRemovesTheCategory() async throws {
         let (model, review) = try makeModelAndReview()
-        #expect(model.deleteConfirmation(for: food.id) == "Delete Food? Its 2 photos go to Not sure.")
         #expect(model.canDeleteCategory)
         model.selectedItem = .category(food.id)
-        model.deleteCategory(food.id)
+        await model.deleteCategory(food.id)
         #expect(review.session.categories.map(\.id) == [documents.id])
+        #expect(review.session.trashedIDs == ["a.jpg", "c.jpg"])
         #expect(model.selectedItem == .notSure)  // The deleted category's list is gone.
         #expect(!model.canDeleteCategory)
-        model.deleteCategory(documents.id)
+        await model.deleteCategory(documents.id)
         #expect(review.session.categories.count == 1)
     }
 
