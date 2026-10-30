@@ -102,7 +102,10 @@ final class ReviewViewModel {
     /// makes a new `ReviewService`.
     /// The latest task that waits for an undo or redo of the Trash and then shows its errors.
     @ObservationIgnored private var undoWatch: Task<Void, Never>?
-    @ObservationIgnored private let mediaByID: [MediaID: MediaFile]
+    /// A lookup of every scanned photo, trashed ones too: a photo that comes back from the Trash needs its
+    /// entry. Lists use `session.visibleMedia`. It changes only when a folder rename gives photos new paths.
+    private var mediaByID: [MediaID: MediaFile] { review.mediaByID }
+    @ObservationIgnored private var seenMediaRevision: Int
 
     /// The cached `visibleIDs`, for the item and order they were made for. Selection changes re-render the
     /// grid, so the list must not be filtered and sorted again then (spec 12, risk 3).
@@ -139,12 +142,12 @@ final class ReviewViewModel {
         self.onRescan = onRescan
         suggestAfterScanPending = afterScan
         source = URL(filePath: review.session.sourcePath, directoryHint: .isDirectory)
-        mediaByID = Dictionary(review.session.scan.media.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let media = mediaByID, source = source
+        seenMediaRevision = review.mediaRevision
+        let source = source
         duplicates = DuplicatesViewModel(
             review: review,
-            thumbnail: { id, maxPixel in
-                guard let file = media[id] else { return nil }
+            thumbnail: { [review] id, maxPixel in
+                guard let file = await review.mediaByID[id] else { return nil }
                 return await thumbnails.thumbnail(for: file, source: source, maxPixel: maxPixel)
             },
             onTrashErrors: { [weak self] in self?.showTrashErrors($0) })
@@ -332,11 +335,11 @@ final class ReviewViewModel {
     /// Shows the Not sure view and opens the suggest sheet.
     func openSuggest() {
         selectedItem = .notSure
-        let thumbnails = thumbnails, media = mediaByID, source = source
+        let thumbnails = thumbnails, review = review, source = source
         suggest = SuggestViewModel(
             review: review,
             thumbnail: { id, maxPixel in
-                guard let file = media[id] else { return nil }
+                guard let file = await review.mediaByID[id] else { return nil }
                 return await thumbnails.thumbnail(for: file, source: source, maxPixel: maxPixel)
             },
             onAdded: { [weak self] _ in self?.suggest = nil })
@@ -608,6 +611,11 @@ final class ReviewViewModel {
 
     // MARK: - Category edits
 
+    /// Why the last folder rename failed, or nil. The alert of the review screen shows it.
+    var folderErrorMessage: String? { review.folderError }
+
+    func dismissFolderError() { review.dismissFolderError() }
+
     var canDeleteCategory: Bool { review.canDeleteCategory }
 
     /// The text of the confirmation dialog before a delete (spec 3.3).
@@ -708,6 +716,12 @@ final class ReviewViewModel {
         watchSession()
         cache = nil
         groupsCache = nil
+        // A folder rename gave photos new paths, so the ids of the selection are old.
+        if seenMediaRevision != review.mediaRevision {
+            seenMediaRevision = review.mediaRevision
+            selection = []
+            anchor = nil
+        }
     }
 
     /// Marks the list as old at the next change of `review.session`. The tracking fires 1 time, so

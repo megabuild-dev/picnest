@@ -64,8 +64,8 @@ final class DuplicatesViewModel {
     @ObservationIgnored private let thumbnailLoader: (MediaID, Int) async -> CGImage?
     @ObservationIgnored private let onTrashErrors: ([TrashError]) -> Void
     @ObservationIgnored private var hasFound = false
-    /// Every scanned photo. The scan does not change while this review is open.
-    @ObservationIgnored private let mediaByID: [MediaID: MediaFile]
+    /// Every scanned photo.
+    private var mediaByID: [MediaID: MediaFile] { review.mediaByID }
     @ObservationIgnored private let source: URL
     /// The cached shown groups, for the found groups and the trashed photos they were made for.
     @ObservationIgnored private var cache: (version: Int, trashed: Set<MediaID>, shown: Shown)?
@@ -80,7 +80,6 @@ final class DuplicatesViewModel {
         self.review = review
         thumbnailLoader = thumbnail
         self.onTrashErrors = onTrashErrors
-        mediaByID = Dictionary(review.session.scan.media.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         source = URL(filePath: review.session.sourcePath, directoryHint: .isDirectory)
     }
 
