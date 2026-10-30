@@ -109,7 +109,7 @@ download, and the install. The appcast is at <https://megabuild-dev.github.io/pi
 
 ### Do these steps for each release
 
-1. Write the release notes in `build/updates/Picnest <version>.md`.
+1. Write the release notes in `build/updates/Picnest-<version>.md`. The name of an archive in that folder has hyphens, not spaces, because GitHub changes a space in an asset name to a dot.
 2. Set `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`, then run `xcodegen generate`.
    `CURRENT_PROJECT_VERSION` must be higher than the last release. Sparkle compares it, not `MARKETING_VERSION`.
 3. Make the DMG: `scripts/make-dmg.sh`.

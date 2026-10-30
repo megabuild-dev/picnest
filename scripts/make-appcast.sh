@@ -49,7 +49,8 @@ fi
 # The DMG that scripts/make-dmg.sh wrote in build/, if the archive folder does not hold it yet.
 for dmg in "$ROOT_DIR"/build/*.dmg; do
   [ -e "$dmg" ] || continue
-  name="$(basename "$dmg")"
+  # GitHub changes a space in an asset name to a dot, so the feed URL would not match. Use a hyphen.
+  name="$(basename "$dmg" | tr ' ' '-')"
   if [ ! -e "$UPDATES_DIR/$name" ]; then
     echo "add   $name"
     cp "$dmg" "$UPDATES_DIR/$name"
