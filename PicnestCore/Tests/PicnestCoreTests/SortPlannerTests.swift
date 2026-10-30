@@ -197,6 +197,24 @@ struct SortPlannerTests {
         #expect(rel(try plan(s, opts())) == ["A-B/1.jpg", "A-B 2/2.jpg"])
     }
 
+    @Test func storedFolderNamesStayWhenCategoriesMove() throws {
+        let a = Category(id: UUID(), displayName: "Food", emoji: "", prompts: [], exampleIDs: [], order: 1, folderName: "Food")
+        let b = Category(id: UUID(), displayName: "Food", emoji: "", prompts: [], exampleIDs: [], order: 0, folderName: "Food 2")
+        let names = SortPlanner.folderNames(for: [a, b])
+        #expect(names[a.id] == "Food" && names[b.id] == "Food 2")
+        let c = Category(id: UUID(), displayName: "food", emoji: "", prompts: [], exampleIDs: [], order: 2)
+        #expect(SortPlanner.folderNames(for: [a, b, c])[c.id] == "food 3")
+        #expect(SortPlanner.uniqueFolderName(for: "Food", among: [a, b], excluding: a.id) == "Food")
+        #expect(SortPlanner.uniqueFolderName(for: "Videos", among: [a, b]) == "Videos 2")
+    }
+
+    @Test func aCategoryFromAnOldSessionHasNoFolderName() throws {
+        let json = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","displayName":"Food","emoji":"x","prompts":[],"exampleIDs":[],"order":0}"#
+        let c = try JSONDecoder().decode(Category.self, from: Data(json.utf8))
+        #expect(c.folderName == nil)
+        #expect(SortPlanner.folderNames(for: [c])[c.id] == "Food")
+    }
+
     @Test func refusesSourceAsDestination() throws {
         let t = try TempDir()
         let source = t.url.appending(path: "photos", directoryHint: .isDirectory)

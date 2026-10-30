@@ -31,6 +31,7 @@ public final class ReviewService {
     @ObservationIgnored private let sessions: SessionRepository
     @ObservationIgnored private let embeddings: EmbeddingRepository
     @ObservationIgnored private let trash: TrashService
+    @ObservationIgnored private let folders: CategoryFolderService
     @ObservationIgnored private let candidates: CandidateRepository
     @ObservationIgnored private let hashes: HashRepository
     @ObservationIgnored private let imageFiles: ImageRepository
@@ -73,8 +74,10 @@ public final class ReviewService {
         session: Session, source: URL, images: [MediaID: Vector], prompts: [CategoryID: [Vector]],
         classify: ClassifyService, sessions: SessionRepository, embeddings: EmbeddingRepository,
         trash: TrashService = TrashService(), candidates: CandidateRepository = CandidateRepository(),
-        hashes: HashRepository? = nil, imageFiles: ImageRepository = ImageRepository()
+        hashes: HashRepository? = nil, imageFiles: ImageRepository = ImageRepository(),
+        folders: CategoryFolderService = CategoryFolderService()
     ) {
+        self.folders = folders
         self.session = session
         self.source = source
         self.images = images
@@ -94,7 +97,7 @@ public final class ReviewService {
         session: Session, source: URL, embeddings: EmbeddingRepository, classify: ClassifyService,
         sessions: SessionRepository, trash: TrashService = TrashService(),
         candidates: CandidateRepository = CandidateRepository(), hashes: HashRepository? = nil,
-        imageFiles: ImageRepository = ImageRepository()
+        imageFiles: ImageRepository = ImageRepository(), folders: CategoryFolderService = CategoryFolderService()
     ) async throws -> ReviewService {
         let files = session.readableImages
         let (vectors, _) = try await embeddings.embeddings(for: files, source: source) { _, _ in }
@@ -105,7 +108,7 @@ public final class ReviewService {
         return ReviewService(
             session: session, source: source, images: vectors, prompts: prompts,
             classify: classify, sessions: sessions, embeddings: embeddings, trash: trash, candidates: candidates,
-            hashes: hashes, imageFiles: imageFiles)
+            hashes: hashes, imageFiles: imageFiles, folders: folders)
     }
 
     /// Waits until no file moves (Move to Trash, clean-up, Trash undo or redo), and the background
@@ -263,6 +266,7 @@ public final class ReviewService {
     public func addCategory(name: String, emoji: String) -> CategoryID {
         let id = CategoryID()
         let prompt = "a photo of \(name)"
+        let folder = SortPlanner.uniqueFolderName(for: name, among: session.categories)
         let embeddings = embeddings
         perform(prepare: { [weak self] in
             guard let vectors = try? await embeddings.textEmbeddings([prompt]) else { return }
@@ -270,8 +274,10 @@ public final class ReviewService {
         }) { categories, _ in
             let order = (categories.map(\.order).max() ?? -1) + 1
             categories.append(Category(
-                id: id, displayName: name, emoji: emoji, prompts: [prompt], exampleIDs: [], order: order))
+                id: id, displayName: name, emoji: emoji, prompts: [prompt], exampleIDs: [], order: order,
+                folderName: folder))
         }
+        makeFolders([folder])
         return id
     }
 
@@ -412,6 +418,13 @@ public final class ReviewService {
                 return (CategoryID(), suggestion, prompts, ids)
             }
         guard !added.isEmpty else { return [] }
+        var taken = session.categories
+        let folderOf: [CategoryID: String] = Dictionary(uniqueKeysWithValues: added.map { item in
+            let folder = SortPlanner.uniqueFolderName(for: item.suggestion.name, among: taken)
+            taken.append(Category(id: item.id, displayName: item.suggestion.name, emoji: "", prompts: [], exampleIDs: [],
+                                  order: taken.count, folderName: folder))
+            return (item.id, folder)
+        })
         let picks: [(MediaID, CategoryID)] = added.flatMap { item in item.ids.map { ($0, item.id) } }
         let embeddings = embeddings
         perform(prepare: { [weak self] in
@@ -424,12 +437,26 @@ public final class ReviewService {
             for item in added {
                 categories.append(Category(
                     id: item.id, displayName: item.suggestion.name, emoji: item.suggestion.emoji,
-                    prompts: item.prompts, exampleIDs: [], order: order))
+                    prompts: item.prompts, exampleIDs: [], order: order, folderName: folderOf[item.id]))
                 order += 1
             }
             Self.pick(picks, categories: &categories, states: &states)
         }
+        makeFolders(Array(folderOf.values))
         return added.map(\.id)
+    }
+
+    /// Makes the folders of new categories off the main actor. A folder that cannot be made is not an
+    /// error: Done makes it when it moves the photos.
+    private func makeFolders(_ names: [String]) {
+        movingFiles += 1
+        let folders = folders, source = source
+        Task { [weak self] in
+            await Task.detached(priority: .userInitiated) {
+                for name in names { try? folders.ensure(name, in: source) }
+            }.value
+            self?.movingFiles -= 1
+        }
     }
 
     // MARK: - Duplicates

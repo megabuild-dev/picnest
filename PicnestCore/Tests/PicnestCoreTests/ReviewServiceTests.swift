@@ -508,6 +508,39 @@ struct ReviewServiceTests {
         #expect(try f.sessions.load(source: f.source) == s.session)
     }
 
+    // MARK: - Category folders
+
+    @Test func addCategoryMakesItsFolderAndStoresTheName() async throws {
+        let f = try fixture()
+        try FileManager.default.createDirectory(at: f.source, withIntermediateDirectories: true)
+        let id = f.service.addCategory(name: "Teacher Demo", emoji: "🧪")
+        await f.service.settled()
+        #expect(category(id, f.service)?.folderName == "Teacher Demo")
+        var isDirectory: ObjCBool = false
+        let path = f.source.appending(path: "Teacher Demo").path
+        #expect(FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) && isDirectory.boolValue)
+    }
+
+    @Test func addCategoryKeepsAFolderThatExists() async throws {
+        let f = try fixture()
+        let folder = f.source.appending(path: "Teacher Demo", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data([1]).write(to: folder.appending(path: "keep.jpg"))
+        f.service.addCategory(name: "Teacher Demo", emoji: "🧪")
+        await f.service.settled()
+        #expect(FileManager.default.fileExists(atPath: folder.appending(path: "keep.jpg").path))
+    }
+
+    @Test func twoCategoriesWithOneNameGetTwoFolders() async throws {
+        let f = try fixture()
+        try FileManager.default.createDirectory(at: f.source, withIntermediateDirectories: true)
+        let a = f.service.addCategory(name: "Trip", emoji: "🧪")
+        let b = f.service.addCategory(name: "trip", emoji: "🧪")
+        await f.service.settled()
+        #expect(category(a, f.service)?.folderName == "Trip")
+        #expect(category(b, f.service)?.folderName == "trip 2")
+    }
+
     // MARK: - Move to Trash
 
     /// A fixture with fake file operations where every fixture photo exists under `source`.
