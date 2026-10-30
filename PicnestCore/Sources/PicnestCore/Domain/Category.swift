@@ -9,8 +9,15 @@ public struct Category: Identifiable, Codable, Sendable, Hashable {
     public var prompts: [String]
     public var exampleIDs: [MediaID]
     public var order: Int
+    /// The name of the folder of this category in the source folder. nil in a session from before category
+    /// folders: `SortPlanner.folderNames(for:)` then works the name out from `displayName`.
+    public var folderName: String?
 
-    public init(id: CategoryID, displayName: String, emoji: String, prompts: [String], exampleIDs: [MediaID], order: Int) {
+    public init(
+        id: CategoryID, displayName: String, emoji: String, prompts: [String], exampleIDs: [MediaID], order: Int,
+        folderName: String? = nil
+    ) {
+        self.folderName = folderName
         self.id = id
         self.displayName = displayName
         self.emoji = emoji

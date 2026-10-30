@@ -47,20 +47,43 @@ public struct SortPlanner: Sendable {
         return name.isEmpty ? "Untitled" : name
     }
 
-    /// The folder name of each category: its safe display name, with " 2", " 3"... added to a name that
-    /// another category or a reserved folder already uses (spec 7.2).
+    /// The folder name of each category: its stored `folderName`, or else its safe display name, with " 2",
+    /// " 3"... added to a name that another category or a reserved folder already uses (spec 7.2).
     public static func folderNames(for categories: [Category]) -> [CategoryID: String] {
-        var used: Set<String> = [key(notSureFolder), key(videosFolder), key(unreadableFolder)]
+        let ordered = categories.sorted { $0.order < $1.order }
+        var used = reservedKeys
         var folderOf: [CategoryID: String] = [:]
-        for c in categories.sorted(by: { $0.order < $1.order }) {
-            let base = folderName(for: c.displayName)
-            var candidate = base
-            var n = 2
-            while used.contains(key(candidate)) { candidate = "\(base) \(n)"; n += 1 }
-            used.insert(key(candidate))
-            folderOf[c.id] = candidate
+        for c in ordered {
+            guard let stored = c.folderName else { continue }
+            folderOf[c.id] = stored
+            used.insert(key(stored))
+        }
+        for c in ordered where c.folderName == nil {
+            let name = unique(folderName(for: c.displayName), avoiding: used)
+            used.insert(key(name))
+            folderOf[c.id] = name
         }
         return folderOf
+    }
+
+    /// A folder name for `displayName` that no other category and no reserved folder uses. `excluding` is
+    /// the category that is renamed: its own folder name does not count.
+    public static func uniqueFolderName(
+        for displayName: String, among categories: [Category], excluding: CategoryID? = nil
+    ) -> String {
+        let others = folderNames(for: categories).filter { $0.key != excluding }
+        return unique(folderName(for: displayName), avoiding: reservedKeys.union(others.values.map(key)))
+    }
+
+    private static var reservedKeys: Set<String> {
+        [key(notSureFolder), key(videosFolder), key(unreadableFolder)]
+    }
+
+    private static func unique(_ base: String, avoiding used: Set<String>) -> String {
+        var candidate = base
+        var n = 2
+        while used.contains(key(candidate)) { candidate = "\(base) \(n)"; n += 1 }
+        return candidate
     }
 
     /// The folder part of a relative path, or "" for a file at the source root.

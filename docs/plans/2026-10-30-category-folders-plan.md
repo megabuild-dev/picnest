@@ -30,7 +30,7 @@ Main feature branch: `category-folders`. Each phase uses the sub-branch `feature
 
 ## Phases
 
-- [ ] Phase 1: store `folderName` on `Category`, and make the folder when a category is created.
+- [x] Phase 1: store `folderName` on `Category`, and make the folder when a category is created.
 - [ ] Phase 2: rename the folder when a category is renamed, and re-key the session.
 - [ ] Phase 3: confirm a delete, move the photos to the Trash, and remove the folder.
 - [ ] Phase 4: update [[2026-10-21-macos-app-design]] sections 3.3 and 7.2.
