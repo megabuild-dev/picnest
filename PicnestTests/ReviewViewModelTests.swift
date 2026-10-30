@@ -496,12 +496,13 @@ struct ReviewViewModelTests {
         #expect(Set(revealed[0].map(\.lastPathComponent)) == ["a.jpg", "c.jpg"])
     }
 
-    @Test func showCategoryInFinderRevealsThePhotosOfThatCategory() throws {
+    @Test func showCategoryInFinderOpensTheFolderWithoutSelectingPhotos() throws {
+        var opened: [URL] = []
         var revealed: [[URL]] = []
-        let model = try makeModelAndReview(revealURLs: { revealed.append($0) }).model
+        let model = try makeModelAndReview(openURL: { opened.append($0) }, revealURLs: { revealed.append($0) }).model
         model.showCategoryInFinder(food.id)
-        try #require(revealed.count == 1)
-        #expect(Set(revealed[0].map(\.lastPathComponent)) == ["a.jpg", "c.jpg"])
+        #expect(revealed.isEmpty)
+        #expect(opened.map(\.lastPathComponent) == ["Photos"])
     }
 
     @Test func selectedURLsAreTheSelection() throws {

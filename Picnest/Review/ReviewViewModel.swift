@@ -465,19 +465,32 @@ final class ReviewViewModel {
 
     /// Shows the selected photos in Finder.
     func showInFinder() {
-        let urls = selectedURLs()
-        guard !urls.isEmpty else { return }
-        revealURLs(urls)
+        reveal(selectedURLs())
     }
 
-    /// Shows the photos of category `c` in Finder. Does nothing if the category has no photos.
+    /// Opens the folder of category `c` in Finder, without selecting any photo. That is the subfolder of the
+    /// source that holds most of its photos, so photos that are still loose in the source do not pull it
+    /// to the source root. It is the source root only if no photo of the category is in a subfolder.
+    /// Does nothing if the category has no photos.
     func showCategoryInFinder(_ c: CategoryID) {
         let session = review.session
-        let urls = session.visibleMedia
+        let parents = session.visibleMedia
             .filter { Self.includes($0, state: session.states[$0.id], in: .category(c)) }
-            .map(url(of:))
-        guard !urls.isEmpty else { return }
-        revealURLs(urls)
+            .map { url(of: $0).deletingLastPathComponent() }
+        guard !parents.isEmpty else { return }
+        let root = source.standardizedFileURL
+        let subfolders = parents.filter { $0.standardizedFileURL != root }
+        let counts = Dictionary(grouping: subfolders, by: \.path).mapValues(\.count)
+        let best = counts.max { ($0.value, $1.key) < ($1.value, $0.key) }
+        openURL(best.map { URL(filePath: $0.key, directoryHint: .isDirectory) } ?? root)
+    }
+
+    /// Reveals `urls` in 1 Finder window. Finder opens 1 window per parent folder, so it keeps only
+    /// the files in the folder of the first URL.
+    private func reveal(_ urls: [URL]) {
+        guard let first = urls.first else { return }
+        let folder = first.deletingLastPathComponent()
+        revealURLs(urls.filter { $0.deletingLastPathComponent() == folder })
     }
 
     func selectAll() { selection = Set(visibleIDs) }
