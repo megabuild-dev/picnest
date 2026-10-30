@@ -541,6 +541,81 @@ struct ReviewServiceTests {
         #expect(category(b, f.service)?.folderName == "trip 2")
     }
 
+    /// A service whose category "A" has the folder A on disk, with the photos A/p1.jpg and A/p2.jpg.
+    private func folderFixture() throws -> (service: ReviewService, root: TempDir, source: URL, a: Category) {
+        let root = try TempDir()
+        let source = root.url.appending(path: "Photos", directoryHint: .isDirectory)
+        let folder = source.appending(path: "A", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let ids = ["A/p1.jpg", "A/p2.jpg"]
+        for id in ids { try Data([1]).write(to: source.appending(path: id)) }
+        let a = Category(id: UUID(), displayName: "A", emoji: "🅰️", prompts: ["a"], exampleIDs: ["A/p1.jpg"], order: 0,
+                         folderName: "A")
+        let sessions = SessionRepository(root: root.url.appending(path: "Sessions", directoryHint: .isDirectory))
+        let embeddings = EmbeddingRepository(
+            embedder: FakeEmbedder(dimension: 4, texts: Self.texts), cacheDirectory: sessions.directory(for: source))
+        let session = Session(
+            sourcePath: source.path(percentEncoded: false), candidateList: .everyday, categories: [a],
+            states: ["A/p1.jpg": .manual(a.id), "A/p2.jpg": .manual(a.id)],
+            scan: ScanResult(media: ids.map { media($0) }, dates: [:], skipped: [:]), sortedAt: nil)
+        let service = ReviewService(
+            session: session, source: source, images: ["A/p1.jpg": [1, 0, 0, 0], "A/p2.jpg": [1, 0, 0, 0]],
+            prompts: [a.id: [Self.texts["a"]!]], classify: classify, sessions: sessions, embeddings: embeddings)
+        return (service, root, source, a)
+    }
+
+    @Test func renamingACategoryRenamesItsFolderAndRekeysThePhotos() async throws {
+        let (s, root, source, a) = try folderFixture()
+        defer { withExtendedLifetime(root) {} }
+        s.move(["A/p2.jpg"], to: a.id)  // Gives the undo stack a step.
+        s.rename(a.id, to: "Holiday")
+        await s.settled()
+        let renamed = try #require(category(a.id, s))
+        #expect(renamed.displayName == "Holiday" && renamed.folderName == "Holiday")
+        #expect(FileManager.default.fileExists(atPath: source.appending(path: "Holiday/p1.jpg").path))
+        #expect(!FileManager.default.fileExists(atPath: source.appending(path: "A").path))
+        #expect(s.session.scan.media.map(\.id) == ["Holiday/p1.jpg", "Holiday/p2.jpg"])
+        #expect(s.session.scan.media.map(\.relativePath) == ["Holiday/p1.jpg", "Holiday/p2.jpg"])
+        #expect(s.session.states["Holiday/p2.jpg"] == .manual(a.id) && s.session.states["A/p2.jpg"] == nil)
+        #expect(Set(renamed.exampleIDs) == ["Holiday/p1.jpg", "Holiday/p2.jpg"])
+        #expect(s.mediaByID["Holiday/p1.jpg"] != nil && s.mediaRevision == 1)
+        #expect(!s.canUndo)
+        #expect(s.folderError == nil)
+    }
+
+    @Test func renamingACategoryWhoseFolderIsNotOnDiskStaysUndoable() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.rename(catA.id, to: "Alpha")
+        await s.settled()
+        #expect(category(catA.id, s)?.displayName == "Alpha")
+        #expect(category(catA.id, s)?.folderName == "Alpha")
+        #expect(s.canUndo)
+    }
+
+    @Test func aFolderRenameThatCannotMoveKeepsTheCategoryName() async throws {
+        let (s, root, source, a) = try folderFixture()
+        defer { withExtendedLifetime(root) {} }
+        try FileManager.default.createDirectory(
+            at: source.appending(path: "Holiday", directoryHint: .isDirectory), withIntermediateDirectories: true)
+        s.rename(a.id, to: "Holiday")
+        await s.settled()
+        #expect(category(a.id, s)?.displayName == "A")
+        #expect(s.folderError != nil)
+        #expect(FileManager.default.fileExists(atPath: source.appending(path: "A/p1.jpg").path))
+        #expect(s.session.scan.media.map(\.id) == ["A/p1.jpg", "A/p2.jpg"])
+    }
+
+    @Test func aRenameOfLetterCaseOnlyRenamesTheFolder() async throws {
+        let (s, root, source, a) = try folderFixture()
+        defer { withExtendedLifetime(root) {} }
+        s.rename(a.id, to: "a")
+        await s.settled()
+        #expect(s.folderError == nil)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: source.path).sorted() == ["a"])
+        #expect(s.session.scan.media.map(\.id) == ["a/p1.jpg", "a/p2.jpg"])
+    }
+
     // MARK: - Move to Trash
 
     /// A fixture with fake file operations where every fixture photo exists under `source`.

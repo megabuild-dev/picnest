@@ -20,6 +20,12 @@ public final class ReviewService {
     /// True while a Move to Trash, a clean-up, or a Trash undo or redo runs (final review I1). The app turns
     /// off Sort, Rescan, Done, and Undo Last Sort meanwhile; `settled()` waits until it is false.
     public private(set) var isMovingFiles = false
+    /// Every scanned photo, trashed ones too, by id. It changes only when photos get new paths
+    /// (`mediaRevision` goes up then): a folder rename or Done.
+    public private(set) var mediaByID: [MediaID: MediaFile]
+    public private(set) var mediaRevision = 0
+    /// Why the last category folder rename failed, or nil. The category keeps its name then.
+    public private(set) var folderError: String?
 
     /// False when only 1 category is left. `delete` ignores the last category.
     public var canDeleteCategory: Bool { session.categories.count > 1 }
@@ -79,6 +85,7 @@ public final class ReviewService {
     ) {
         self.folders = folders
         self.session = session
+        mediaByID = Self.index(session.scan.media)
         self.source = source
         self.images = images
         self.prompts = prompts
@@ -151,7 +158,13 @@ public final class ReviewService {
         guard !moves.isEmpty else { return }
         var map: [MediaID: String] = [:]
         for move in moves { map[move.mediaID] = move.to }
+        await rekey(map)
+    }
 
+    /// Gives photos new paths: `map` holds the new path of each moved photo. Re-keys `scan.media` (id and
+    /// relativePath), `dates`, `states`, `trashed`, every `exampleIDs`, the image vectors, and the embedding
+    /// cache. Drops the duplicate state, because a moved group is a new group. Then saves the session.
+    private func rekey(_ map: [MediaID: String]) async {
         var media: [MediaFile] = []
         media.reserveCapacity(session.scan.media.count)
         var keyMap: [String: String] = [:]
@@ -172,12 +185,25 @@ public final class ReviewService {
         session.scan.dates = dates
         session.states = states
         session.categories = categories
+        session.trashed = session.trashed.map { record in
+            var moved = record
+            moved.mediaID = map[record.mediaID] ?? record.mediaID
+            return moved
+        }
         session.notDuplicateKeys = []
+        lastDuplicates = []
+        pixelSizes = [:]
         var vectors: [MediaID: Vector] = [:]
         for (id, vector) in images { vectors[map[id] ?? id] = vector }
         images = vectors
+        mediaByID = Self.index(session.scan.media)
+        mediaRevision += 1
         await embeddings.rekey(keyMap)
         save()
+    }
+
+    private static func index(_ media: [MediaFile]) -> [MediaID: MediaFile] {
+        Dictionary(media.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// Stops all saves of the session (Start Over, spec 3.3). A change made after this stays in memory only,
@@ -281,8 +307,52 @@ public final class ReviewService {
         return id
     }
 
+    /// Renames `c`, and its folder if the folder is on disk. A folder rename is not undoable: the photos
+    /// in it get new paths, so old undo steps do not fit any more. It clears the undo history. If the
+    /// folder cannot move, the category keeps its name and `folderError` says why.
     public func rename(_ c: CategoryID, to name: String) {
-        editCategory(c) { $0.displayName = name }
+        guard let category = session.categories.first(where: { $0.id == c }) else { return }
+        let old = SortPlanner.folderNames(for: session.categories)[c] ?? SortPlanner.folderName(for: category.displayName)
+        let new = SortPlanner.uniqueFolderName(for: name, among: session.categories, excluding: c)
+        guard old != new, folders.exists(old, in: source) else {
+            editCategory(c) { $0.displayName = name; $0.folderName = new }
+            return
+        }
+        runFileTask { await $0.renameFolder(c, to: name, from: old, newFolder: new) }
+    }
+
+    public func dismissFolderError() {
+        folderError = nil
+    }
+
+    private func renameFolder(_ c: CategoryID, to name: String, from old: String, newFolder new: String) async {
+        let folders = folders, source = source
+        let result = await Task.detached(priority: .userInitiated) {
+            Result { try folders.rename(old, to: new, in: source) }
+        }.value
+        switch result {
+        case .failure(let error):
+            folderError = "The folder \"\(old)\" could not be renamed to \"\(new)\": \(error.localizedDescription)"
+        case .success(let moved):
+            guard let i = session.categories.firstIndex(where: { $0.id == c }) else { return }
+            session.categories[i].displayName = name
+            session.categories[i].folderName = new
+            guard moved else { save(); return }
+            undoStack.removeAll()
+            redoStack.removeAll()
+            redoEpoch += 1
+            await rekey(Self.pathChanges(in: session.scan.media, from: old, to: new))
+        }
+    }
+
+    /// The new path of each photo in the folder `old` when that folder becomes `new`.
+    private static func pathChanges(in media: [MediaFile], from old: String, to new: String) -> [MediaID: String] {
+        let prefix = old + "/"
+        var map: [MediaID: String] = [:]
+        for file in media where file.relativePath.hasPrefix(prefix) {
+            map[file.id] = new + "/" + file.relativePath.dropFirst(prefix.count)
+        }
+        return map
     }
 
     public func setEmoji(_ c: CategoryID, _ e: String) {
