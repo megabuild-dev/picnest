@@ -55,8 +55,10 @@ struct SidebarView: View {
             Button("Cancel", role: .cancel) {}
         }
         .confirmationDialog(deletingTitle, isPresented: isPresented($deleting), titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { if let deleting { model.deleteCategory(deleting) } }
+            Button("Delete", role: .destructive) { if let deleting { Task { await model.deleteCategory(deleting) } } }
             Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(deleting.map(model.deleteMessage(for:)) ?? "")
         }
     }
 

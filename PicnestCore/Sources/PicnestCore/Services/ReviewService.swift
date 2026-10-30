@@ -399,6 +399,36 @@ public final class ReviewService {
         }
     }
 
+    /// The photos that show in category `c`: manual picks and certain guesses. Trashed photos are not in it.
+    public func photoIDs(in c: CategoryID) -> [MediaID] {
+        session.visibleMedia.map(\.id).filter { id in
+            switch session.states[id] {
+            case .manual(c): true
+            case .auto(let a): a.categoryID == c && !a.uncertain
+            default: false
+            }
+        }
+    }
+
+    /// **Delete** with a confirmation: the photos of `c` go to the Trash, then `c` is deleted, then its folder
+    /// is removed if it is empty. Each of the 2 steps can be undone (the photos come back from the Trash;
+    /// the category comes back, its folder is made again when a photo returns). A photo that cannot move
+    /// stays and goes to Not sure, and its folder stays: `folderError` says so. Does nothing for the last
+    /// category.
+    public func deleteCategoryAndPhotos(_ c: CategoryID) async -> [TrashError] {
+        guard canDeleteCategory, let folder = SortPlanner.folderNames(for: session.categories)[c] else { return [] }
+        let errors = await trashFiles(photoIDs(in: c), newAction: true)
+        delete(c)
+        let folders = folders, source = source
+        let removal = await Task.detached(priority: .userInitiated) { folders.removeIfEmpty(folder, in: source) }.value
+        if case .kept(let others) = removal {
+            folderError = others > 0
+                ? "The folder \"\(folder)\" stays, because it holds \(others) file\(others == 1 ? "" : "s") that were not in this category."
+                : "The folder \"\(folder)\" could not be removed."
+        }
+        return errors
+    }
+
     /// All photos of `c`, also manual picks, go to Not sure and stay there (spec 3.3).
     /// The last category cannot be deleted. Afterwards no state refers to `c`.
     public func delete(_ c: CategoryID) {

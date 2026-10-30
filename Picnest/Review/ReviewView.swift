@@ -77,7 +77,7 @@ struct ReviewView: View {
         } message: {
             Text(model.trashMessage ?? "")
         }
-        .alert("Rename Folder", isPresented: folderErrorBinding) {
+        .alert("Category Folder", isPresented: folderErrorBinding) {
             Button("OK", role: .cancel) { model.dismissFolderError() }
         } message: {
             Text(model.folderErrorMessage ?? "")

@@ -146,8 +146,10 @@ The window has a sidebar and a main area (`NavigationSplitView`).
 | Other | Don't move, Videos, Unreadable. |
 
 - The user can drop photos on a category item. The item shows a highlight during the drag.
-- Right-click on a category: Rename, Change Icon, Merge Into…, Delete.
-- Delete moves all photos of that category to "Not sure", also the manual picks. They stay in "Not sure" until the user acts on them, even if a new score is high. The app asks for confirmation first. (Builder decision, made during the spec review.)
+- Right-click on a category: Rename, Change Icon, Merge Into…, Reveal in Finder, Delete.
+- Each category has a folder in the source folder (section 7.1). **New Category…** makes the folder at once. Rename renames the folder. The photos in the folder get new paths, and the app clears the review undo history. If the folder cannot move, the category keeps its name and the app shows an alert.
+- Delete moves the photos that show in that category to the Trash, then deletes the category and its folder. The app asks for confirmation first. The text says how many photos go to the Trash and that the folder is deleted. Press ⌘Z to put the photos back. A file in the folder that is not in the category stays, and so does the folder. Photos that were "Not sure" guesses of that category go to "Not sure". (User decision, 2026-10-30. It replaces the earlier rule that moved all photos to "Not sure".)
+- **Reveal in Finder** opens the folder of the category. It is off while the folder does not exist.
 - Merge moves all photos into the target category. Photos the user picked by hand keep the "Changed by you" status.
 - Keys `1` to `9` match the first 9 categories in the sidebar order. The user can drag categories to change the order.
 
@@ -400,7 +402,7 @@ The user then asked for a smaller header. The Review screen uses the compact too
 
 - The destination must be outside the source folder. The app refuses the source folder and each folder in it. Reason: the scan cannot skip a destination that it does not know, so a rescan would read the sorted files as new photos.
 - No folder that gets files can be the source folder or a folder in it. Example: the source is `~/Pictures/Food`, the destination is `~/Pictures`, and a category has the name "Food". The app refuses this plan.
-- The category folder name is the display name of the category (for example `Kids' artwork`). Replace `/` and `:` with `-`.
+- The category folder name is the display name of the category when the category is made or renamed (for example `Kids' artwork`). Replace `/` and `:` with `-`. Add ` 2`, ` 3`, and so on if another category uses the name. The session stores the folder name in `folderName`.
 - Photos marked "Don't move" stay in the source folder.
 - Photos under "Leave in the source folder" stay in the source folder.
 - The app writes no hidden file into the destination folder.

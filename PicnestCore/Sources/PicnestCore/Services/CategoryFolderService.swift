@@ -42,4 +42,23 @@ public final class CategoryFolderService: Sendable {
         }
         return true
     }
+
+    /// What `removeIfEmpty` found.
+    public enum Removal: Sendable, Equatable {
+        /// The folder is gone, or was never there.
+        case gone
+        /// The folder holds this many files that stay, so the app did not remove it.
+        case kept(otherFiles: Int)
+    }
+
+    /// Removes the folder `name` of `source` only if it is empty (a lone `.DS_Store` does not count). It never
+    /// removes a file, so a file that the session does not track stays with its folder.
+    public func removeIfEmpty(_ name: String, in source: URL) -> Removal {
+        let folder = source.appending(path: name, directoryHint: .isDirectory)
+        guard fileOps.exists(folder) else { return .gone }
+        try? fileOps.removeEmptyFolder(folder)
+        guard fileOps.exists(folder) else { return .gone }
+        let others = fileOps.names(in: folder).subtracting(LocalFileOps.ignoredNames)
+        return .kept(otherFiles: others.count)
+    }
 }

@@ -618,17 +618,30 @@ final class ReviewViewModel {
 
     var canDeleteCategory: Bool { review.canDeleteCategory }
 
-    /// The text of the confirmation dialog before a delete (spec 3.3).
+    /// The title of the confirmation dialog before a delete (spec 3.3).
     func deleteConfirmation(for c: CategoryID) -> String {
-        let name = review.session.categories.first { $0.id == c }?.displayName ?? ""
-        return "Delete \(name)? Its \(count(of: .category(c))) photos go to Not sure."
+        "Delete \(categoryName(c))?"
     }
 
-    /// Deletes `c`. Its photos go to "Not sure", so that list shows if `c` was showing.
-    func deleteCategory(_ c: CategoryID) {
+    /// The warning of that dialog: the photos go to the Trash and the folder goes too.
+    func deleteMessage(for c: CategoryID) -> String {
+        let folder = SortPlanner.folderNames(for: review.session.categories)[c] ?? categoryName(c)
+        let photos = review.photoIDs(in: c).count
+        return "\(photos) \(photos == 1 ? "photo" : "photos") in this category move to the Trash, "
+            + "and the folder \"\(folder)\" is deleted. "
+            + "Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder."
+    }
+
+    private func categoryName(_ c: CategoryID) -> String {
+        review.session.categories.first { $0.id == c }?.displayName ?? ""
+    }
+
+    /// Deletes `c`: its photos go to the Trash, and its folder goes. The Not sure list shows if `c` was showing.
+    func deleteCategory(_ c: CategoryID) async {
         guard canDeleteCategory else { return }
-        review.delete(c)
         if selectedItem == .category(c) { selectedItem = .notSure }
+        clearSelection()
+        showTrashErrors(await review.deleteCategoryAndPhotos(c))
     }
 
     /// The categories that `c` can merge into, in sidebar order.

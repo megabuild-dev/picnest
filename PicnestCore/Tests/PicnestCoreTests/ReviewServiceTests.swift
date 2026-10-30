@@ -542,7 +542,7 @@ struct ReviewServiceTests {
     }
 
     /// A service whose category "A" has the folder A on disk, with the photos A/p1.jpg and A/p2.jpg.
-    private func folderFixture() throws -> (service: ReviewService, root: TempDir, source: URL, a: Category) {
+    private func folderFixture(trash: TrashService = TrashService()) throws -> (service: ReviewService, root: TempDir, source: URL, a: Category) {
         let root = try TempDir()
         let source = root.url.appending(path: "Photos", directoryHint: .isDirectory)
         let folder = source.appending(path: "A", directoryHint: .isDirectory)
@@ -560,7 +560,8 @@ struct ReviewServiceTests {
             scan: ScanResult(media: ids.map { media($0) }, dates: [:], skipped: [:]), sortedAt: nil)
         let service = ReviewService(
             session: session, source: source, images: ["A/p1.jpg": [1, 0, 0, 0], "A/p2.jpg": [1, 0, 0, 0]],
-            prompts: [a.id: [Self.texts["a"]!]], classify: classify, sessions: sessions, embeddings: embeddings)
+            prompts: [a.id: [Self.texts["a"]!]], classify: classify, sessions: sessions, embeddings: embeddings,
+            trash: trash)
         return (service, root, source, a)
     }
 
@@ -614,6 +615,55 @@ struct ReviewServiceTests {
         #expect(s.folderError == nil)
         #expect(try FileManager.default.contentsOfDirectory(atPath: source.path).sorted() == ["a"])
         #expect(s.session.scan.media.map(\.id) == ["a/p1.jpg", "a/p2.jpg"])
+    }
+
+    @Test func deletingACategoryTrashesItsPhotosAndRemovesItsEmptyFolder() async throws {
+        let ops = FakeTrashOps()
+        let root = try TempDir()
+        let source = root.url.appending(path: "Photos", directoryHint: .isDirectory)
+        for name in ["A", "B"] {
+            try FileManager.default.createDirectory(
+                at: source.appending(path: name, directoryHint: .isDirectory), withIntermediateDirectories: true)
+        }
+        let a = Category(id: UUID(), displayName: "A", emoji: "", prompts: ["a"], exampleIDs: [], order: 0, folderName: "A")
+        let b = Category(id: UUID(), displayName: "B", emoji: "", prompts: ["b"], exampleIDs: [], order: 1, folderName: "B")
+        for id in ["A/p1.jpg", "B/p2.jpg"] { ops.add(source.appending(path: id)) }
+        let sessions = SessionRepository(root: root.url.appending(path: "Sessions", directoryHint: .isDirectory))
+        let session = Session(
+            sourcePath: source.path(percentEncoded: false), candidateList: .everyday, categories: [a, b],
+            states: ["A/p1.jpg": .manual(a.id), "B/p2.jpg": .manual(b.id)],
+            scan: ScanResult(media: ["A/p1.jpg", "B/p2.jpg"].map { media($0) }, dates: [:], skipped: [:]), sortedAt: nil)
+        let embeddings = EmbeddingRepository(
+            embedder: FakeEmbedder(dimension: 4, texts: Self.texts), cacheDirectory: sessions.directory(for: source))
+        let s = ReviewService(
+            session: session, source: source, images: ["A/p1.jpg": [1, 0, 0, 0], "B/p2.jpg": [0, 1, 0, 0]],
+            prompts: [a.id: [Self.texts["a"]!], b.id: [Self.texts["b"]!]], classify: classify, sessions: sessions,
+            embeddings: embeddings, trash: TrashService(fileOps: ops))
+        #expect(s.photoIDs(in: a.id) == ["A/p1.jpg"])
+        let errors = await s.deleteCategoryAndPhotos(a.id)
+        await s.settled()
+        #expect(errors.isEmpty)
+        #expect(s.session.categories.map(\.id) == [b.id])
+        #expect(s.session.trashedIDs == ["A/p1.jpg"])
+        #expect(!FileManager.default.fileExists(atPath: source.appending(path: "A").path))
+        #expect(FileManager.default.fileExists(atPath: source.appending(path: "B").path))
+        #expect(s.folderError == nil)
+    }
+
+    @Test func deletingACategoryKeepsAFolderThatHoldsOtherFiles() async throws {
+        let ops = FakeTrashOps()
+        let (s, root, source, a) = try folderFixture(trash: TrashService(fileOps: ops))
+        defer { withExtendedLifetime(root) {} }
+        for id in ["A/p1.jpg", "A/p2.jpg"] { ops.add(source.appending(path: id)) }
+        try Data([1]).write(to: source.appending(path: "A/untracked.txt"))
+        s.addCategory(name: "B", emoji: "🅱️")  // The last category cannot be deleted.
+        await s.settled()
+        let errors = await s.deleteCategoryAndPhotos(a.id)
+        await s.settled()
+        #expect(errors.isEmpty)
+        #expect(s.session.trashedIDs == ["A/p1.jpg", "A/p2.jpg"])
+        #expect(FileManager.default.fileExists(atPath: source.appending(path: "A/untracked.txt").path))
+        #expect(s.folderError?.contains("\"A\" stays") == true)
     }
 
     // MARK: - Move to Trash
