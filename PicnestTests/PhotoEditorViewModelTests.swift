@@ -35,7 +35,7 @@ struct PhotoEditorViewModelTests {
     /// 3 landscape photos a.jpg, b.jpg, c.jpg (40 × 20 pixels).
     private func makeModel(
         names: [String] = ["a.jpg", "b.jpg", "c.jpg"], start: String? = nil, protectedIDs: Set<MediaID> = [],
-        portrait: Set<String> = []
+        portrait: Set<String> = [], storedSize: PixelSize? = nil
     ) throws -> Fixture {
         var photos: [EditorPhoto] = []
         for name in names {
@@ -56,7 +56,8 @@ struct PhotoEditorViewModelTests {
             },
             revealURL: { [panel] in panel.revealed.append($0) },
             onClose: { [closed] in closed.count += 1 },
-            onCancelClose: { [closed] in closed.cancels += 1 })
+            onCancelClose: { [closed] in closed.cancels += 1 },
+            readSize: { _ in storedSize })
         return Fixture(model: model, panel: panel, closed: closed)
     }
 
@@ -273,5 +274,91 @@ struct PhotoEditorViewModelTests {
         try await waitUntil { m.previewImage != nil }
         try await Task.sleep(for: .milliseconds(150))
         #expect(m.current.id == "b.jpg" && m.previewImage?.width == 20 && m.previewImage?.height == 40)
+    }
+
+    // MARK: - Screen state
+
+    @Test func testOutputSizeFollowsTheCropAndTheTurns() async throws {
+        let m = try makeModel(storedSize: PixelSize(width: 4000, height: 2000)).model
+        try await waitUntil { m.previewImage != nil && !m.outputSizeText.isEmpty }
+        #expect(m.outputSizeText == "4000 × 2000")
+        m.setAspect(.square)
+        #expect(m.outputSizeText == "2000 × 2000")
+        m.rotate(clockwise: true)
+        #expect(m.outputSizeText == "2000 × 2000")
+    }
+
+    @Test func testOutputSizeUsesTheUprightOrientationOfThePreview() async throws {
+        // The file stores 4000 × 2000, but the preview is upright and portrait (an EXIF turn).
+        let m = try makeModel(names: ["p.jpg"], portrait: ["p.jpg"], storedSize: PixelSize(width: 4000, height: 2000)).model
+        try await waitUntil { m.previewImage != nil && !m.outputSizeText.isEmpty }
+        #expect(m.outputSizeText == "2000 × 4000")
+    }
+
+    @Test func testOutputSizeIsEmptyWhenTheFileSizeIsUnknown() throws {
+        #expect(try makeModel().model.outputSizeText.isEmpty)
+    }
+
+    @Test func testToolDecidesWhatTheCanvasDraws() throws {
+        let m = try makeModel().model
+        #expect(m.showsCropFrame && m.showsGrid)
+        m.tool = .straighten
+        #expect(!m.showsCropFrame && m.showsGrid)
+        m.tool = .rotate
+        #expect(!m.showsCropFrame && !m.showsGrid)
+        m.tool = .crop
+        m.isShowingOriginal = true
+        #expect(!m.showsCropFrame && !m.showsGrid)
+    }
+
+    @Test func testStatusTextSaysOriginalThenEdited() throws {
+        let m = try makeModel().model
+        #expect(m.statusText == "a.jpg · Original")
+        m.rotate(clockwise: true)
+        #expect(m.statusText == "a.jpg · Edited")
+    }
+
+    @Test func testValueTexts() {
+        #expect(PhotoEditorViewModel.adjustmentText(20) == "+20")
+        #expect(PhotoEditorViewModel.adjustmentText(-5) == "-5")
+        #expect(PhotoEditorViewModel.adjustmentText(0) == "0")
+        #expect(PhotoEditorViewModel.straightenText(10.54, locale: Locale(identifier: "en_US")) == "+10.5°")
+        #expect(PhotoEditorViewModel.straightenText(-3, locale: Locale(identifier: "en_US")) == "-3°")
+        #expect(PhotoEditorViewModel.straightenText(0, locale: Locale(identifier: "en_US")) == "0°")
+    }
+
+    @Test func testStepLimits() throws {
+        let m = try makeModel().model
+        #expect(!m.canStepBack && m.canStepForward)
+        m.step(by: 2)
+        #expect(m.canStepBack && !m.canStepForward)
+    }
+
+    @Test func testScaleCropGrowsAndShrinksAroundTheCenter() async throws {
+        let m = try makeModel().model
+        try await waitUntil { m.previewImage != nil }
+        m.setAspect(.freeform)
+        m.dragCrop(.bottomRight, dx: -0.5, dy: -0.5)
+        m.dragCrop(.move, dx: 0.25, dy: 0.25)
+        m.endDrag()
+        let before = m.edit.crop
+        m.scaleCrop(by: 1.05)
+        let after = m.edit.crop
+        #expect(abs(after.width - before.width * 1.05) < 1e-9)
+        #expect(abs((after.x + after.width / 2) - (before.x + before.width / 2)) < 1e-9)
+        m.undo()
+        #expect(m.edit.crop == before)
+    }
+
+    @Test func testScaleCropStaysInsideTheFrameAndKeepsTheRatio() async throws {
+        let m = try makeModel().model
+        try await waitUntil { m.previewImage != nil }
+        m.scaleCrop(by: 1.05)  // the whole frame already
+        #expect(m.edit.crop == .full && !m.canUndo)
+        m.setAspect(.square)  // 0.5 × 1 of a 2:1 frame
+        let before = m.edit.crop
+        m.scaleCrop(by: 0.95)
+        let c = m.edit.crop
+        #expect(c.width < before.width && abs(c.height / c.width - before.height / before.width) < 1e-9)
     }
 }

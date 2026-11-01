@@ -1000,7 +1000,8 @@ final class ReviewViewModel {
             chooseDestination: chooseExportDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
             onClose: { [weak self] in self?.closeEditor() },
-            onCancelClose: { [weak self] in self?.itemAfterClose = nil })
+            onCancelClose: { [weak self] in self?.itemAfterClose = nil },
+            readSize: { [weak self] id in await self?.pixelSize(of: id) })
     }
 
     /// Closes the photo editor and drops its edit. The selection stays. A sidebar item that the user chose

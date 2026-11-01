@@ -67,6 +67,11 @@ final class ThemeTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(Theme.onBadge.dark.contrast(with: blend(Theme.badgeBackground.dark)), 4.5)
     }
 
+    func testCropLineIsVisibleOnShade() {
+        XCTAssertGreaterThanOrEqual(Theme.cropLine.light.contrast(with: Theme.cropShade.light), 4.5)
+        XCTAssertGreaterThanOrEqual(Theme.cropLine.dark.contrast(with: Theme.cropShade.dark), 4.5)
+    }
+
     func testOnConfirmedIsReadableOnConfirmedFill() {
         XCTAssertGreaterThanOrEqual(Theme.onConfirmed.light.contrast(with: Theme.confirmed.light), 4.5)
         XCTAssertGreaterThanOrEqual(Theme.onConfirmed.dark.contrast(with: Theme.confirmed.dark), 4.5)

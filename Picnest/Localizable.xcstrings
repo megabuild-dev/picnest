@@ -61,6 +61,26 @@
         }
       }
     },
+    "%@ · Edited" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · Đã chỉnh sửa"
+          }
+        }
+      }
+    },
+    "%@ · Original" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · Bản gốc"
+          }
+        }
+      }
+    },
     "%lld files" : {
       "localizations" : {
         "en" : {
@@ -234,6 +254,40 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld ảnh sẽ vào Thùng rác"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld photos in this set" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo in this set"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos in this set"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh trong bộ này"
                 }
               }
             }
@@ -539,6 +593,16 @@
         }
       }
     },
+    "About exporting" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Về việc xuất ảnh"
+          }
+        }
+      }
+    },
     "Accept %@" : {
       "localizations" : {
         "vi" : {
@@ -697,6 +761,26 @@
         }
       }
     },
+    "Adjust" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Điều chỉnh"
+          }
+        }
+      }
+    },
+    "Adjustments" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Điều chỉnh"
+          }
+        }
+      }
+    },
     "All" : {
       "localizations" : {
         "vi" : {
@@ -767,12 +851,32 @@
         }
       }
     },
+    "Aspect ratio" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tỷ lệ khung hình"
+          }
+        }
+      }
+    },
     "Back" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quay lại"
+          }
+        }
+      }
+    },
+    "Back to Photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quay lại ảnh"
           }
         }
       }
@@ -1063,6 +1167,16 @@
         }
       }
     },
+    "Contrast" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tương phản"
+          }
+        }
+      }
+    },
     "Copied %@ to “%@”." : {
       "localizations" : {
         "vi" : {
@@ -1099,6 +1213,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không thể tìm ảnh trùng"
+          }
+        }
+      }
+    },
+    "Could not export" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể xuất ảnh"
           }
         }
       }
@@ -1169,6 +1293,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tạo một thư mục cho mỗi danh mục, chuyển ảnh vào đó và đổi tên ảnh"
+          }
+        }
+      }
+    },
+    "Crop" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cắt"
+          }
+        }
+      }
+    },
+    "Crop frame" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khung cắt"
           }
         }
       }
@@ -1249,6 +1393,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kích thước ảnh"
+          }
+        }
+      }
+    },
+    "Discard Edits" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ chỉnh sửa"
+          }
+        }
+      }
+    },
+    "Discard your edits?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ các chỉnh sửa?"
           }
         }
       }
@@ -1393,6 +1557,16 @@
         }
       }
     },
+    "Edited copy will be exported separately" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản đã chỉnh sửa sẽ được xuất riêng"
+          }
+        }
+      }
+    },
     "Emoji" : {
       "localizations" : {
         "vi" : {
@@ -1419,6 +1593,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bản sao giống hệt (%lld)"
+          }
+        }
+      }
+    },
+    "Export edited copy" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xuất bản đã chỉnh sửa"
+          }
+        }
+      }
+    },
+    "Export edited copy saves a new file. The original photo never changes." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xuất bản đã chỉnh sửa sẽ lưu một tệp mới. Ảnh gốc không bao giờ thay đổi."
+          }
+        }
+      }
+    },
+    "Exposure" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ phơi sáng"
           }
         }
       }
@@ -1473,6 +1677,36 @@
         }
       }
     },
+    "Fix horizon" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉnh đường chân trời"
+          }
+        }
+      }
+    },
+    "Flip horizontal" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lật ngang"
+          }
+        }
+      }
+    },
+    "Flip vertical" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lật dọc"
+          }
+        }
+      }
+    },
     "Folder" : {
       "localizations" : {
         "vi" : {
@@ -1499,6 +1733,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Định dạng"
+          }
+        }
+      }
+    },
+    "Freeform" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tự do"
           }
         }
       }
@@ -2107,6 +2351,16 @@
         }
       }
     },
+    "Next photo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh tiếp theo"
+          }
+        }
+      }
+    },
     "No Favorites" : {
       "localizations" : {
         "vi" : {
@@ -2293,12 +2547,42 @@
         }
       }
     },
+    "Original" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản gốc"
+          }
+        }
+      }
+    },
+    "Original stays unchanged" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh gốc được giữ nguyên"
+          }
+        }
+      }
+    },
     "Originals stay in the source folder." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bản gốc vẫn ở trong thư mục nguồn."
+          }
+        }
+      }
+    },
+    "Output size" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kích thước đầu ra"
           }
         }
       }
@@ -2422,6 +2706,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xem trước"
+          }
+        }
+      }
+    },
+    "Previous photo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh trước"
           }
         }
       }
@@ -2596,6 +2890,16 @@
         }
       }
     },
+    "Reset" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt lại"
+          }
+        }
+      }
+    },
     "Restart" : {
       "localizations" : {
         "vi" : {
@@ -2622,6 +2926,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "Rotate" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoay"
+          }
+        }
+      }
+    },
+    "Rotate & flip" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoay và lật"
+          }
+        }
+      }
+    },
+    "Rotate left" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoay trái"
+          }
+        }
+      }
+    },
+    "Rotate right" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoay phải"
+          }
+        }
+      }
+    },
+    "Saturation" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ bão hòa"
           }
         }
       }
@@ -2702,6 +3056,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hiện bảng thông tin"
+          }
+        }
+      }
+    },
+    "Show Original" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem bản gốc"
           }
         }
       }
@@ -2866,6 +3230,16 @@
         }
       }
     },
+    "Square" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuông"
+          }
+        }
+      }
+    },
     "Start Over" : {
       "localizations" : {
         "vi" : {
@@ -2946,6 +3320,16 @@
         }
       }
     },
+    "Straighten" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉnh thẳng"
+          }
+        }
+      }
+    },
     "Suggest Categories" : {
       "localizations" : {
         "vi" : {
@@ -3022,6 +3406,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đích đến là thư mục nguồn. Hãy chọn thư mục khác."
+          }
+        }
+      }
+    },
+    "The edits to this photo are not exported yet." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các chỉnh sửa của ảnh này chưa được xuất."
           }
         }
       }
@@ -3246,6 +3640,16 @@
         }
       }
     },
+    "Tone and color" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tông và màu"
+          }
+        }
+      }
+    },
     "Tools" : {
       "localizations" : {
         "vi" : {
@@ -3272,12 +3676,32 @@
         }
       }
     },
+    "Trim and reframe" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cắt và chỉnh khung"
+          }
+        }
+      }
+    },
     "Try Again" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thử lại"
+          }
+        }
+      }
+    },
+    "Turn photo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoay ảnh"
           }
         }
       }
@@ -3348,6 +3772,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Video"
+          }
+        }
+      }
+    },
+    "Warmth" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ ấm"
           }
         }
       }

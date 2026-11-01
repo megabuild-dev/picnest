@@ -14,6 +14,8 @@ struct ReviewView: View {
     @SceneStorage("inspectorShown") private var inspectorShown = true
     /// Grid or list. Kept for the app.
     @AppStorage(LibraryLayout.storageKey) private var layout: LibraryLayout = .grid
+    /// The sidebar hides while the photo editor shows (the editor fills the window).
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     private let review: ReviewService
     private let sortService: SortService
@@ -49,21 +51,29 @@ struct ReviewView: View {
 
     /// The screen with its sheets and dialogs. Split from `body` so the compiler type-checks it in time.
     private var screen: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView(model: model, preferences: preferences)
                 .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
         } detail: {
-            detail
-                .background(Theme.background.color)
-                .navigationTitle(model.title)
-                .navigationSubtitle(countText)
-                .searchable(text: Bindable(model).searchText, placement: .toolbar, prompt: "Search")
-                .toolbar { toolbar }
-                .inspector(isPresented: $inspectorShown) {
-                    InspectorView(model: model)
-                        .inspectorColumnWidth(min: 280, ideal: 300, max: 360)
-                }
+            if let editor = model.editor {
+                PhotoEditorView(model: editor, library: model)
+                    .navigationTitle("Edit Photo")
+                    .toolbar(removing: .sidebarToggle)
+                    .toolbar { editorToolbar(editor) }
+            } else {
+                detail
+                    .background(Theme.background.color)
+                    .navigationTitle(model.title)
+                    .navigationSubtitle(countText)
+                    .searchable(text: Bindable(model).searchText, placement: .toolbar, prompt: "Search")
+                    .toolbar { toolbar }
+                    .inspector(isPresented: $inspectorShown) {
+                        InspectorView(model: model)
+                            .inspectorColumnWidth(min: 280, ideal: 300, max: 360)
+                    }
+            }
         }
+        .onChange(of: model.isEditing) { columnVisibility = model.isEditing ? .detailOnly : .automatic }
         .alert("New Category", isPresented: Bindable(model).isNamingNewCategory) {
             TextField("Name", text: $newCategoryName)
             Button("Create") { model.createNewCategory(name: newCategoryName) }
@@ -237,6 +247,21 @@ struct ReviewView: View {
                 .disabled(!model.canDone)
                 .help("Create a folder for each category, move the photos into it, and rename them")
             moreMenu
+        }
+    }
+
+    /// Back and Redo only: no avatar, no tab bar, no search (spec 6).
+    @ToolbarContentBuilder private func editorToolbar(_ editor: PhotoEditorViewModel) -> some ToolbarContent {
+        ToolbarItem(placement: .navigation) {
+            Button("Back to Photos", systemImage: "chevron.left", action: editor.requestClose)
+                .labelStyle(.iconOnly)
+                .help("Back to Photos")
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button("Redo", systemImage: "arrow.uturn.forward", action: editor.redo)
+                .labelStyle(.iconOnly)
+                .disabled(!editor.canRedo)
+                .help("Redo")
         }
     }
 

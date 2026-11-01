@@ -47,6 +47,8 @@ final class PhotoEditorViewModel {
     private var index: Int
     /// The preview of the shown photo with no edit, and the id it belongs to.
     private var base: (id: MediaID, image: CGImage)?
+    /// The pixel size of the shown file as stored, before its EXIF turn, and the id it belongs to.
+    private var storedSize: (id: MediaID, size: PixelSize)?
 
     @ObservationIgnored private let photos: [EditorPhoto]
     @ObservationIgnored private let service: PhotoEditService
@@ -55,6 +57,7 @@ final class PhotoEditorViewModel {
     @ObservationIgnored private let revealURL: @MainActor (URL) -> Void
     @ObservationIgnored private let onClose: @MainActor () -> Void
     @ObservationIgnored private let onCancelClose: @MainActor () -> Void
+    @ObservationIgnored private let readSize: @MainActor (MediaID) async -> PixelSize?
     /// The decode of the base preview of the shown photo. An edit never restarts it.
     @ObservationIgnored private var baseTask: (id: MediaID, task: Task<CGImage?, Never>)?
     /// True when `setAspect` ran before the base preview loaded, so the crop still needs to fit.
@@ -69,7 +72,8 @@ final class PhotoEditorViewModel {
          chooseDestination: @escaping @MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?,
          revealURL: @escaping @MainActor (URL) -> Void,
          onClose: @escaping @MainActor () -> Void,
-         onCancelClose: @escaping @MainActor () -> Void = {}) {
+         onCancelClose: @escaping @MainActor () -> Void = {},
+         readSize: @escaping @MainActor (MediaID) async -> PixelSize? = { _ in nil }) {
         precondition(!photos.isEmpty, "The editor needs at least 1 photo.")
         self.photos = photos
         index = photos.firstIndex { $0.id == start } ?? 0
@@ -79,7 +83,9 @@ final class PhotoEditorViewModel {
         self.revealURL = revealURL
         self.onClose = onClose
         self.onCancelClose = onCancelClose
+        self.readSize = readSize
         refreshPreview()
+        loadStoredSize()
     }
 
     deinit { previewTask?.cancel() }
@@ -251,7 +257,81 @@ final class PhotoEditorViewModel {
         previewImage = nil
         lastExport = nil
         exportError = nil
+        storedSize = nil
         refreshPreview()
+        loadStoredSize()
+    }
+
+    private func loadStoredSize() {
+        let id = current.id, readSize = readSize
+        Task { [weak self] in
+            guard let size = await readSize(id), let self, current.id == id else { return }
+            storedSize = (id, size)
+        }
+    }
+
+    // MARK: - Screen state (decided here, so the views stay plain)
+
+    /// The size of the file in upright pixels. The stored size turns when the preview has the other orientation.
+    private var uprightSize: PixelSize? {
+        guard let stored = storedSize, stored.id == current.id else { return nil }
+        let size = stored.size
+        guard let image = base?.image, image.width != image.height, size.width != size.height else { return size }
+        let previewIsLandscape = image.width > image.height
+        return (size.width > size.height) == previewIsLandscape ? size : PixelSize(width: size.height, height: size.width)
+    }
+
+    /// The size of the exported copy, for example "4032 × 3024". Empty while the file size is unknown.
+    var outputSizeText: String {
+        guard let source = uprightSize else { return "" }
+        let size = PhotoEditService.outputSize(of: edit, source: source)
+        return "\(size.width.formatted(.number.grouping(.never))) × \(size.height.formatted(.number.grouping(.never)))"
+    }
+
+    /// The line under the canvas: the file name, then "Original" or "Edited".
+    var statusText: String {
+        hasChanges
+            ? String(localized: "\(current.fileName) · Edited")
+            : String(localized: "\(current.fileName) · Original")
+    }
+
+    /// The count line of the filmstrip.
+    var setCountText: String { CountText.inSet(photos.count) }
+
+    /// The canvas draws the shade, the crop frame, and the handles only with the **Crop** tool.
+    var showsCropFrame: Bool { tool == .crop && !isShowingOriginal }
+    /// The 3 × 3 grid shows with **Crop** and **Straighten**.
+    var showsGrid: Bool { (tool == .crop || tool == .straighten) && !isShowingOriginal }
+    var canStepBack: Bool { index > 0 }
+    var canStepForward: Bool { index < photos.count - 1 }
+
+    /// The text of a slider value, for example "+20", "-5", or "0".
+    static func adjustmentText(_ value: Int) -> String { value > 0 ? "+\(value)" : "\(value)" }
+
+    /// The text of the straighten angle, for example "+10.5°".
+    static func straightenText(_ degrees: Double, locale: Locale = .current) -> String {
+        let rounded = (degrees * 10).rounded() / 10
+        let body = rounded.formatted(.number.precision(.fractionLength(0...1)).locale(locale))
+        return (rounded > 0 ? "+" : "") + body + "°"
+    }
+
+    /// Makes the crop frame `factor` times as large around its center, inside the frame. 1 undo step.
+    /// A locked ratio stays. The frame never gets under 5% of a side.
+    func scaleCrop(by factor: Double) {
+        let c = edit.crop
+        var w = min(c.width * factor, 1), h = min(c.height * factor, 1)
+        if cropRatio != nil {
+            let k = c.height / c.width
+            let scale = min(w / c.width, h / c.height)
+            w = c.width * scale
+            h = w * k
+        }
+        guard w >= 0.05, h >= 0.05 else { return }
+        var e = edit
+        e.crop = NormalizedRect(
+            x: min(max(c.x + c.width / 2 - w / 2, 0), 1 - w), y: min(max(c.y + c.height / 2 - h / 2, 0), 1 - h),
+            width: w, height: h)
+        change(e, commit: true)
     }
 
     // MARK: - Preview
