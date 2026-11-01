@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ %lld%%" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %lld%%"
+          }
+        }
+      }
+    },
     "%@ (and %lld more)" : {
       "localizations" : {
         "vi" : {
@@ -187,6 +197,16 @@
         }
       }
     },
+    "%lld photos selected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã chọn %lld ảnh"
+          }
+        }
+      }
+    },
     "%lld photos stay in the source folder." : {
       "localizations" : {
         "en" : {
@@ -345,6 +365,16 @@
         }
       }
     },
+    "Accept suggestion" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chấp nhận đề xuất"
+          }
+        }
+      }
+    },
     "Add %lld Categories" : {
       "localizations" : {
         "en" : {
@@ -415,6 +445,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hãy cho phép truy cập trong Cài đặt Hệ thống, rồi chọn lại thư mục."
+          }
+        }
+      }
+    },
+    "Alternative category" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh mục thay thế"
           }
         }
       }
@@ -569,6 +609,16 @@
         }
       }
     },
+    "Choose category…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn danh mục…"
+          }
+        }
+      }
+    },
     "Chosen by you" : {
       "localizations" : {
         "vi" : {
@@ -605,6 +655,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nhấp để đánh dấu Giữ lại."
+          }
+        }
+      }
+    },
+    "Confidence" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ tin cậy"
           }
         }
       }
@@ -749,6 +809,16 @@
         }
       }
     },
+    "Dimensions" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kích thước ảnh"
+          }
+        }
+      }
+    },
     "Do not copy or move them." : {
       "localizations" : {
         "vi" : {
@@ -845,6 +915,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bản sao y hệt (%lld)"
+          }
+        }
+      }
+    },
+    "File size" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dung lượng"
           }
         }
       }
@@ -1045,6 +1125,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gộp vào…"
+          }
+        }
+      }
+    },
+    "More" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm"
           }
         }
       }
@@ -1333,6 +1423,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không phải ảnh trùng"
+          }
+        }
+      }
+    },
+    "Not sure" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa chắc"
           }
         }
       }
@@ -1640,6 +1740,16 @@
         }
       }
     },
+    "Select a photo to see its details." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn một ảnh để xem chi tiết."
+          }
+        }
+      }
+    },
     "Set" : {
       "localizations" : {
         "vi" : {
@@ -1840,6 +1950,16 @@
         }
       }
     },
+    "Stays here" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ nguyên chỗ"
+          }
+        }
+      }
+    },
     "Stop" : {
       "localizations" : {
         "vi" : {
@@ -1886,6 +2006,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gợi ý danh mục…"
+          }
+        }
+      }
+    },
+    "Suggested category" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh mục đề xuất"
           }
         }
       }

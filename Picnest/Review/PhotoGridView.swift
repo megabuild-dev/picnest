@@ -65,7 +65,7 @@ final class ShareAnchor {
 
 /// An invisible background that gives its tile a view for `ShareAnchor`. It lets clicks and the
 /// right-click pass through to the tile above it.
-private struct ShareAnchorView: NSViewRepresentable {
+struct ShareAnchorView: NSViewRepresentable {
     let anchor: ShareAnchor
 
     func makeNSView(context: Context) -> NSView {

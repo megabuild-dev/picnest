@@ -470,6 +470,45 @@ final class ReviewViewModel {
         return TileModel(name: name, secondLine: secondLine(id, state: state, session: session), badge: badge)
     }
 
+    /// The facts of the inspector for `id`, or nil if the photo is unknown.
+    func inspectorFacts(for id: MediaID) -> InspectorFacts? {
+        guard let media = mediaByID[id] else { return nil }
+        let session = review.session
+        let state = session.states[id]
+        func name(_ c: CategoryID) -> String? { session.categories.first { $0.id == c }?.displayName }
+        let assignment = Self.assignment(state)
+        let status: InspectorFacts.Status
+        switch state {
+        case .manual(let c):
+            let category = session.categories.first { $0.id == c }
+            status = category.map { .category(emoji: $0.emoji, name: $0.displayName) } ?? .none
+        case .dontMove: status = .staysHere
+        case .unreadable, nil: status = .none
+        case .auto, .heldNotSure:
+            if state?.isNotSure == true { status = .notSure }
+            else if let a = assignment, let category = session.categories.first(where: { $0.id == a.categoryID }) {
+                status = .category(emoji: category.emoji, name: category.displayName)
+            } else { status = .none }
+        }
+        var suggestion: InspectorFacts.Suggestion?
+        if state?.isNotSure == true, let a = assignment, let best = name(a.categoryID) {
+            suggestion = InspectorFacts.Suggestion(
+                categoryName: best, alternativeName: a.secondCategoryID.flatMap(name),
+                alternativePercent: classify.secondPercent(of: a))
+        }
+        let date = session.scan.dates[id].flatMap { $0.source == .modificationTime ? nil : $0.date }
+        return InspectorFacts(
+            id: id, name: Self.fileName(media), status: status, date: date, fileSize: media.size,
+            confidence: assignment?.percent, isChosenByYou: state?.isManual == true, suggestion: suggestion,
+            isUncertain: state?.isNotSure == true)
+    }
+
+    /// The pixel size of `id`, read off the main thread. Nil if the file cannot be read.
+    func pixelSize(of id: MediaID) async -> PixelSize? {
+        guard let media = mediaByID[id] else { return nil }
+        return await thumbnails.pixelSize(of: media, source: source)
+    }
+
     /// The decode size for a tile of `width` points, or 0 while the tile has no width yet. The tile
     /// keys its load task on this value, so the task runs again when the width becomes known.
     func loadPixels(forTileWidth width: Double) -> Int {

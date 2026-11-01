@@ -1213,4 +1213,53 @@ struct ReviewViewModelTests {
         seven.closeSuggest()
         #expect(seven.suggest == nil)
     }
+
+    // MARK: - Inspector (UI redesign 4.2, 6)
+
+    @Test func inspectorFactsOfOnePhoto() throws {
+        let model = try makeModel()
+        let a = try #require(model.inspectorFacts(for: "a.jpg"))
+        #expect(a.name == "a.jpg")
+        #expect(a.status == .category(emoji: "🍜", name: "Food"))
+        #expect(a.confidence == 91)
+        #expect(a.fileSize == 10)
+        #expect(a.date == day(2024, 5, 12))
+        #expect(a.suggestion == nil)
+        #expect(!a.isUncertain)
+        #expect(model.inspectorFacts(for: "nope.jpg") == nil)
+    }
+
+    @Test func inspectorFactsOfNotSurePhotoHaveSuggestionAndAlternative() throws {
+        let model = try makeModel()
+        let d = try #require(model.inspectorFacts(for: "d.jpg"))
+        #expect(d.status == .notSure)
+        #expect(d.isUncertain)
+        #expect(d.confidence == 41)
+        #expect(d.suggestion == .init(categoryName: "Food", alternativeName: "Documents", alternativePercent: 38))
+    }
+
+    @Test func inspectorFactsOfHandChosenPhotoShowNoConfidence() throws {
+        let model = try makeModel()
+        let c = try #require(model.inspectorFacts(for: "c.jpg"))
+        #expect(c.isChosenByYou)
+        #expect(c.confidence == nil)
+        #expect(c.status == .category(emoji: "🍜", name: "Food"))
+    }
+
+    @Test func inspectorFactsDateIsNilWhenOnlyModificationTimeIsKnown() throws {
+        let model = try makeModel()
+        #expect(try #require(model.inspectorFacts(for: "h.jpg")).date == nil)
+        #expect(try #require(model.inspectorFacts(for: "e.jpg")).status == .staysHere)
+        #expect(try #require(model.inspectorFacts(for: "f.jpg")).status == .none)
+    }
+
+    @Test func pixelSizeLoadsOffMainAndIsNilForUnreadableFile() async throws {
+        let (model, _) = try makeModelAndReview()
+        let source = try temp.folder("Photos")
+        try writeTestJPEG(to: source.appending(path: "a.jpg"), red: 0.1, green: 0.2, blue: 0.3, size: 48)
+        try Data("not an image".utf8).write(to: source.appending(path: "b.jpg"))
+        #expect(await model.pixelSize(of: "a.jpg") == PixelSize(width: 48, height: 48))
+        #expect(await model.pixelSize(of: "b.jpg") == nil)
+        #expect(await model.pixelSize(of: "missing.jpg") == nil)
+    }
 }
