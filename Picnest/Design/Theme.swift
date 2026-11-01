@@ -46,21 +46,25 @@ struct ThemeColor {
     }
 }
 
-/// All colors and metrics of the app. Values come from the approved mockups in `design/`.
-/// Neutrals and the accent hue are sampled from the PNG files. The accent is darker than the
-/// mockup pink (#E2839C) so white text on it reaches 4.5:1.
+/// All colors and metrics of the app.
+/// Sampled from the mockups in `design/`: the light neutrals (background, sidebar, selection) and the
+/// accent hue (mockup pink #E2839C).
+/// Chosen by hand, because the mockups have no dark mode and no text samples: all dark values,
+/// `textPrimary`, `textSecondary`, `surface`, and the status colors (`confirmed`, `needsReview`,
+/// `destructive`). The accent is darker than the mockup pink so white text on it reaches 4.5:1.
+/// Status colors reach 4.5:1 as text on every ground. `accent` reaches 3:1 on every ground.
 enum Theme {
     static let background = ThemeColor(light: 0xFAF7F4, dark: 0x1F1C1D)
     static let sidebar = ThemeColor(light: 0xF7F2F0, dark: 0x191617)
     static let surface = ThemeColor(light: 0xFFFFFF, dark: 0x2A2627)
     static let textPrimary = ThemeColor(light: 0x2B2528, dark: 0xF4F0F1)
     static let textSecondary = ThemeColor(light: 0x6B6166, dark: 0xB5ACB1)
-    static let accent = ThemeColor(light: 0xB83E63, dark: 0xBE4468)
+    static let accent = ThemeColor(light: 0xB83E63, dark: 0xC24A6E)
     static let onAccent = ThemeColor(light: 0xFFFFFF, dark: 0xFFFFFF)
     /// Confirmed or kept: score badges, "Changed by you".
-    static let confirmed = ThemeColor(light: 0x2E7D4F, dark: 0x4FB87C)
+    static let confirmed = ThemeColor(light: 0x2A7048, dark: 0x4FB87C)
     /// Needs review: "Not sure", uncertain scores.
-    static let needsReview = ThemeColor(light: 0xA8650A, dark: 0xE0A030)
+    static let needsReview = ThemeColor(light: 0x855000, dark: 0xE0A030)
     static let destructive = ThemeColor(light: 0xB3261E, dark: 0xFF6B63)
     /// Selected sidebar row (mockup #F3E3E4).
     static let selection = ThemeColor(light: 0xF3E3E4, dark: 0x3A2A30)
