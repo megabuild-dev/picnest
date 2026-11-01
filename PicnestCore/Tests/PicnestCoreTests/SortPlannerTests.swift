@@ -186,6 +186,20 @@ struct SortPlannerTests {
         #expect(p.folderCounts.map(\.count) == [1, 1, 1])
     }
 
+    @Test func folderNameIsNFCAndAsciiNamesStay() throws {
+        let composed = "\u{1EA8}m th\u{1EF1}c"
+        let decomposed = composed.decomposedStringWithCanonicalMapping
+        #expect(composed != decomposed || composed.unicodeScalars.count != decomposed.unicodeScalars.count)
+        #expect(SortPlanner.folderName(for: decomposed).unicodeScalars.elementsEqual(composed.precomposedStringWithCanonicalMapping.unicodeScalars))
+        #expect(SortPlanner.folderName(for: decomposed).unicodeScalars.elementsEqual(SortPlanner.folderName(for: composed).unicodeScalars))
+        for name in ["Food", "My Trip 2024", "A/B:C", ".hidden", "  Pets  "] {
+            #expect(SortPlanner.folderName(for: name).unicodeScalars.elementsEqual(
+                SortPlanner.folderName(for: name).precomposedStringWithCanonicalMapping.unicodeScalars))
+        }
+        #expect(SortPlanner.folderName(for: "Food") == "Food")
+        #expect(SortPlanner.folderName(for: "  My Trip 2024 ") == "My Trip 2024")
+    }
+
     @Test func folderNames() throws {
         #expect(SortPlanner.folderName(for: "A/B:C") == "A-B-C")
         #expect(SortPlanner.folderName(for: ".hidden") == "-hidden")
