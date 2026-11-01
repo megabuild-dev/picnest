@@ -364,4 +364,89 @@ struct CollectionsViewModelTests {
         model.requestNewCollection(adding: [])
         #expect(model.collectionSheetExcluding == nil)
     }
+
+    // MARK: - Fix round 1 of the review of 3.8 and 3.9
+
+    private func makeWithTrashedA() throws -> (model: ReviewViewModel, review: ReviewService) {
+        let made = try make { $0.trashed = [TrashedPhoto(mediaID: "a.jpg", trashPath: "/t/a", time: Date())] }
+        made.model.selectedItem = .recentlyDeleted
+        select(made.model, ["a.jpg"])
+        return made
+    }
+
+    @Test func testDroppingTrashedPhotosChangesNothing() throws {
+        let box = collection("Trip", [])
+        let (model, review) = try make {
+            $0.collections = [box]
+            $0.trashed = [TrashedPhoto(mediaID: "a.jpg", trashPath: "/t/a", time: Date())]
+        }
+        model.selectedItem = .recentlyDeleted
+        let before = review.session.states
+        #expect(!model.drop(["a.jpg"], on: fx.documents.id))
+        #expect(!model.dropOnCollection(["a.jpg"], box.id))
+        #expect(review.session.states == before)
+        #expect(review.session.collections[0].memberIDs.isEmpty)
+        model.selectedItem = .all
+        #expect(model.dropOnCollection(["b.jpg"], box.id))
+    }
+
+    @Test func testRecentlyDeletedBlocksPreviewKeysTrashAndFavorites() async throws {
+        let (model, review) = try makeWithTrashedA()
+        let before = review.session.states
+        model.openPreview("a.jpg")
+        #expect(model.previewURL == nil)
+        #expect(!model.moveSelection(toKey: 1))
+        await model.trashSelection()
+        #expect(model.trashMessage == nil)
+        #expect(review.session.trashed.count == 1)
+        #expect(!model.canFavoriteSelection)
+        model.toggleFavoriteSelection()
+        #expect(review.session.favoriteIDs.isEmpty)
+        #expect(review.session.states == before)
+        model.selectedItem = .all
+        select(model, ["b.jpg"])
+        #expect(model.canFavoriteSelection)
+    }
+
+    @Test func testThumbnailOfATrashedPhotoReadsTheTrashPath() async throws {
+        let file = fx.temp.url.appending(path: "in-trash.jpg")
+        try writeTestJPEG(to: file, red: 1, green: 0, blue: 0, size: 64)
+        let (model, _) = try make { session in
+            session.trashed = [TrashedPhoto(mediaID: "a.jpg", trashPath: file.path(percentEncoded: false), time: Date())]
+        }
+        #expect(await model.thumbnail("a.jpg", maxPixel: 200) != nil)
+        // b.jpg is not trashed, and the source folder has no file for it.
+        #expect(await model.thumbnail("b.jpg", maxPixel: 200) == nil)
+    }
+
+    @Test func testCanRemoveFromCollectionOnlyInACollection() throws {
+        let box = collection("Trip", [])
+        let (model, _) = try make { $0.collections = [box] }
+        #expect(!model.canRemoveFromCollection)
+        model.selectedItem = .collection(box.id)
+        #expect(model.canRemoveFromCollection)
+    }
+
+    @Test func testRequestNewCollectionFromSelection() throws {
+        let (model, _) = try make()
+        model.requestNewCollectionFromSelection()
+        #expect(model.editingCollection == nil)
+        model.sortOrder = .name
+        select(model, ["c.jpg", "a.jpg"])
+        model.requestNewCollectionFromSelection()
+        #expect(model.editingCollection == .new(name: "", adding: ["a.jpg", "c.jpg"]))
+    }
+
+    @Test func testAddPhotosCandidatesHonorSearch() throws {
+        let (model, _) = try make()
+        #expect(model.addPhotosCandidates(for: .category(fx.food.id), matching: "G.M") == ["g.mov"])
+        #expect(model.addPhotosCandidates(for: .category(fx.food.id), matching: "zzz").isEmpty)
+    }
+
+    @Test func testAddPhotosKeepsTheOrderOfTheCandidates() throws {
+        let box = collection("Trip", [])
+        let (model, review) = try make { $0.collections = [box] }
+        model.addPhotos(Set(["c.jpg", "b.jpg", "zzz.jpg"]), to: .collection(box.id))
+        #expect(review.session.collections[0].memberIDs == ["b.jpg", "c.jpg"])
+    }
 }

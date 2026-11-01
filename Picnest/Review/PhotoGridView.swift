@@ -62,9 +62,23 @@ private struct PhotoInteractions: ViewModifier {
                 model.click(id, modifiers: PhotoGridInteractions<EmptyView>.currentModifiers)
                 onTap()
             })
-            .draggable(MediaIDs(ids: model.dragIDs(for: id)))
+            .modifier(PhotoDrag(model: model, id: id))
             .background { ShareAnchorView(anchor: shareAnchor) }
             .contextMenu { PhotoContextMenu(model: model, id: id, anchor: shareAnchor.view) }
+    }
+}
+
+/// The drag of a photo to a sidebar item. A photo in Recently Deleted does not drag.
+private struct PhotoDrag: ViewModifier {
+    let model: ReviewViewModel
+    let id: MediaID
+
+    func body(content: Content) -> some View {
+        if model.bodyKind == .recentlyDeleted {
+            content
+        } else {
+            content.draggable(MediaIDs(ids: model.dragIDs(for: id)))
+        }
     }
 }
 

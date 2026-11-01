@@ -22,7 +22,7 @@ struct FavoriteButton: View {
             Image(systemName: isFavorite ? "heart.fill" : "heart")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(isFavorite ? Theme.accent.color : (onPhoto ? Theme.onAccent.color : Theme.textSecondary.color))
-                .shadow(color: onPhoto ? Theme.badgeBackground.color.opacity(0.6) : .clear, radius: 2)
+                .shadow(color: onPhoto ? Theme.shadow.color.opacity(0.6) : .clear, radius: 2)
                 .frame(width: 26, height: 26)
                 .contentShape(Rectangle())
         }
@@ -71,6 +71,15 @@ private struct FavoriteOverlay: ViewModifier {
 }
 
 extension View {
+    /// The VoiceOver action that toggles the favorite of `id`. Not in Recently Deleted.
+    func favoriteAccessibilityAction(model: ReviewViewModel, id: MediaID) -> some View {
+        accessibilityActions {
+            if model.bodyKind != .recentlyDeleted {
+                Button(action: { model.toggleFavorite(id) }) { Text(FavoriteText.title(isFavorite: model.isFavorite(id))) }
+            }
+        }
+    }
+
     /// The hover heart of a grid tile.
     func tileFavorite(model: ReviewViewModel, id: MediaID) -> some View {
         modifier(FavoriteOverlay(model: model, id: id, placement: .tile))

@@ -979,7 +979,7 @@ final class ReviewViewModel {
     /// Photos dropped on a sidebar category. Returns false for an empty drop.
     @discardableResult
     func drop(_ ids: [MediaID], on c: CategoryID) -> Bool {
-        guard !ids.isEmpty else { return false }
+        guard bodyKind != .recentlyDeleted, !ids.isEmpty else { return false }
         review.move(ids, to: c)
         clearSelection()
         return true
@@ -1270,7 +1270,8 @@ final class ReviewViewModel {
     /// Photos dropped on a sidebar collection. Returns false for an empty drop or an unknown collection.
     @discardableResult
     func dropOnCollection(_ ids: [MediaID], _ c: CollectionID) -> Bool {
-        guard !ids.isEmpty, review.session.collections.contains(where: { $0.id == c }) else { return false }
+        guard bodyKind != .recentlyDeleted, !ids.isEmpty,
+              review.session.collections.contains(where: { $0.id == c }) else { return false }
         review.addToCollection(ids, c)
         return true
     }
@@ -1301,8 +1302,11 @@ final class ReviewViewModel {
             .map(\.id)
     }
 
-    /// A category target makes manual picks (the files move at **Done**). A collection target adds members.
-    func addPhotos(_ ids: [MediaID], to target: AddPhotosTarget) {
+    /// Adds `picks` to `target`, in the order of `addPhotosCandidates`. A category target makes manual picks (the files move at **Done**). A collection target adds members.
+    func addPhotos(_ picks: some Collection<MediaID>, to target: AddPhotosTarget) {
+        // The grid order, so the members and the picks do not depend on the order of the taps.
+        let picked = Set(picks)
+        let ids = addPhotosCandidates(for: target).filter(picked.contains)
         switch target {
         case .category(let c): review.move(ids, to: c)
         case .collection(let c): review.addToCollection(ids, c)

@@ -62,7 +62,7 @@ private struct PhotoListRow: View {
             Text(row.fileSize, format: .byteCount(style: .file))
                 .frame(width: 80, alignment: .trailing)
             // The room of the heart, which sits over it.
-            Color.clear.frame(width: 28, height: 1)
+            if model.bodyKind != .recentlyDeleted { Color.clear.frame(width: 28, height: 1) }
         }
         .font(.system(size: 12.5))
         .foregroundStyle(Theme.textSecondary.color)
@@ -77,10 +77,6 @@ private struct PhotoListRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(row.accessibilityLabel)
         .accessibilityAddTraits(isSelected ? [.isImage, .isSelected] : .isImage)
-        .accessibilityActions {
-            if model.bodyKind != .recentlyDeleted {
-                Button(action: { model.toggleFavorite(id) }) { Text(FavoriteText.title(isFavorite: model.isFavorite(id))) }
-            }
-        }
+        .favoriteAccessibilityAction(model: model, id: id)
     }
 }

@@ -9,12 +9,13 @@ struct AddPhotosSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
+    /// The photos of the grid. Made again when the search text changes, not on each tap.
+    @State private var candidates: [MediaID] = []
     @State private var picked: Set<MediaID> = []
 
     private static let tileWidth: Double = 120
 
     var body: some View {
-        let candidates = model.addPhotosCandidates(for: target, matching: search)
         VStack(alignment: .leading, spacing: 14) {
             Text("Add Photos")
                 .font(.system(size: 20, weight: .bold))
@@ -35,7 +36,7 @@ struct AddPhotosSheet: View {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button(CountText.addPhotos(picked.count)) { model.addPhotos(orderedPicks(in: candidates), to: target) }
+                Button(CountText.addPhotos(picked.count)) { model.addPhotos(picked, to: target) }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(picked.isEmpty)
@@ -44,6 +45,8 @@ struct AddPhotosSheet: View {
         .padding(24)
         .frame(width: 640, height: 520)
         .background(Theme.surface.color)
+        .onAppear { candidates = model.addPhotosCandidates(for: target, matching: search) }
+        .onChange(of: search) { candidates = model.addPhotosCandidates(for: target, matching: search) }
     }
 
     private func tile(_ id: MediaID) -> some View {
@@ -59,25 +62,12 @@ struct AddPhotosSheet: View {
                                    lineWidth: isPicked ? 3 : 0.5)
             }
             .overlay(alignment: .topTrailing) {
-                if isPicked {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Theme.onAccent.color)
-                        .frame(width: 20, height: 20)
-                        .background(Theme.accent.color, in: Circle())
-                        .padding(6)
-                }
+                if isPicked { SelectionCheck(diameter: 20).padding(6) }
             }
             .onTapGesture {
                 if picked.contains(id) { picked.remove(id) } else { picked.insert(id) }
             }
             .accessibilityLabel(Text(verbatim: model.tile(id).name))
             .accessibilityAddTraits(isPicked ? [.isImage, .isSelected] : .isImage)
-    }
-
-    /// The picks in the order of the grid. Picks that a search hides still count.
-    private func orderedPicks(in shown: [MediaID]) -> [MediaID] {
-        let shownPicks = shown.filter(picked.contains)
-        return shownPicks + picked.subtracting(shownPicks).sorted()
     }
 }
