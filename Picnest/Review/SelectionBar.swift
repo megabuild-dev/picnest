@@ -66,7 +66,7 @@ struct SelectionBar: View {
         HStack(spacing: 4) {
             Text("or drag to a category ·")
             KeyCap("1")
-            Text("–")
+            Text(verbatim: "–")
             KeyCap("9")
         }
         .foregroundStyle(.secondary)
@@ -86,7 +86,9 @@ struct MoveToMenuItems: View {
             // The number is text only: a real shortcut would also fire while a text field has focus.
             // The grid's key handler moves photos with keys 1 to 9.
             let key = index < 9 ? "   \(index + 1)" : ""
-            Button("\(category.emoji) \(category.displayName)\(key)") { beforeAction(); model.moveSelection(to: category.id) }
+            Button { beforeAction(); model.moveSelection(to: category.id) } label: {
+                Text(verbatim: "\(category.emoji) \(category.displayName)\(key)")
+            }
         }
         Divider()
         Button("New Category…") { beforeAction(); model.requestNewCategory(movingSelection: true) }

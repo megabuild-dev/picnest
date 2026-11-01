@@ -1,0 +1,2245 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ (and %lld more)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (và %lld lỗi khác)"
+          }
+        }
+      }
+    },
+    "%@ / %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / %@"
+          }
+        }
+      }
+    },
+    "%@ are not sure." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ chưa chắc."
+          }
+        }
+      }
+    },
+    "%@ still \"Not sure\":" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ vẫn \"Chưa chắc\":"
+          }
+        }
+      }
+    },
+    "%lld folders" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folder"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folders"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld thư mục"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld photos" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld photos could not be moved. They stay where they were." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo could not be moved. It stays where it was."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos could not be moved. They stay where they were."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh không thể được chuyển. Chúng vẫn ở chỗ cũ."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld photos in this category move to the Trash," : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo in this category move to the Trash,"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos in this category move to the Trash,"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh trong danh mục này sẽ được chuyển vào Thùng rác,"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld photos stay in the source folder." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo stays in the source folder."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos stay in the source folder."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh vẫn ở trong thư mục nguồn."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld selected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã chọn %lld"
+          }
+        }
+      }
+    },
+    "A category folder would land inside the source folder. Choose another destination." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một thư mục danh mục sẽ nằm trong thư mục nguồn. Hãy chọn đích đến khác."
+          }
+        }
+      }
+    },
+    "A copy did not match its original. The original was kept." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một bản sao không khớp với bản gốc. Bản gốc đã được giữ lại."
+          }
+        }
+      }
+    },
+    "A file of the model is missing or damaged. Install Picnest again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một tệp của mô hình bị thiếu hoặc hỏng. Hãy cài đặt lại Picnest."
+          }
+        }
+      }
+    },
+    "A sort is running. Stop it first, then quit." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một lần sắp xếp đang chạy. Hãy dừng nó trước, rồi thoát."
+          }
+        }
+      }
+    },
+    "About %lld minutes left" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "About %lld minute left"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "About %lld minutes left"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Còn khoảng %lld phút"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Accept %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chấp nhận %@"
+          }
+        }
+      }
+    },
+    "Accept All Best Guesses" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chấp nhận mọi dự đoán tốt nhất"
+          }
+        }
+      }
+    },
+    "Accept Best Guess" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chấp nhận dự đoán tốt nhất"
+          }
+        }
+      }
+    },
+    "Accept best guess" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chấp nhận dự đoán tốt nhất"
+          }
+        }
+      }
+    },
+    "Add %lld Categories" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld Category"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld Categories"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Thêm %lld danh mục"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Add this category" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm danh mục này"
+          }
+        }
+      }
+    },
+    "All photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tất cả ảnh"
+          }
+        }
+      }
+    },
+    "All photos have a category." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mọi ảnh đều đã có danh mục."
+          }
+        }
+      }
+    },
+    "Allow access in System Settings, then choose the folder again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy cho phép truy cập trong Cài đặt Hệ thống, rồi chọn lại thư mục."
+          }
+        }
+      }
+    },
+    "Another sort is still running. Try again when it stops." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một lần sắp xếp khác vẫn đang chạy. Hãy thử lại khi nó dừng."
+          }
+        }
+      }
+    },
+    "Appearance" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giao diện"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quay lại"
+          }
+        }
+      }
+    },
+    "Best guess: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dự đoán tốt nhất: %@"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hủy"
+          }
+        }
+      }
+    },
+    "Categories" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh mục"
+          }
+        }
+      }
+    },
+    "Category" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh mục"
+          }
+        }
+      }
+    },
+    "Category Folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục danh mục"
+          }
+        }
+      }
+    },
+    "Change Icon…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi biểu tượng…"
+          }
+        }
+      }
+    },
+    "Changed by you" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã thay đổi"
+          }
+        }
+      }
+    },
+    "Change…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi…"
+          }
+        }
+      }
+    },
+    "Check each group. The app moves the photos that are not marked Keep to the Trash." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy kiểm tra từng nhóm. Ứng dụng chuyển các ảnh không được đánh dấu Giữ lại vào Thùng rác."
+          }
+        }
+      }
+    },
+    "Check for Updates…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiểm tra bản cập nhật…"
+          }
+        }
+      }
+    },
+    "Choose Another Folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn thư mục khác"
+          }
+        }
+      }
+    },
+    "Choose Folder…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn thư mục…"
+          }
+        }
+      }
+    },
+    "Choose a folder outside the source folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy chọn một thư mục nằm ngoài thư mục nguồn."
+          }
+        }
+      }
+    },
+    "Clean Up All (%lld)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dọn tất cả (%lld)"
+          }
+        }
+      }
+    },
+    "Clear Recent Folders" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa các thư mục gần đây"
+          }
+        }
+      }
+    },
+    "Click to mark Keep." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhấp để đánh dấu Giữ lại."
+          }
+        }
+      }
+    },
+    "Copied %@ to “%@”." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã sao chép %@ vào “%@”."
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép"
+          }
+        }
+      }
+    },
+    "Copying %@ of %@…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang sao chép %@ trên %@…"
+          }
+        }
+      }
+    },
+    "Could Not Look for Duplicates" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể tìm ảnh trùng"
+          }
+        }
+      }
+    },
+    "Could not open the folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể mở thư mục"
+          }
+        }
+      }
+    },
+    "Could not open “%@”. %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể mở “%@”. %@"
+          }
+        }
+      }
+    },
+    "Could not organize" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể sắp xếp"
+          }
+        }
+      }
+    },
+    "Create" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo"
+          }
+        }
+      }
+    },
+    "Create a folder for each category, move the photos into it, and rename them" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo một thư mục cho mỗi danh mục, chuyển ảnh vào đó và đổi tên ảnh"
+          }
+        }
+      }
+    },
+    "Dark" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tối"
+          }
+        }
+      }
+    },
+    "Date" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngày"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa"
+          }
+        }
+      }
+    },
+    "Delete %@?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa %@?"
+          }
+        }
+      }
+    },
+    "Delete…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa…"
+          }
+        }
+      }
+    },
+    "Do not copy or move them." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không sao chép hay di chuyển chúng."
+          }
+        }
+      }
+    },
+    "Don't Move" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không di chuyển"
+          }
+        }
+      }
+    },
+    "Don't move" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không di chuyển"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xong"
+          }
+        }
+      }
+    },
+    "Drop a folder of photos here" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thả thư mục ảnh vào đây"
+          }
+        }
+      }
+    },
+    "Duplicates" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh trùng"
+          }
+        }
+      }
+    },
+    "Each original is deleted after its copy is checked." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mỗi bản gốc bị xóa sau khi bản sao của nó được kiểm tra."
+          }
+        }
+      }
+    },
+    "Enter a name." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy nhập tên."
+          }
+        }
+      }
+    },
+    "Everything runs on this Mac. No photos leave your computer." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mọi thứ chạy trên máy Mac này. Không có ảnh nào rời khỏi máy tính của bạn."
+          }
+        }
+      }
+    },
+    "Exact copies (%lld)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản sao y hệt (%lld)"
+          }
+        }
+      }
+    },
+    "Find Folder…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tìm thư mục…"
+          }
+        }
+      }
+    },
+    "Find groups in the Not sure photos and make categories" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tìm các nhóm trong những ảnh Chưa chắc và tạo danh mục"
+          }
+        }
+      }
+    },
+    "Folder not found" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy thư mục"
+          }
+        }
+      }
+    },
+    "Icon" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biểu tượng"
+          }
+        }
+      }
+    },
+    "If you start a new sort, the last sort can no longer be undone." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nếu bạn bắt đầu lần sắp xếp mới, không thể hoàn tác lần sắp xếp trước nữa."
+          }
+        }
+      }
+    },
+    "Keep" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ lại"
+          }
+        }
+      }
+    },
+    "Keep the selected photos where they are" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ các ảnh đã chọn ở nguyên chỗ cũ"
+          }
+        }
+      }
+    },
+    "Keep. Click to unmark." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ lại. Nhấp để bỏ đánh dấu."
+          }
+        }
+      }
+    },
+    "Kind" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loại"
+          }
+        }
+      }
+    },
+    "Leave in the source folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Để lại trong thư mục nguồn"
+          }
+        }
+      }
+    },
+    "Less than a minute left" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Còn chưa đến một phút"
+          }
+        }
+      }
+    },
+    "Light" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sáng"
+          }
+        }
+      }
+    },
+    "Looking at your photos…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang xem ảnh của bạn…"
+          }
+        }
+      }
+    },
+    "Looking for duplicates…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang tìm ảnh trùng…"
+          }
+        }
+      }
+    },
+    "Looking for groups…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang tìm các nhóm…"
+          }
+        }
+      }
+    },
+    "Lowest confidence" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ tin cậy thấp nhất"
+          }
+        }
+      }
+    },
+    "Make date sub-folders (year / month)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo thư mục con theo ngày (năm / tháng)"
+          }
+        }
+      }
+    },
+    "Merge Into…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gộp vào…"
+          }
+        }
+      }
+    },
+    "Move" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Di chuyển"
+          }
+        }
+      }
+    },
+    "Move %@?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển %@?"
+          }
+        }
+      }
+    },
+    "Move %lld Photos" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld Photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld Photos"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Chuyển %lld ảnh"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Move %lld photos to the Trash? You can put them back with Undo or from the Trash in Finder." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld photo to the Trash? You can put them back with Undo or from the Trash in Finder."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld photos to the Trash? You can put them back with Undo or from the Trash in Finder."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Chuyển %lld ảnh vào Thùng rác? Bạn có thể trả chúng về bằng Hoàn tác hoặc từ Thùng rác trong Finder."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Move %lld to Trash" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển %lld ảnh vào Thùng rác"
+          }
+        }
+      }
+    },
+    "Move every Not sure photo to its best guess" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển mọi ảnh Chưa chắc về danh mục dự đoán tốt nhất của nó"
+          }
+        }
+      }
+    },
+    "Move the photos that are not marked Keep to the Trash" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển các ảnh không được đánh dấu Giữ lại vào Thùng rác"
+          }
+        }
+      }
+    },
+    "Move the selected Not sure photos to their best guess" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển các ảnh Chưa chắc đã chọn về danh mục dự đoán tốt nhất"
+          }
+        }
+      }
+    },
+    "Move the selected photos to the Trash. Undo puts them back." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển các ảnh đã chọn vào Thùng rác. Hoàn tác sẽ trả chúng về."
+          }
+        }
+      }
+    },
+    "Move to Trash" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển vào Thùng rác"
+          }
+        }
+      }
+    },
+    "Move to…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển đến…"
+          }
+        }
+      }
+    },
+    "Moved %@ to “%@”." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã chuyển %@ vào “%@”."
+          }
+        }
+      }
+    },
+    "Moving %@ of %@…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chuyển %@ trên %@…"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên"
+          }
+        }
+      }
+    },
+    "Name the new category." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt tên cho danh mục mới."
+          }
+        }
+      }
+    },
+    "New Category" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh mục mới"
+          }
+        }
+      }
+    },
+    "New Category…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh mục mới…"
+          }
+        }
+      }
+    },
+    "No Photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có ảnh"
+          }
+        }
+      }
+    },
+    "No duplicates found." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy ảnh trùng."
+          }
+        }
+      }
+    },
+    "No new groups found. Move the photos by hand or make a category with New Category…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy nhóm mới. Hãy chuyển ảnh thủ công hoặc tạo danh mục bằng Danh mục mới…"
+          }
+        }
+      }
+    },
+    "No photos are in this list." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh sách này không có ảnh."
+          }
+        }
+      }
+    },
+    "No photos found in this folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy ảnh trong thư mục này."
+          }
+        }
+      }
+    },
+    "Not Duplicates" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không phải ảnh trùng"
+          }
+        }
+      }
+    },
+    "Not sure" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa chắc"
+          }
+        }
+      }
+    },
+    "Nothing left to check." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không còn gì để kiểm tra."
+          }
+        }
+      }
+    },
+    "Nothing to sort." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có gì để sắp xếp."
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở"
+          }
+        }
+      }
+    },
+    "Open System Settings" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở Cài đặt Hệ thống"
+          }
+        }
+      }
+    },
+    "Organizing photos…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang sắp xếp ảnh…"
+          }
+        }
+      }
+    },
+    "Originals stay in the source folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản gốc vẫn ở trong thư mục nguồn."
+          }
+        }
+      }
+    },
+    "Other" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khác"
+          }
+        }
+      }
+    },
+    "Picnest" : {
+      "shouldTranslate" : false
+    },
+    "Picnest cannot open this folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest không thể mở thư mục này."
+          }
+        }
+      }
+    },
+    "Picnest could not look for duplicates: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest không thể tìm ảnh trùng: %@"
+          }
+        }
+      }
+    },
+    "Picnest could not read “%@”." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest không thể đọc “%@”."
+          }
+        }
+      }
+    },
+    "Picnest could not save" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest không thể lưu"
+          }
+        }
+      }
+    },
+    "Picnest could not save your changes: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest không thể lưu các thay đổi của bạn: %@"
+          }
+        }
+      }
+    },
+    "Preparing the model…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chuẩn bị mô hình…"
+          }
+        }
+      }
+    },
+    "Put each one in its most likely category." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đưa từng ảnh vào danh mục có khả năng nhất."
+          }
+        }
+      }
+    },
+    "Put in a \"Not sure\" folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đưa vào thư mục \"Chưa chắc\""
+          }
+        }
+      }
+    },
+    "Put the photos of the last sort back" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trả các ảnh của lần sắp xếp trước về chỗ cũ"
+          }
+        }
+      }
+    },
+    "Quick Look" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem nhanh"
+          }
+        }
+      }
+    },
+    "RECENT" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GẦN ĐÂY"
+          }
+        }
+      }
+    },
+    "Redo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Làm lại"
+          }
+        }
+      }
+    },
+    "Remove from Recent" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa khỏi Gần đây"
+          }
+        }
+      }
+    },
+    "Rename" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi tên"
+          }
+        }
+      }
+    },
+    "Rename Category" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi tên danh mục"
+          }
+        }
+      }
+    },
+    "Rename files to date + category + number" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi tên tệp thành ngày + danh mục + số"
+          }
+        }
+      }
+    },
+    "Rename…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi tên…"
+          }
+        }
+      }
+    },
+    "Rescan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quét lại"
+          }
+        }
+      }
+    },
+    "Reveal in Finder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "Review" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem lại"
+          }
+        }
+      }
+    },
+    "Scan the folder again and keep your changes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quét lại thư mục và giữ các thay đổi của bạn"
+          }
+        }
+      }
+    },
+    "Select All" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn tất cả"
+          }
+        }
+      }
+    },
+    "Set" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt"
+          }
+        }
+      }
+    },
+    "Share…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chia sẻ…"
+          }
+        }
+      }
+    },
+    "Show in Finder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "Similar photos (%lld)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh giống nhau (%lld)"
+          }
+        }
+      }
+    },
+    "Some files already exist in the destination. Choose another destination." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một số tệp đã có trong đích đến. Hãy chọn đích đến khác."
+          }
+        }
+      }
+    },
+    "Some files could not be put back. They are still in the sorted folder: %@." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể trả một số tệp về chỗ cũ. Chúng vẫn nằm trong thư mục đã sắp xếp: %@."
+          }
+        }
+      }
+    },
+    "Some files could not be put back. They are still in the sorted folder: %@…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể trả một số tệp về chỗ cũ. Chúng vẫn nằm trong thư mục đã sắp xếp: %@…"
+          }
+        }
+      }
+    },
+    "Some photos changed since the scan. Click Rescan, then sort again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một số ảnh đã thay đổi kể từ lần quét. Hãy nhấp Quét lại, rồi sắp xếp lại."
+          }
+        }
+      }
+    },
+    "Sort" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sắp xếp"
+          }
+        }
+      }
+    },
+    "Sort %@ into %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sắp xếp %@ vào %@"
+          }
+        }
+      }
+    },
+    "Sort Order" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thứ tự sắp xếp"
+          }
+        }
+      }
+    },
+    "Sort Photos…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sắp xếp ảnh…"
+          }
+        }
+      }
+    },
+    "Sort order" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thứ tự sắp xếp"
+          }
+        }
+      }
+    },
+    "Sort photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sắp xếp ảnh"
+          }
+        }
+      }
+    },
+    "Sort them by hand later in Finder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sắp xếp thủ công sau trong Finder."
+          }
+        }
+      }
+    },
+    "Sorted %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã sắp xếp %@"
+          }
+        }
+      }
+    },
+    "Start Over" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu lại"
+          }
+        }
+      }
+    },
+    "Start Over…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu lại…"
+          }
+        }
+      }
+    },
+    "Start a New Sort" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu lần sắp xếp mới"
+          }
+        }
+      }
+    },
+    "Start over?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu lại?"
+          }
+        }
+      }
+    },
+    "Stop" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dừng"
+          }
+        }
+      }
+    },
+    "Stopped after %@ of %@." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã dừng sau %@ trên %@."
+          }
+        }
+      }
+    },
+    "Stopping after the current file…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sẽ dừng sau tệp hiện tại…"
+          }
+        }
+      }
+    },
+    "Suggest Categories" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gợi ý danh mục"
+          }
+        }
+      }
+    },
+    "Suggest Categories…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gợi ý danh mục…"
+          }
+        }
+      }
+    },
+    "System" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hệ thống"
+          }
+        }
+      }
+    },
+    "The app is not confident about these photos. They are grouped by best guess. Accept a group, or select photos and move them." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ứng dụng chưa chắc về các ảnh này. Chúng được nhóm theo dự đoán tốt nhất. Hãy chấp nhận một nhóm, hoặc chọn ảnh rồi di chuyển."
+          }
+        }
+      }
+    },
+    "The app scans the folder again and proposes new categories. Your categories and picks are lost." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất."
+          }
+        }
+      }
+    },
+    "The destination is the source folder. Choose another folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đích đến là thư mục nguồn. Hãy chọn thư mục khác."
+          }
+        }
+      }
+    },
+    "The last sort can no longer be undone." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể hoàn tác lần sắp xếp trước nữa."
+          }
+        }
+      }
+    },
+    "The last sort did not finish. Click Undo Last Sort first." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lần sắp xếp trước chưa hoàn tất. Hãy nhấp Hoàn tác lần sắp xếp trước trước."
+          }
+        }
+      }
+    },
+    "The model of Picnest has an unexpected format. Install Picnest again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mô hình của Picnest có định dạng không đúng. Hãy cài đặt lại Picnest."
+          }
+        }
+      }
+    },
+    "The model of Picnest is missing. Install Picnest again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiếu mô hình của Picnest. Hãy cài đặt lại Picnest."
+          }
+        }
+      }
+    },
+    "The photo could not be moved to the Trash: %@." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể chuyển ảnh vào Thùng rác: %@."
+          }
+        }
+      }
+    },
+    "The photo could not be put back: %@." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể trả ảnh về chỗ cũ: %@."
+          }
+        }
+      }
+    },
+    "The photos changed. Check the new plan, then sort again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các ảnh đã thay đổi. Hãy kiểm tra kế hoạch mới, rồi sắp xếp lại."
+          }
+        }
+      }
+    },
+    "The scan failed. %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quét không thành công. %@"
+          }
+        }
+      }
+    },
+    "The selected photos go to the new category." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các ảnh đã chọn sẽ vào danh mục mới."
+          }
+        }
+      }
+    },
+    "The sort stopped." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Việc sắp xếp đã dừng."
+          }
+        }
+      }
+    },
+    "There is no sort to undo." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có lần sắp xếp nào để hoàn tác."
+          }
+        }
+      }
+    },
+    "This folder moved after a sort that did not finish. Move it back to %@, then click Undo Last Sort." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục này đã được di chuyển sau một lần sắp xếp chưa hoàn tất. Hãy chuyển nó về %@, rồi nhấp Hoàn tác lần sắp xếp trước."
+          }
+        }
+      }
+    },
+    "This folder was sorted on %@." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục này đã được sắp xếp vào %@."
+          }
+        }
+      }
+    },
+    "This name is already used." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên này đã được dùng."
+          }
+        }
+      }
+    },
+    "Thumbnail size" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kích thước ảnh thu nhỏ"
+          }
+        }
+      }
+    },
+    "Tools" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Công cụ"
+          }
+        }
+      }
+    },
+    "Try Again" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thử lại"
+          }
+        }
+      }
+    },
+    "Type or paste 1 emoji" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhập hoặc dán 1 emoji"
+          }
+        }
+      }
+    },
+    "Undo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoàn tác"
+          }
+        }
+      }
+    },
+    "Undo Last Sort" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoàn tác lần sắp xếp trước"
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không rõ"
+          }
+        }
+      }
+    },
+    "Unreadable" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không đọc được"
+          }
+        }
+      }
+    },
+    "Videos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video"
+          }
+        }
+      }
+    },
+    "a file already exists at its original place" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "đã có một tệp ở vị trí ban đầu của nó"
+          }
+        }
+      }
+    },
+    "and the folder \"%@\" is deleted. Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "và thư mục \"%@\" sẽ bị xóa. Nhấn ⌘Z để trả ảnh về. Tệp không thuộc danh mục này vẫn được giữ lại, thư mục cũng vậy."
+          }
+        }
+      }
+    },
+    "its place in the Trash is not known" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "không biết vị trí của nó trong Thùng rác"
+          }
+        }
+      }
+    },
+    "no date" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "không có ngày"
+          }
+        }
+      }
+    },
+    "or %@ %lld%%" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hoặc %@ %lld%%"
+          }
+        }
+      }
+    },
+    "or drag to a category ·" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hoặc kéo vào một danh mục ·"
+          }
+        }
+      }
+    },
+    "select all ·" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "chọn tất cả ·"
+          }
+        }
+      }
+    },
+    "the file is not in the Trash any more" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tệp không còn trong Thùng rác"
+          }
+        }
+      }
+    },
+    "undo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hoàn tác"
+          }
+        }
+      }
+    },
+    "“%@” was moved, renamed, or deleted. Find it to continue." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” đã bị di chuyển, đổi tên hoặc xóa. Hãy tìm nó để tiếp tục."
+          }
+        }
+      }
+    },
+    "✓ You" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ Bạn"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

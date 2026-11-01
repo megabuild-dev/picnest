@@ -4,8 +4,7 @@ import SwiftUI
 /// The Not sure view (spec 3.4): an amber notice, then the photos in groups by best guess, largest group
 /// first. Each group has **Select All** and **Accept N**. The toolbar has **Accept All Best Guesses**.
 struct NotSureView: View {
-    static let notice = "The app is not confident about these photos. They are grouped by best guess. "
-        + "Accept a group, or select photos and move them."
+    static let notice = String(localized: "The app is not confident about these photos. They are grouped by best guess. Accept a group, or select photos and move them.")
 
     let model: ReviewViewModel
 
@@ -67,7 +66,7 @@ private struct GroupHeader: View {
     var body: some View {
         HStack(spacing: 10) {
             Text("Best guess: \(group.categoryName)").font(.system(size: 15, weight: .bold))
-            Text(group.ids.count == 1 ? "1 photo" : "\(group.ids.count.formatted()) photos")
+            Text(CountText.photos(group.ids.count))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
             Spacer()

@@ -94,14 +94,16 @@ final class SortViewModel: Identifiable {
     // MARK: - Texts
 
     var title: String {
-        guard let plan else { return "Sort photos" }
-        return "Sort \(count(plan.entries.count, "photo", "photos")) into \(count(plan.folderCounts.count, "folder", "folders"))"
+        guard let plan else { return String(localized: "Sort photos") }
+        let photos = CountText.photos(plan.entries.count, locale: locale)
+        let folders = CountText.folders(plan.folderCounts.count, locale: locale)
+        return String(localized: "Sort \(photos) into \(folders)")
     }
 
     /// The photos that stay in the source folder (Don't move, or Not sure with Leave in the source folder).
     var subtitle: String? {
         guard let left = plan?.leftInSource, left > 0 else { return nil }
-        return left == 1 ? "1 photo stays in the source folder." : "\(number(left)) photos stay in the source folder."
+        return String(localized: "\(left) photos stay in the source folder.", locale: locale)
     }
 
     /// The destination path with the home folder as `~`.
@@ -114,9 +116,10 @@ final class SortViewModel: Identifiable {
     /// The short reason under the destination row when the destination cannot be used.
     var destinationNote: String? {
         switch planError {
-        case .destinationIsSource?: "The destination is the source folder. Choose another folder."
-        case .destinationInsideSource?: "Choose a folder outside the source folder."
-        case .categoryFolderInsideSource?: "A category folder would land inside the source folder. Choose another destination."
+        case .destinationIsSource?: String(localized: "The destination is the source folder. Choose another folder.")
+        case .destinationInsideSource?: String(localized: "Choose a folder outside the source folder.")
+        case .categoryFolderInsideSource?:
+            String(localized: "A category folder would land inside the source folder. Choose another destination.")
         case nil: planFailure
         }
     }
@@ -129,12 +132,16 @@ final class SortViewModel: Identifiable {
     /// The hint to suggest categories when many images are Not sure (`SuggestionService.manyNotSure`, spec 3.5).
     var showSuggestHint: Bool { SuggestionService.manyNotSure(notSure: notSureImageCount, images: imageCount) }
 
-    var suggestHintText: String { "\(count(notSureImageCount, "photo", "photos")) are not sure." }
+    var suggestHintText: String {
+        String(localized: "\(CountText.photos(notSureImageCount, locale: locale)) are not sure.")
+    }
 
     /// **Suggest Categories…**: the screen closes this sheet, shows the Not sure view and opens the suggest sheet.
     func suggestFromSort() { onSuggest() }
 
-    var notSureHeader: String { "\(count(notSureCount, "photo", "photos")) still \"Not sure\":" }
+    var notSureHeader: String {
+        String(localized: "\(CountText.photos(notSureCount, locale: locale)) still \"Not sure\":")
+    }
 
     /// The folder tree: the destination, the first 3 folders with counts, the first file of the first
     /// folder, then `…` if more folders follow.
@@ -156,18 +163,20 @@ final class SortViewModel: Identifiable {
     }
 
     var sortButtonTitle: String {
-        guard options.mode == .move else { return "Sort" }
+        guard options.mode == .move else { return String(localized: "Sort") }
         let n = plan?.entries.count ?? 0
-        return n == 1 ? "Move 1 Photo" : "Move \(number(n)) Photos"
+        return String(localized: "Move \(n) Photos", locale: locale)
     }
 
     /// The Move confirmation: "Move <N> photos?" with `confirmMoveMessage` under it.
-    var confirmMoveTitle: String { "Move \(count(plan?.entries.count ?? 0, "photo", "photos"))?" }
+    var confirmMoveTitle: String {
+        String(localized: "Move \(CountText.photos(plan?.entries.count ?? 0, locale: locale))?")
+    }
 
     let confirmMoveMessage = SortViewModel.moveDetail
 
     /// The text of the Move card and of the Move confirmation (spec 3.5).
-    static let moveDetail = "Each original is deleted after its copy is checked."
+    static let moveDetail = String(localized: "Each original is deleted after its copy is checked.")
 
     var canSort: Bool {
         guard state == .editing, !isPlanning, planError == nil, let plan else { return false }
@@ -183,8 +192,8 @@ final class SortViewModel: Identifiable {
         }
     }
 
-    static let planChangedNotice = "The photos changed. Check the new plan, then sort again."
-    static let nothingToSortNotice = "Nothing to sort."
+    static let planChangedNotice = String(localized: "The photos changed. Check the new plan, then sort again.")
+    static let nothingToSortNotice = String(localized: "Nothing to sort.")
 
     /// True while files change. The sheet cannot close then.
     /// True while the sort or its undo runs, or while review files move to or from the Trash (final
@@ -202,16 +211,22 @@ final class SortViewModel: Identifiable {
 
     var progressText: String {
         guard case .running(let done, let total) = state else { return "" }
-        return "\(options.mode == .move ? "Moving" : "Copying") \(number(done)) of \(number(total))…"
+        let (doneText, totalText) = (number(done), number(total))
+        return options.mode == .move
+            ? String(localized: "Moving \(doneText) of \(totalText)…")
+            : String(localized: "Copying \(doneText) of \(totalText)…")
     }
 
     var summaryText: String {
         switch state {
         case .finished(let copied, let moved):
-            let verb = moved > 0 ? "Moved" : "Copied"
-            return "\(verb) \(count(copied + moved, "photo", "photos")) to “\(options.destination.lastPathComponent)”."
+            let photos = CountText.photos(copied + moved, locale: locale)
+            let folder = options.destination.lastPathComponent
+            return moved > 0
+                ? String(localized: "Moved \(photos) to “\(folder)”.")
+                : String(localized: "Copied \(photos) to “\(folder)”.")
         case .stopped(let done, let total):
-            return "Stopped after \(number(done)) of \(count(total, "photo", "photos"))."
+            return String(localized: "Stopped after \(number(done)) of \(CountText.photos(total, locale: locale)).")
         case .failed(let message):
             return message
         default:
@@ -319,7 +334,7 @@ final class SortViewModel: Identifiable {
         case .failure(let error):
             plan = nil
             planError = error as? SortPlanError
-            planFailure = planError == nil ? error.localizedDescription : nil
+            planFailure = planError == nil ? CoreErrorMessages.text(for: error) : nil
         }
     }
 
@@ -427,10 +442,6 @@ final class SortViewModel: Identifiable {
 
     private func number(_ n: Int) -> String {
         n.formatted(.number.locale(locale))
-    }
-
-    private func count(_ n: Int, _ one: String, _ many: String) -> String {
-        n == 1 ? "1 \(one)" : "\(number(n)) \(many)"
     }
 }
 

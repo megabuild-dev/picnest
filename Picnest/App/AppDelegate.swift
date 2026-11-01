@@ -8,7 +8,7 @@ import AppKit
 /// the app refuses to quit, and Sparkle keeps the update for the next quit.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    static let sortRunningMessage = "A sort is running. Stop it first, then quit."
+    static let sortRunningMessage = String(localized: "A sort is running. Stop it first, then quit.")
 
     /// Nil in the test host: tests make their own environment.
     let environment: AppEnvironment?
@@ -56,7 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if reply == .terminateCancel {
             let alert = NSAlert()
             alert.messageText = Self.sortRunningMessage
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: String(localized: "OK"))
             alert.runModal()
         }
         return reply

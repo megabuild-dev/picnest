@@ -77,7 +77,7 @@ private struct SuggestRowView: View {
                         .onSubmit { model.commitEmoji(of: row.id) }
                         .onChange(of: emojiFocused) { if !emojiFocused { model.commitEmoji(of: row.id) } }
                     TextField("Name", text: $row.name)
-                    Text(row.ids.count == 1 ? "1 photo" : "\(row.ids.count.formatted()) photos")
+                    Text(CountText.photos(row.ids.count))
                         .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
                 }
                 if let hint {

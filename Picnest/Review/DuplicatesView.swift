@@ -116,7 +116,7 @@ private struct GroupCard: View {
             }
             .scrollIndicators(.automatic)
             HStack {
-                Text("\(group.ids.count) photos")
+                Text(CountText.photos(group.ids.count))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -168,7 +168,7 @@ private struct DuplicateTile: View {
         .frame(width: DuplicatesViewModel.tileWidth)
         .contentShape(Rectangle())
         .task(id: id) { await load() }
-        .help(isKeep ? "Keep. Click to unmark." : "Click to mark Keep.")
+        .help(isKeep ? LocalizedStringKey("Keep. Click to unmark.") : LocalizedStringKey("Click to mark Keep."))
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isKeep ? [.isImage, .isSelected] : .isImage)
     }

@@ -206,8 +206,7 @@ final class AppModel {
     }
 
     private static func organizeFailureMessage(_ count: Int) -> String {
-        count == 1 ? "1 photo could not be moved. It stays where it was." :
-            "\(count) photos could not be moved. They stay where they were."
+        String(localized: "\(count) photos could not be moved. They stay where they were.")
     }
 
     /// Goes back to the Welcome screen and stops a session that is still loading.
@@ -267,6 +266,6 @@ final class AppModel {
 
     private func show(_ error: any Error, opening url: URL) {
         screen = .welcome
-        errorMessage = "Could not open “\(url.lastPathComponent)”. \(SortMessages.text(for: error))"
+        errorMessage = String(localized: "Could not open “\(url.lastPathComponent)”. \(SortMessages.text(for: error))")
     }
 }

@@ -51,9 +51,9 @@ struct SortSheet: View {
         }
 
         VStack(spacing: 8) {
-            ChoiceCard(title: "Copy", detail: "Originals stay in the source folder.",
+            ChoiceCard(title: Text("Copy"), detail: Text("Originals stay in the source folder."),
                        isOn: model.options.mode == .copy) { model.options.mode = .copy }
-            ChoiceCard(title: "Move", detail: SortViewModel.moveDetail,
+            ChoiceCard(title: Text("Move"), detail: Text(verbatim: SortViewModel.moveDetail),
                        isOn: model.options.mode == .move) { model.options.mode = .move }
         }
         .padding(.top, 12)
@@ -123,8 +123,8 @@ struct SortSheet: View {
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
     }
 
-    private func notSureCard(_ choice: NotSureChoice, _ title: String, _ detail: String) -> some View {
-        ChoiceCard(title: title, detail: detail, isOn: model.options.notSureChoice == choice) {
+    private func notSureCard(_ choice: NotSureChoice, _ title: LocalizedStringKey, _ detail: LocalizedStringKey) -> some View {
+        ChoiceCard(title: Text(title), detail: Text(detail), isOn: model.options.notSureChoice == choice) {
             model.options.notSureChoice = choice
         }
     }
@@ -134,7 +134,7 @@ struct SortSheet: View {
     @ViewBuilder private var running: some View {
         Text(model.title).font(.system(size: 18, weight: .bold)).padding(.bottom, 16)
         ProgressView(value: model.progress)
-        Text(model.isStopping ? "Stopping after the current file…" : model.progressText)
+        (model.isStopping ? Text("Stopping after the current file…") : Text(verbatim: model.progressText))
             .font(.system(size: 13))
             .monospacedDigit()
             .foregroundStyle(.secondary)
@@ -204,8 +204,8 @@ struct SortSheet: View {
 
 /// A radio choice as a card: a soft accent fill and ring when selected (mockup `.opt`).
 private struct ChoiceCard: View {
-    let title: String
-    let detail: String
+    let title: Text
+    let detail: Text
     let isOn: Bool
     let action: () -> Void
 
@@ -217,8 +217,8 @@ private struct ChoiceCard: View {
                     .frame(width: 16, height: 16)
                     .padding(.top, 1)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).fontWeight(.semibold)
-                    Text(detail).font(.system(size: 12)).foregroundStyle(.secondary)
+                    title.fontWeight(.semibold)
+                    detail.font(.system(size: 12)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
             }

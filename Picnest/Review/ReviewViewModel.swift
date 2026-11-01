@@ -20,9 +20,9 @@ final class ReviewViewModel {
 
         var title: String {
             switch self {
-            case .lowestConfidence: "Lowest confidence"
-            case .date: "Date"
-            case .name: "Name"
+            case .lowestConfidence: String(localized: "Lowest confidence")
+            case .date: String(localized: "Date")
+            case .name: String(localized: "Name")
             }
         }
     }
@@ -52,7 +52,7 @@ final class ReviewViewModel {
     }
 
     static let columnRange = 2...8
-    static let noDate = "no date"
+    static let noDate = String(localized: "no date")
     /// The emoji of a category that the user makes with **New Category…**.
     static let newCategoryEmoji = "📁"
 
@@ -80,7 +80,7 @@ final class ReviewViewModel {
     /// The text of the Trash alert (a photo that could not move to the Trash or come back), or nil.
     var trashMessage: String?
     /// The title of the Trash alert: the action that failed (**Move to Trash**, **Undo**, or **Redo**).
-    private(set) var trashAlertTitle = "Move to Trash"
+    private(set) var trashAlertTitle = String(localized: "Move to Trash")
     /// The Duplicates view (spec 3.6). Made with this review, so a rescan finds the groups again.
     @ObservationIgnored private(set) var duplicates: DuplicatesViewModel!
 
@@ -181,15 +181,16 @@ final class ReviewViewModel {
 
     var title: String {
         switch selectedItem {
-        case .all: "All photos"
-        case .notSure: "Not sure"
-        case .changedByYou: "Changed by you"
+        case .all: String(localized: "All photos")
+        case .notSure: String(localized: "Not sure")
+        case .changedByYou: String(localized: "Changed by you")
         case .category(let c):
-            review.session.categories.first { $0.id == c }.map { "\($0.emoji) \($0.displayName)" } ?? "Category"
-        case .duplicates: "Duplicates"
-        case .dontMove: "Don't move"
-        case .videos: "Videos"
-        case .unreadable: "Unreadable"
+            review.session.categories.first { $0.id == c }.map { "\($0.emoji) \($0.displayName)" }
+                ?? String(localized: "Category")
+        case .duplicates: String(localized: "Duplicates")
+        case .dontMove: String(localized: "Don't move")
+        case .videos: String(localized: "Videos")
+        case .unreadable: String(localized: "Unreadable")
         }
     }
 
@@ -276,8 +277,8 @@ final class ReviewViewModel {
 
     /// The text of the Start Over confirmation.
     var startOverMessage: String {
-        let text = "The app scans the folder again and proposes new categories. Your categories and picks are lost."
-        return canUndoLastSort ? text + " The last sort can no longer be undone." : text
+        let text = String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost.")
+        return canUndoLastSort ? text + " " + String(localized: "The last sort can no longer be undone.") : text
     }
 
     /// File > **Start Over…**: shows the confirmation.
@@ -367,7 +368,7 @@ final class ReviewViewModel {
             sorted(files, session: session).enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
         let names = Dictionary(session.categories.map { ($0.id, $0.displayName) }, uniquingKeysWith: { first, _ in first })
         let groups = review.notSureGroups.map { group in
-            NotSureGroup(category: group.category, categoryName: names[group.category] ?? "Unknown",
+            NotSureGroup(category: group.category, categoryName: names[group.category] ?? String(localized: "Unknown"),
                          ids: group.ids.sorted { (position[$0] ?? .max) < (position[$1] ?? .max) })
         }
         groupsCache = (order, groups)
@@ -569,13 +570,13 @@ final class ReviewViewModel {
     func undo() {
         let runs = review.canUndo
         review.undo()
-        if runs { watchTrashErrors(title: "Undo") }
+        if runs { watchTrashErrors(title: String(localized: "Undo")) }
     }
 
     func redo() {
         let runs = review.canRedo
         review.redo()
-        if runs { watchTrashErrors(title: "Redo") }
+        if runs { watchTrashErrors(title: String(localized: "Redo")) }
     }
 
     /// Moves the selected photos to the Trash, with no confirmation (spec 3.3). They leave every list; **Undo**
@@ -602,11 +603,12 @@ final class ReviewViewModel {
 
     /// The Trash alert: the first message, and "and <n> more" for the other errors. Also for the
     /// clean-ups of the Duplicates view.
-    func showTrashErrors(_ errors: [TrashError], title: String = "Move to Trash") {
+    func showTrashErrors(_ errors: [TrashError], title: String = String(localized: "Move to Trash")) {
         guard let first = errors.first else { return }
         trashAlertTitle = title
         let more = errors.count - 1
-        trashMessage = more > 0 ? "\(first.message) (and \(more) more)" : first.message
+        let message = CoreErrorMessages.text(for: first)
+        trashMessage = more > 0 ? String(localized: "\(message) (and \(more) more)") : message
     }
 
     // MARK: - Category edits
@@ -620,16 +622,15 @@ final class ReviewViewModel {
 
     /// The title of the confirmation dialog before a delete (spec 3.3).
     func deleteConfirmation(for c: CategoryID) -> String {
-        "Delete \(categoryName(c))?"
+        String(localized: "Delete \(categoryName(c))?")
     }
 
     /// The warning of that dialog: the photos go to the Trash and the folder goes too.
     func deleteMessage(for c: CategoryID) -> String {
         let folder = SortPlanner.folderNames(for: review.session.categories)[c] ?? categoryName(c)
         let photos = review.photoIDs(in: c).count
-        return "\(photos) \(photos == 1 ? "photo" : "photos") in this category move to the Trash, "
-            + "and the folder \"\(folder)\" is deleted. "
-            + "Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder."
+        return String(localized: "\(photos) photos in this category move to the Trash,") + " "
+            + String(localized: "and the folder \"\(folder)\" is deleted. Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder.")
     }
 
     private func categoryName(_ c: CategoryID) -> String {
@@ -838,7 +839,7 @@ final class ReviewViewModel {
         if selectedItem == .notSure, let a = Self.assignment(state), let second = a.secondCategoryID,
            let category = session.categories.first(where: { $0.id == second }),
            let percent = classify.secondPercent(of: a) {
-            return "or \(category.displayName) \(percent)%"
+            return String(localized: "or \(category.displayName) \(percent)%")
         }
         guard let date = session.scan.dates[id], date.source != .modificationTime else { return Self.noDate }
         return date.date.formatted(Self.dayFormat)

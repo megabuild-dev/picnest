@@ -9,9 +9,11 @@
 /* Begin PBXBuildFile section */
 		0D135A442D6E88198A5A795D /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */; };
 		16DC62252371603DC3D9DD17 /* SuggestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */; };
+		17B6C890FD0E7560878A2EC6 /* CatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47958C12A51561B635AA7868 /* CatalogTests.swift */; };
 		219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */; };
 		21ABC7AB273C92070EBEBE84 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989FD2A75D20A49C2832027B /* ScanView.swift */; };
 		23916343736674F0E7E86524 /* AppearanceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FF717F28C895BC0150D447 /* AppearanceStore.swift */; };
+		264EBA9BD31D7B33B1891056 /* CountText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6454171A84EC6C4B6543899A /* CountText.swift */; };
 		2AA7F661CDC1E5AF2268CA06 /* DuplicatesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */; };
 		326E89BE84A438C0F07B4475 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1900A1C0BD2CD847B38FB9F9 /* SettingsView.swift */; };
 		3326E5A71671FEF75E42A951 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE520B57AC25EFFC86499E5 /* Sparkle */; };
@@ -32,9 +34,11 @@
 		70F1E214CEAC18D05A77D56B /* PicnestApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE5C538024D2F93601A43E4D /* PicnestApp.swift */; };
 		73B91E90E6553F5DEAB35D9A /* SuggestSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */; };
 		78EC7D52544D30719D020C2A /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08D2B7C9420C231204BC494F /* AppEnvironment.swift */; };
+		79E8030F958AF0D6BBA2BA37 /* CoreErrorMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3495D1B7D2EC7FD63A699C4A /* CoreErrorMessages.swift */; };
 		7B99D0EBD537E8C83EBF58D5 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BB1CB2C97F8E1CAEA1D7731 /* Theme.swift */; };
 		81A840EAE82A6E64825282AC /* SuggestViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B56D8F8749FFD9F550296D /* SuggestViewModelTests.swift */; };
 		8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501266281830058D97AF399D /* DuplicatesView.swift */; };
+		8E076CDAFBC919D5236CF251 /* SortMessagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6DD9B8F4192F4739C37783 /* SortMessagesTests.swift */; };
 		9395AF3BEDCC01FED02365BC /* AppDelegateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */; };
 		97486C098A9BF55A6CD6EB3C /* QuickLookPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A582EB3063F6C786DBEDF4B /* QuickLookPreview.swift */; };
 		A69E706284D40D6D2A1A4579 /* Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D74193AE5CCDEA74C74B46 /* Support.swift */; };
@@ -51,6 +55,7 @@
 		EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */; };
 		F23B8FDED3D74BE03246FEE3 /* WelcomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */; };
 		F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920C3114E14A8F5535838C19 /* NotSureView.swift */; };
+		F7EB95F8545801C871F2248C /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B22D4C3F95177E0A17BBD52D /* Localizable.xcstrings */; };
 		FDBFE918B994319F3232C9DC /* ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25180EB57733ADEE527C9178 /* ScanViewModel.swift */; };
 /* End PBXBuildFile section */
 
@@ -80,11 +85,14 @@
 		2BB1CB2C97F8E1CAEA1D7731 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestViewModel.swift; sourceTree = "<group>"; };
 		2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestSheet.swift; sourceTree = "<group>"; };
+		3495D1B7D2EC7FD63A699C4A /* CoreErrorMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreErrorMessages.swift; sourceTree = "<group>"; };
 		35166FEF0689ABA60577363E /* PhotoTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoTile.swift; sourceTree = "<group>"; };
 		3A4F291B7B0D7F2F894B589E /* Picnest.Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Picnest.Debug.entitlements; sourceTree = "<group>"; };
+		47958C12A51561B635AA7868 /* CatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogTests.swift; sourceTree = "<group>"; };
 		501266281830058D97AF399D /* DuplicatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesView.swift; sourceTree = "<group>"; };
 		57D74193AE5CCDEA74C74B46 /* Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support.swift; sourceTree = "<group>"; };
 		5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
+		6454171A84EC6C4B6543899A /* CountText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountText.swift; sourceTree = "<group>"; };
 		65043FDF2E3D7F22128AA68E /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		70654CE25C0D4A3AEB26F66C /* SortMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMessages.swift; sourceTree = "<group>"; };
 		7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeViewModelTests.swift; sourceTree = "<group>"; };
@@ -97,8 +105,10 @@
 		920C3114E14A8F5535838C19 /* NotSureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotSureView.swift; sourceTree = "<group>"; };
 		989FD2A75D20A49C2832027B /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
 		9A582EB3063F6C786DBEDF4B /* QuickLookPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLookPreview.swift; sourceTree = "<group>"; };
+		9E6DD9B8F4192F4739C37783 /* SortMessagesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMessagesTests.swift; sourceTree = "<group>"; };
 		A23A226DCC3C8650C439A15E /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		A7C2B7BBF113F2DC262B2B68 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		B22D4C3F95177E0A17BBD52D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		BC73950B912E76D04662E063 /* PicnestCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PicnestCore; path = PicnestCore; sourceTree = SOURCE_ROOT; };
 		C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCommands.swift; sourceTree = "<group>"; };
@@ -163,10 +173,12 @@
 				5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */,
 				D6113378D0D5A7B5F61A2407 /* AppearanceStoreTests.swift */,
 				8720DD050E7DEC881184656B /* AppModelTests.swift */,
+				47958C12A51561B635AA7868 /* CatalogTests.swift */,
 				7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */,
 				8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */,
 				7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */,
 				D61409C47FE261863147401E /* ScanViewModelTests.swift */,
+				9E6DD9B8F4192F4739C37783 /* SortMessagesTests.swift */,
 				0977699F69AB7452B6F56650 /* SortViewModelTests.swift */,
 				05B56D8F8749FFD9F550296D /* SuggestViewModelTests.swift */,
 				57D74193AE5CCDEA74C74B46 /* Support.swift */,
@@ -181,6 +193,7 @@
 			children = (
 				D594434602636BD2EEEFF69E /* Assets.xcassets */,
 				1A5B92C09D222C1D48568576 /* Info.plist */,
+				B22D4C3F95177E0A17BBD52D /* Localizable.xcstrings */,
 				3A4F291B7B0D7F2F894B589E /* Picnest.Debug.entitlements */,
 				03B644AB4BC12B0942135B63 /* Picnest.entitlements */,
 				900ACE24C78A981403F67AD7 /* App */,
@@ -210,6 +223,8 @@
 				08D2B7C9420C231204BC494F /* AppEnvironment.swift */,
 				EC9F57247BA22021E463784C /* AppModel.swift */,
 				BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */,
+				3495D1B7D2EC7FD63A699C4A /* CoreErrorMessages.swift */,
+				6454171A84EC6C4B6543899A /* CountText.swift */,
 				DE5C538024D2F93601A43E4D /* PicnestApp.swift */,
 				A7C2B7BBF113F2DC262B2B68 /* RootView.swift */,
 				EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */,
@@ -341,6 +356,7 @@
 			knownRegions = (
 				Base,
 				en,
+				vi,
 			);
 			mainGroup = 3807D8D8DFC5F208A36BFFB6;
 			minimizedProjectReferenceProxies = 1;
@@ -365,6 +381,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				61B83CA7F230CB6792E22FBC /* Assets.xcassets in Resources */,
+				F7EB95F8545801C871F2248C /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -419,10 +436,12 @@
 				9395AF3BEDCC01FED02365BC /* AppDelegateTests.swift in Sources */,
 				C85B93CBA4C456D7B1094A35 /* AppModelTests.swift in Sources */,
 				BF5984936F5251EDFE074BE8 /* AppearanceStoreTests.swift in Sources */,
+				17B6C890FD0E7560878A2EC6 /* CatalogTests.swift in Sources */,
 				2AA7F661CDC1E5AF2268CA06 /* DuplicatesViewModelTests.swift in Sources */,
 				EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */,
 				5E5EBEB4613086D0FD6C9433 /* ReviewViewModelTests.swift in Sources */,
 				5EC0A2D59907C15FB0D2604A /* ScanViewModelTests.swift in Sources */,
+				8E076CDAFBC919D5236CF251 /* SortMessagesTests.swift in Sources */,
 				D107C155337D4DE5FBBF567E /* SortViewModelTests.swift in Sources */,
 				81A840EAE82A6E64825282AC /* SuggestViewModelTests.swift in Sources */,
 				A69E706284D40D6D2A1A4579 /* Support.swift in Sources */,
@@ -440,6 +459,8 @@
 				4389658CBA389E3956766A27 /* AppModel.swift in Sources */,
 				CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */,
 				23916343736674F0E7E86524 /* AppearanceStore.swift in Sources */,
+				79E8030F958AF0D6BBA2BA37 /* CoreErrorMessages.swift in Sources */,
+				264EBA9BD31D7B33B1891056 /* CountText.swift in Sources */,
 				8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */,
 				219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */,
 				F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */,
@@ -641,11 +662,13 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.1;
 				PICNEST_MODEL_STEM = mobileclip_s2;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.megabuild.picnest;
 				PRODUCT_NAME = Picnest;
 				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = Debug;
 		};
@@ -669,11 +692,13 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.1;
 				PICNEST_MODEL_STEM = mobileclip_s2;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.megabuild.picnest;
 				PRODUCT_NAME = Picnest;
 				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = Release;
 		};
