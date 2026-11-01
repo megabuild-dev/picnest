@@ -233,6 +233,43 @@ struct ReviewViewModelTests {
         #expect(model.listRow("h.jpg").date == nil)
     }
 
+    // MARK: - Library chrome
+
+    private func chromeItems(_ model: ReviewViewModel) -> [ReviewViewModel.SidebarItem] {
+        [.all, .notSure, .changedByYou, .category(food.id), .duplicates, .dontMove, .videos, .unreadable]
+    }
+
+    private func chrome(_ model: ReviewViewModel, _ read: (ReviewViewModel) -> Bool) -> [Bool] {
+        chromeItems(model).map { model.selectedItem = $0; return read(model) }
+    }
+
+    @Test func testBodyKind() throws {
+        let model = try makeModel()
+        let kinds: [ReviewViewModel.BodyKind] = chromeItems(model).map { model.selectedItem = $0; return model.bodyKind }
+        #expect(kinds == [.library, .needsReview, .library, .library, .duplicates, .library, .library, .library])
+    }
+
+    @Test func testShowsFilterChips() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsFilterChips } == [true, true, true, false, false, false, false, false])
+    }
+
+    @Test func testShowsLayoutPicker() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsLayoutPicker } == [true, false, true, true, false, true, true, true])
+    }
+
+    @Test func testShowsFooter() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsFooter } == [true, false, true, true, false, true, true, true])
+    }
+
+    @Test func testShowsThumbnailSlider() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsThumbnailSlider(layout: .grid) } == [true, true, true, true, false, true, true, true])
+        #expect(chrome(model) { $0.showsThumbnailSlider(layout: .list) } == [false, true, false, false, false, false, false, false])
+    }
+
     @Test func testSearchDoesNotChangeSidebarCounts() throws {
         let model = try makeModel()
         let before = model.sidebarCounts

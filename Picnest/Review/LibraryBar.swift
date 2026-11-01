@@ -4,17 +4,11 @@ import SwiftUI
 /// The chips show for All Photos, Needs Review and Chosen by you only.
 struct LibraryBar: View {
     let model: ReviewViewModel
-
-    private var showsChips: Bool {
-        switch model.selectedItem {
-        case .all, .notSure, .changedByYou: true
-        default: false
-        }
-    }
+    let layout: LibraryLayout
 
     var body: some View {
         HStack(spacing: 8) {
-            if showsChips {
+            if model.showsFilterChips {
                 HStack(spacing: 8) {
                     ForEach(PhotoFilter.allCases, id: \.self) { filter in
                         FilterChip(title: filter.title, isSelected: model.filter == filter) { model.filter = filter }
@@ -24,7 +18,7 @@ struct LibraryBar: View {
                 .accessibilityLabel("Filter")
             }
             Spacer(minLength: 12)
-            SizeSlider(model: model)
+            if model.showsThumbnailSlider(layout: layout) { SizeSlider(model: model) }
             Picker("Sort Order", selection: Bindable(model).sortOrder) {
                 ForEach(ReviewViewModel.SortOrder.allCases) { Text($0.title).tag($0) }
             }

@@ -413,6 +413,44 @@ final class ReviewViewModel {
         }
     }
 
+    // MARK: - Library chrome
+
+    /// Which body the detail column shows.
+    enum BodyKind: Equatable {
+        case duplicates, needsReview, library
+    }
+
+    var bodyKind: BodyKind {
+        switch selectedItem {
+        case .duplicates: .duplicates
+        case .notSure: .needsReview
+        default: .library
+        }
+    }
+
+    /// The filter chips show for All Photos, Needs Review and Chosen by you.
+    var showsFilterChips: Bool {
+        switch selectedItem {
+        case .all, .notSure, .changedByYou: true
+        default: false
+        }
+    }
+
+    /// The grid or list switch shows for the flat views only.
+    var showsLayoutPicker: Bool { bodyKind == .library }
+
+    /// The "N photos" footer shows under the flat views only.
+    var showsFooter: Bool { bodyKind == .library }
+
+    /// The thumbnail size slider. Needs Review is always a grid; the list has no thumbnail size.
+    func showsThumbnailSlider(layout: LibraryLayout) -> Bool {
+        switch bodyKind {
+        case .duplicates: false
+        case .needsReview: true
+        case .library: layout == .grid
+        }
+    }
+
     /// The Needs Review item ignores the search text (it does not filter its groups yet), so the search
     /// field is off there.
     var isSearchEnabled: Bool { selectedItem != .notSure }

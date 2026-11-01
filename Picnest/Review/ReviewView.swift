@@ -140,38 +140,35 @@ struct ReviewView: View {
     }
 
     @ViewBuilder private var detail: some View {
-        if model.selectedItem == .duplicates {
+        switch model.bodyKind {
+        case .duplicates:
             DuplicatesView(model: model.duplicates)
-        } else {
+        case .needsReview:
             VStack(spacing: 0) {
-                LibraryBar(model: model)
-                if model.selectedItem == .notSure {
-                    NotSureView(model: model)
-                } else {
-                    switch layout {
-                    case .grid: PhotoGridView(model: model)
-                    case .list: PhotoListView(model: model)
-                    }
-                    LibraryFooter(count: model.count)
+                LibraryBar(model: model, layout: layout)
+                NotSureView(model: model)
+            }
+        case .library:
+            VStack(spacing: 0) {
+                LibraryBar(model: model, layout: layout)
+                switch layout {
+                case .grid: PhotoGridView(model: model)
+                case .list: PhotoListView(model: model)
                 }
+                if model.showsFooter { LibraryFooter(count: model.count) }
             }
         }
     }
-
-    /// The grid and the list layouts are the flat views. Needs Review and Duplicates have their own.
-    private var showsLayoutPicker: Bool { model.selectedItem != .notSure && model.selectedItem != .duplicates }
 
     /// The photo count under the title, for example "2,413 photos".
     private var countText: LocalizedStringKey { "\(model.count) photos" }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            if model.selectedItem == .duplicates {
+            if model.bodyKind == .duplicates {
                 CleanUpAllButton(model: model.duplicates)
-            } else {
-                if showsLayoutPicker {
-                    LibraryLayoutPicker(layout: $layout)
-                }
+            } else if model.showsLayoutPicker {
+                LibraryLayoutPicker(layout: $layout)
             }
             Button(inspectorShown ? "Hide Inspector" : "Show Inspector", systemImage: "sidebar.trailing") {
                 inspectorShown.toggle()
