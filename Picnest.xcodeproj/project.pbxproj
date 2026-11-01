@@ -64,6 +64,7 @@
 		C0D6276346C37C0D994D1657 /* ReviewCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */; };
 		C85B93CBA4C456D7B1094A35 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8720DD050E7DEC881184656B /* AppModelTests.swift */; };
 		C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0629FE80B349DDD9DC93B874 /* AppDelegate.swift */; };
+		CB4609F6FA2C540D2E417AC6 /* CollectionNameSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55C1B56CA95B0AF237A9EA6 /* CollectionNameSheet.swift */; };
 		CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */; };
 		D0B67C143763D6E8B18175D3 /* SortSheetStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC2493E6A3C7CA05FC3F88E /* SortSheetStates.swift */; };
 		D100DAAA6E9733D1CBEEC47C /* CollectionsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A3282C6F3F954018F0612B4 /* CollectionsViewModelTests.swift */; };
@@ -163,6 +164,7 @@
 		D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesViewModel.swift; sourceTree = "<group>"; };
 		D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
 		DE5C538024D2F93601A43E4D /* PicnestApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PicnestApp.swift; sourceTree = "<group>"; };
+		E55C1B56CA95B0AF237A9EA6 /* CollectionNameSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionNameSheet.swift; sourceTree = "<group>"; };
 		E6FF717F28C895BC0150D447 /* AppearanceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceStore.swift; sourceTree = "<group>"; };
 		E7ED133DBF6E046A2482EF23 /* InspectorFacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorFacts.swift; sourceTree = "<group>"; };
 		EAC2493E6A3C7CA05FC3F88E /* SortSheetStates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortSheetStates.swift; sourceTree = "<group>"; };
@@ -288,6 +290,7 @@
 			isa = PBXGroup;
 			children = (
 				0344361077AD59CA5DE3D15A /* CategoryHeaderView.swift */,
+				E55C1B56CA95B0AF237A9EA6 /* CollectionNameSheet.swift */,
 				79CA12F607E49B987E75890F /* DuplicateGroupCard.swift */,
 				501266281830058D97AF399D /* DuplicatesView.swift */,
 				D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */,
@@ -534,6 +537,7 @@
 				CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */,
 				23916343736674F0E7E86524 /* AppearanceStore.swift in Sources */,
 				D5A8270477F96902A7700CB6 /* CategoryHeaderView.swift in Sources */,
+				CB4609F6FA2C540D2E417AC6 /* CollectionNameSheet.swift in Sources */,
 				79E8030F958AF0D6BBA2BA37 /* CoreErrorMessages.swift in Sources */,
 				264EBA9BD31D7B33B1891056 /* CountText.swift in Sources */,
 				20386BCE23B82A1E7C242D8D /* DuplicateGroupCard.swift in Sources */,

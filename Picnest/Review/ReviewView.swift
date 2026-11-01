@@ -81,6 +81,18 @@ struct ReviewView: View {
         } message: {
             Text(model.deletingCategory.map(model.deleteMessage(for:)) ?? "")
         }
+        .sheet(item: Bindable(model).editingCollection) { CollectionNameSheet(model: model, editor: $0) }
+        .confirmationDialog(
+            model.deletingCollection.map(model.deleteCollectionTitle(for:)) ?? "", isPresented: deletingCollectionBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Collection", role: .destructive) {
+                if let deleting = model.deletingCollection { model.deleteCollection(deleting) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The photos stay in their folders.")
+        }
         .sheet(item: Bindable(model).suggest) { SuggestSheet(model: $0) }
         .alert("Undo Last Sort", isPresented: undoMessageBinding) {
             Button("OK", role: .cancel) { model.undoSortMessage = nil }
@@ -246,6 +258,10 @@ struct ReviewView: View {
 
     private var trashMessageBinding: Binding<Bool> {
         Binding(get: { model.trashMessage != nil }, set: { if !$0 { model.trashMessage = nil } })
+    }
+
+    private var deletingCollectionBinding: Binding<Bool> {
+        Binding(get: { model.deletingCollection != nil }, set: { if !$0 { model.deletingCollection = nil } })
     }
 
     private var deletingCategoryBinding: Binding<Bool> {

@@ -949,6 +949,16 @@
         }
       }
     },
+    "Collections" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ sưu tập"
+          }
+        }
+      }
+    },
     "Confidence" : {
       "localizations" : {
         "vi" : {
@@ -1095,6 +1105,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xóa %@?"
+          }
+        }
+      }
+    },
+    "Delete Collection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa bộ sưu tập"
+          }
+        }
+      }
+    },
+    "Delete the collection “%@”?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa bộ sưu tập “%@”?"
           }
         }
       }
@@ -1873,6 +1903,16 @@
         }
       }
     },
+    "New Collection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ sưu tập mới"
+          }
+        }
+      }
+    },
     "No Favorites" : {
       "localizations" : {
         "vi" : {
@@ -2268,6 +2308,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đổi tên"
+          }
+        }
+      }
+    },
+    "Rename Collection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi tên bộ sưu tập"
           }
         }
       }
@@ -2818,6 +2868,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Các ảnh đã thay đổi. Hãy kiểm tra kế hoạch mới, rồi sắp xếp lại."
+          }
+        }
+      }
+    },
+    "The photos stay in their folders." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các ảnh vẫn nằm trong thư mục của chúng."
           }
         }
       }

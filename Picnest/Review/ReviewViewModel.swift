@@ -1264,6 +1264,12 @@ final class ReviewViewModel {
         }
     }
 
+    /// The title of the confirmation dialog before a collection is deleted.
+    func deleteCollectionTitle(for c: CollectionID) -> String {
+        let name = collections.first { $0.id == c }?.name ?? ""
+        return String(localized: "Delete the collection “\(name)”?")
+    }
+
     func validateCollectionName(_ name: String, excluding: CollectionID?) -> CollectionNameIssue? {
         CollectionService.validateName(name, excluding: excluding, among: review.session.collections)
     }

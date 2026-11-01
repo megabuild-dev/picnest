@@ -138,6 +138,12 @@ struct CollectionsViewModelTests {
         #expect(review.session.collections.first { $0.id == box.id }?.name == "Holiday")
     }
 
+    @Test func testDeleteCollectionTitleNamesTheCollection() throws {
+        let box = collection("Trip", [])
+        let (model, _) = try make { $0.collections = [box] }
+        #expect(model.deleteCollectionTitle(for: box.id) == "Delete the collection “Trip”?")
+    }
+
     @Test func testAddSelectionAndDrop() throws {
         let box = collection("Trip", [])
         let (model, review) = try make { $0.collections = [box] }
