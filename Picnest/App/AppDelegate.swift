@@ -46,6 +46,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sortIsRunning ? .terminateCancel : .terminateNow
     }
 
+    /// Applies the saved appearance. The test host has no environment, so it changes nothing.
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        environment?.appearance.applyCurrent()
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let reply = Self.terminateReply(sortIsRunning: isSortRunning())
         if reply == .terminateCancel {
