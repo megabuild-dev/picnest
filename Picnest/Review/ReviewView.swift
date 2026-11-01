@@ -76,7 +76,7 @@ struct ReviewView: View {
                 model.openSuggest()
             }
         }) { SortSheet(model: $0) }
-        .sheet(isPresented: editingCategoryBinding) {
+        .sheet(isPresented: editingCategoryBinding, onDismiss: model.openPendingCollection) {
             if let category = model.categories.first(where: { $0.id == model.editingCategory }) {
                 EditCategorySheet(model: model, category: category) { model.editingCategory = nil }
             }
@@ -93,6 +93,7 @@ struct ReviewView: View {
             Text(model.deletingCategory.map(model.deleteMessage(for:)) ?? "")
         }
         .sheet(item: Bindable(model).editingCollection) { CollectionNameSheet(model: model, editor: $0) }
+        .sheet(item: Bindable(model).addingPhotos) { AddPhotosSheet(model: model, target: $0) }
         .confirmationDialog(
             model.deletingCollection.map(model.deleteCollectionTitle(for:)) ?? "", isPresented: deletingCollectionBinding,
             titleVisibility: .visible
@@ -191,7 +192,17 @@ struct ReviewView: View {
         case .library, .recentlyDeleted:
             VStack(spacing: 0) {
                 if let category = model.selectedCategory {
-                    CategoryHeaderView(model: model, category: category, photoCount: model.count)
+                    PhotoSetHeaderView(
+                        model: model, icon: .emoji(category.emoji), name: category.displayName, photoCount: model.count,
+                        addPhotos: { model.addingPhotos = .category(category.id) },
+                        rename: { model.editingCategory = category.id },
+                        moreItems: { CategoryMoreItems(model: model, category: category) })
+                } else if let collection = model.selectedCollection {
+                    PhotoSetHeaderView(
+                        model: model, icon: .symbol("square.stack"), name: collection.name, photoCount: model.count,
+                        addPhotos: { model.addingPhotos = .collection(collection.id) },
+                        rename: { model.requestRenameCollection(collection.id) },
+                        moreItems: { CollectionMoreItems(model: model, collection: collection) })
                 }
                 LibraryBar(model: model, layout: layout)
                 switch layout {

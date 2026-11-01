@@ -78,6 +78,7 @@ struct EditCategorySheet: View {
             Text("The folder follows the category name.")
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textSecondary.color)
+            createCollectionRow
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel, action: dismiss)
@@ -92,6 +93,29 @@ struct EditCategorySheet: View {
         .frame(width: 440)
         .background(Theme.surface.color)
         .onAppear { nameFocused = true }
+    }
+
+    /// Makes a collection with the name of the category. The category does not change.
+    private var createCollectionRow: some View {
+        Button { model.createCollectionInstead(of: category.id) } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "square.stack").foregroundStyle(Theme.accent.color)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Create a collection instead").font(.system(size: 13, weight: .semibold))
+                    Text("Group photos without moving files.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.textSecondary.color)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").foregroundStyle(Theme.textSecondary.color)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.textPrimary.color.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Theme.textPrimary.color)
     }
 
     private func save() {

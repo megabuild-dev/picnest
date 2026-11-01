@@ -603,6 +603,50 @@
         }
       }
     },
+    "Add %lld Photos" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld Photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld Photos"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Thêm %lld ảnh"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Add Photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm ảnh"
+          }
+        }
+      }
+    },
     "Add this category" : {
       "localizations" : {
         "vi" : {
@@ -1079,6 +1123,16 @@
         }
       }
     },
+    "Create a collection instead" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo bộ sưu tập thay thế"
+          }
+        }
+      }
+    },
     "Create a folder for each category, move the photos into it, and rename them" : {
       "localizations" : {
         "vi" : {
@@ -1395,6 +1449,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lưới hoặc danh sách"
+          }
+        }
+      }
+    },
+    "Group photos without moving files." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gom ảnh mà không di chuyển tệp."
           }
         }
       }

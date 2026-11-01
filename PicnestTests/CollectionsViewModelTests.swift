@@ -253,4 +253,63 @@ struct CollectionsViewModelTests {
         #expect(model.tile("a.jpg").accessibilityLabel.contains("Favorite"))
         #expect(!model.tile("b.jpg").accessibilityLabel.contains("Favorite"))
     }
+
+    // MARK: - Add Photos (UI redesign 3.9)
+
+    @Test func testAddPhotosCandidatesLeaveOutMembers() throws {
+        let box = collection("Trip", ["a.jpg", "b.jpg"])
+        let (model, _) = try make { session in
+            session.collections = [box]
+            session.trashed = [TrashedPhoto(mediaID: "c.jpg", trashPath: "/t/c", time: Date())]
+        }
+        let candidates = model.addPhotosCandidates(for: .collection(box.id))
+        // Not the members, not the trashed c.jpg.
+        #expect(Set(candidates) == ["d.jpg", "e.jpg", "f.jpg", "g.mov", "h.jpg"])
+        #expect(candidates.count == 5)
+        // Food has a.jpg (certain guess) and c.jpg (chosen); b.jpg is only a weak guess.
+        let forCategory = model.addPhotosCandidates(for: .category(fx.food.id))
+        #expect(!forCategory.contains("a.jpg") && !forCategory.contains("c.jpg"))
+        #expect(forCategory.contains("b.jpg") && forCategory.contains("h.jpg"))
+    }
+
+    @Test func testAddPhotosToCategoryMakesManualPicks() throws {
+        let (model, review) = try make()
+        let category = fx.documents.id
+        model.addingPhotos = .category(category)
+        model.addPhotos(["a.jpg", "b.jpg"], to: .category(category))
+        #expect(review.session.states["a.jpg"] == .manual(category))
+        #expect(review.session.states["b.jpg"] == .manual(category))
+        #expect(model.addingPhotos == nil)
+    }
+
+    @Test func testAddPhotosToCollectionAppendsMembers() throws {
+        let box = collection("Trip", ["a.jpg"])
+        let (model, review) = try make { $0.collections = [box] }
+        model.addingPhotos = .collection(box.id)
+        model.addPhotos(["b.jpg", "c.jpg"], to: .collection(box.id))
+        #expect(review.session.collections[0].memberIDs == ["a.jpg", "b.jpg", "c.jpg"])
+        #expect(model.addingPhotos == nil)
+    }
+
+    @Test func testCreateCollectionInsteadKeepsTheCategoryAndOpensTheSheetAfterTheEditSheet() throws {
+        let (model, review) = try make()
+        model.editingCategory = fx.food.id
+        model.createCollectionInstead(of: fx.food.id)
+        // The edit sheet closes first. The collection sheet waits for its dismissal.
+        #expect(model.editingCategory == nil)
+        #expect(model.editingCollection == nil)
+        model.openPendingCollection()
+        #expect(model.editingCollection == .new(name: "Food", adding: []))
+        model.openPendingCollection()  // Once only.
+        #expect(review.session.categories.contains { $0.id == fx.food.id && $0.displayName == "Food" })
+        #expect(review.session.collections.isEmpty)
+    }
+
+    @Test func testSelectedCollectionFollowsTheSidebarItem() throws {
+        let box = collection("Trip", [])
+        let (model, _) = try make { $0.collections = [box] }
+        #expect(model.selectedCollection == nil)
+        model.selectedItem = .collection(box.id)
+        #expect(model.selectedCollection?.name == "Trip")
+    }
 }

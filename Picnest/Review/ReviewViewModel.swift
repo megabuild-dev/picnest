@@ -14,6 +14,14 @@ enum ReviewIssue: CaseIterable {
     case lowConfidence, noCategory, similarPhotos
 }
 
+/// Where the Add Photos sheet puts the photos.
+enum AddPhotosTarget: Identifiable, Hashable {
+    case category(CategoryID)
+    case collection(CollectionID)
+
+    var id: Self { self }
+}
+
 /// What the collection sheet does.
 enum CollectionEditor: Identifiable, Equatable {
     case new(name: String, adding: [MediaID])
@@ -516,8 +524,8 @@ final class ReviewViewModel {
         return categories.first { $0.id == id }
     }
 
-    /// The category header shows at the top of the library body of a category.
-    var showsCategoryHeader: Bool { selectedCategory != nil }
+    /// The header shows at the top of the library body of a category and of a collection.
+    var showsCategoryHeader: Bool { selectedCategory != nil || selectedCollection != nil }
 
     /// The filter chips show for All Photos and Chosen by you. Needs Review has its own header and filter menus.
     var showsFilterChips: Bool {
@@ -1265,6 +1273,65 @@ final class ReviewViewModel {
         guard !ids.isEmpty, review.session.collections.contains(where: { $0.id == c }) else { return false }
         review.addToCollection(ids, c)
         return true
+    }
+
+    // MARK: - Add Photos
+
+    /// The open Add Photos sheet, or nil.
+    var addingPhotos: AddPhotosTarget?
+
+    /// The visible photos that are not in `target` yet, by file name, that match `search`.
+    func addPhotosCandidates(for target: AddPhotosTarget, matching search: String = "") -> [MediaID] {
+        let session = review.session
+        let needle = Self.searchNeedle(search)
+        let item: SidebarItem = switch target {
+        case .category(let c): .category(c)
+        case .collection(let c): .collection(c)
+        }
+        let members = Self.members(of: item, in: session)
+        return session.visibleMedia
+            .filter { media in
+                !Self.includes(media, state: session.states[media.id], in: item, members: members)
+                    && (needle.map { Self.matches(media, needle: $0) } ?? true)
+            }
+            .sorted {
+                let (a, b) = (Self.fileName($0), Self.fileName($1))
+                return a != b ? a.localizedStandardCompare(b) == .orderedAscending : $0.id < $1.id
+            }
+            .map(\.id)
+    }
+
+    /// A category target makes manual picks (the files move at **Done**). A collection target adds members.
+    func addPhotos(_ ids: [MediaID], to target: AddPhotosTarget) {
+        switch target {
+        case .category(let c): review.move(ids, to: c)
+        case .collection(let c): review.addToCollection(ids, c)
+        }
+        addingPhotos = nil
+    }
+
+    /// The collection that `selectedItem` shows, or nil for any other item.
+    var selectedCollection: PhotoCollection? {
+        guard case .collection(let c) = selectedItem else { return nil }
+        return collections.first { $0.id == c }
+    }
+
+    /// The name for the collection sheet that opens when the Edit Category sheet is gone, or nil.
+    private var pendingCollectionName: String?
+
+    /// **Create a collection instead** in the Edit Category sheet. The category stays as it is. The sheet closes
+    /// first, then `openPendingCollection` opens the collection sheet, so the 2 sheets do not overlap.
+    func createCollectionInstead(of c: CategoryID) {
+        guard let category = categories.first(where: { $0.id == c }) else { return }
+        pendingCollectionName = category.displayName
+        editingCategory = nil
+    }
+
+    /// Runs when the Edit Category sheet is gone. Opens the collection sheet of `createCollectionInstead`, once.
+    func openPendingCollection() {
+        guard let name = pendingCollectionName else { return }
+        pendingCollectionName = nil
+        requestNewCollection(name: name, adding: [])
     }
 
     /// The open collection sheet, or nil.

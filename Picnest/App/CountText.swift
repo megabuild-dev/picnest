@@ -17,6 +17,11 @@ enum CountText {
         String(localized: "\(n) photos selected", locale: locale)
     }
 
+    /// "Add N Photos", the button of the Add Photos sheet.
+    static func addPhotos(_ n: Int, locale: Locale = .current) -> String {
+        String(localized: "Add \(n) Photos", locale: locale)
+    }
+
     static func folders(_ n: Int, locale: Locale = .current) -> String {
         String(localized: "\(n) folders", locale: locale)
     }
