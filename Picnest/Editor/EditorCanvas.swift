@@ -45,8 +45,6 @@ private struct Grid3x3: Shape {
 private struct CropFrame: View {
     @Bindable var model: PhotoEditorViewModel
     let size: CGSize
-    /// The translation at the last drag event, so each event sends only the new part.
-    @State private var lastTranslation: CGSize = .zero
 
     private var rect: CGRect {
         let c = model.edit.crop
@@ -113,18 +111,13 @@ private struct CropFrame: View {
         return CGPoint(x: x, y: y)
     }
 
+    /// Sends the whole translation since the drag started, in 0…1 units of the preview.
     private func drag(_ handle: CropHandle) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
                 guard size.width > 0, size.height > 0 else { return }
-                let t = value.translation
-                model.dragCrop(handle, dx: (t.width - lastTranslation.width) / size.width,
-                               dy: (t.height - lastTranslation.height) / size.height)
-                lastTranslation = t
+                model.dragCrop(handle, dx: value.translation.width / size.width, dy: value.translation.height / size.height)
             }
-            .onEnded { _ in
-                lastTranslation = .zero
-                model.endDrag()
-            }
+            .onEnded { _ in model.endDrag() }
     }
 }

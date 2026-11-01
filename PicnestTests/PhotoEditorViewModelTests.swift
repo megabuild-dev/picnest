@@ -75,11 +75,10 @@ struct PhotoEditorViewModelTests {
     @Test func testSliderDragIsOneUndoStepAfterEndDrag() throws {
         let m = try makeModel().model
         for v in [5.0, 10, 15] { m.setStraighten(v) }
-        m.setAdjustment(.exposure, 20)
         m.endDrag()
         #expect(m.edit.straighten == 15)
         m.undo()
-        #expect(m.edit.straighten == 0 && m.edit[.exposure] == 0 && !m.canUndo)
+        #expect(m.edit.straighten == 0 && !m.canUndo)
     }
 
     @Test func testResetThenUndoBringsTheEditBack() throws {
@@ -226,7 +225,7 @@ struct PhotoEditorViewModelTests {
         let m = try makeModel().model
         m.setAspect(.freeform)
         m.dragCrop(.right, dx: -0.25, dy: 0)
-        m.dragCrop(.right, dx: -0.25, dy: 0)
+        m.dragCrop(.right, dx: -0.5, dy: 0)  // the whole translation since the start
         #expect(abs(m.edit.crop.width - 0.5) < 0.001 && abs(m.edit.crop.x) < 0.001)
         m.endDrag()
         m.undo()
@@ -339,6 +338,7 @@ struct PhotoEditorViewModelTests {
         try await waitUntil { m.previewImage != nil }
         m.setAspect(.freeform)
         m.dragCrop(.bottomRight, dx: -0.5, dy: -0.5)
+        m.endDrag()
         m.dragCrop(.move, dx: 0.25, dy: 0.25)
         m.endDrag()
         let before = m.edit.crop
@@ -360,5 +360,53 @@ struct PhotoEditorViewModelTests {
         m.scaleCrop(by: 0.95)
         let c = m.edit.crop
         #expect(c.width < before.width && abs(c.height / c.width - before.height / before.width) < 1e-9)
+    }
+
+    @Test func testDragBackAfterAnEdgeClampTracksThePointer() throws {
+        let m = try makeModel().model
+        m.setAspect(.freeform)
+        m.dragCrop(.right, dx: -0.5, dy: 0)
+        m.endDrag()  // width 0.5
+        m.dragCrop(.move, dx: 0.9, dy: 0)  // clamps at the right edge: x = 0.5
+        #expect(abs(m.edit.crop.x - 0.5) < 1e-9)
+        m.dragCrop(.move, dx: 0.3, dy: 0)  // back toward the start: follows the pointer at once
+        #expect(abs(m.edit.crop.x - 0.3) < 1e-9)
+        m.endDrag()
+        m.undo()  // the whole move is 1 step
+        #expect(abs(m.edit.crop.width - 0.5) < 1e-9 && abs(m.edit.crop.x) < 1e-9)
+    }
+
+    @Test func testKeyboardSliderChangesEachBecomeOneUndoStep() async throws {
+        let m = try makeModel().model
+        m.commitDelay = .milliseconds(20)
+        m.setAdjustment(.exposure, 1)
+        try await Task.sleep(for: .milliseconds(120))
+        m.setAdjustment(.exposure, 2)
+        try await Task.sleep(for: .milliseconds(120))
+        m.undo()
+        #expect(m.edit[.exposure] == 1)
+        m.undo()
+        #expect(m.edit[.exposure] == 0 && !m.canUndo)
+    }
+
+    @Test func testAnotherSliderCommitsThePendingChange() throws {
+        let m = try makeModel().model
+        m.setAdjustment(.exposure, 10)
+        m.setStraighten(5)  // a different slider: the exposure step closes
+        m.endDrag()
+        m.undo()
+        #expect(m.edit[.exposure] == 10 && m.edit.straighten == 0)
+    }
+
+    @Test func testMouseSliderDragWaitsForEndDrag() async throws {
+        let m = try makeModel().model
+        m.commitDelay = .milliseconds(20)
+        m.beginDrag()
+        m.setStraighten(5)
+        try await Task.sleep(for: .milliseconds(120))
+        m.setStraighten(9)
+        m.endDrag()
+        m.undo()
+        #expect(m.edit.isOriginal)
     }
 }

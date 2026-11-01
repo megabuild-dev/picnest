@@ -43,7 +43,18 @@ final class PhotoEditorViewModel {
     /// True while the Discard Edits dialog shows.
     var isConfirmingDiscard = false
 
+    private enum Slider: Equatable {
+        case straighten
+        case adjustment(AdjustmentKind)
+    }
+
     private var history = EditHistory()
+    private var pendingSlider: Slider?
+    private var dragStartCrop: NormalizedRect?
+    private var isDragging = false
+    @ObservationIgnored nonisolated(unsafe) private var idleCommit: Task<Void, Never>?
+    /// How long a slider change that has no end event waits for the next one before it is 1 undo step.
+    @ObservationIgnored var commitDelay: Duration = .milliseconds(600)
     private var index: Int
     /// The preview of the shown photo with no edit, and the id it belongs to.
     private var base: (id: MediaID, image: CGImage)?
@@ -88,7 +99,7 @@ final class PhotoEditorViewModel {
         loadStoredSize()
     }
 
-    deinit { previewTask?.cancel() }
+    deinit { previewTask?.cancel(); idleCommit?.cancel() }
 
     // MARK: - State
 
@@ -148,44 +159,89 @@ final class PhotoEditorViewModel {
         }
     }
 
-    /// Moves a crop handle by `dx` and `dy`, in 0…1 units of the frame, from where the crop is now.
-    /// The change is 1 undo step after `endDrag`.
+    /// Moves a crop handle. `dx` and `dy` are the whole translation since the drag started, in 0…1 units of the
+    /// frame, so a drag back after a clamp at an edge follows the pointer. The change is 1 undo step after `endDrag`.
     func dragCrop(_ handle: CropHandle, dx: Double, dy: Double) {
+        let start = dragStartCrop ?? edit.crop
+        dragStartCrop = start
         var e = edit
-        e.crop = CropGeometry.drag(e.crop, handle: handle, dx: dx, dy: dy, ratio: cropRatio, frameAspect: frameAspect)
+        e.crop = CropGeometry.drag(start, handle: handle, dx: dx, dy: dy, ratio: cropRatio, frameAspect: frameAspect)
         change(e, commit: false)
     }
 
     func setStraighten(_ degrees: Double) {
         var e = edit
         e.straighten = degrees
-        change(e, commit: false)
+        slide(.straighten, e)
     }
 
     func setAdjustment(_ kind: AdjustmentKind, _ value: Int) {
         var e = edit
         e[kind] = value
+        slide(.adjustment(kind), e)
+    }
+
+    /// A slider changed. A mouse drag ends with `endDrag`. A key or VoiceOver change has no end event, so it
+    /// becomes 1 undo step after `commitDelay` with no new change, or when another slider changes.
+    private func slide(_ key: Slider, _ e: PhotoEdit) {
+        if let pendingSlider, pendingSlider != key { history.commit() }
+        pendingSlider = key
         change(e, commit: false)
+        idleCommit?.cancel()
+        guard !isDragging else { return }
+        let delay = commitDelay
+        idleCommit = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            self?.finishChange()
+        }
+    }
+
+    /// The start of a drag of a slider with the mouse: no idle commit until `endDrag`.
+    func beginDrag() {
+        isDragging = true
+        idleCommit?.cancel()
     }
 
     /// The end of a drag of a handle or a slider: all its changes become 1 undo step.
     func endDrag() {
+        isDragging = false
+        finishChange()
+    }
+
+    private func finishChange() {
+        idleCommit?.cancel()
+        idleCommit = nil
+        pendingSlider = nil
+        dragStartCrop = nil
         history.commit()
     }
 
     func reset() {
+        finishPending()
         history.reset()
         refreshPreview()
     }
 
     func undo() {
+        finishPending()
         history.undo()
         refreshPreview()
     }
 
     func redo() {
+        finishPending()
         history.redo()
         refreshPreview()
+    }
+
+    /// Drops the state of a drag or a slider change that waits for its end, before undo, redo, or reset.
+    /// The history itself drops or keeps the shown value.
+    private func finishPending() {
+        idleCommit?.cancel()
+        idleCommit = nil
+        pendingSlider = nil
+        dragStartCrop = nil
     }
 
     private func change(_ e: PhotoEdit, commit: Bool) {
@@ -250,6 +306,7 @@ final class PhotoEditorViewModel {
     private func show(_ id: MediaID) {
         guard let target = photos.firstIndex(where: { $0.id == id }) else { return }
         index = target
+        finishPending()
         history = EditHistory()
         base = nil
         baseTask = nil
