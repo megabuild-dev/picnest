@@ -169,6 +169,66 @@ struct ReviewServiceTests {
         #expect(try f.sessions.load(source: f.source) == s.session)
     }
 
+    @Test func applyOrganizeReKeysFavoritesAndMembers() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.toggleFavorite(["a1.jpg", "b1.jpg"])
+        let id = try #require(s.createCollection(name: "Trip", adding: ["a2.jpg", "a1.jpg"]))
+        await s.applyOrganize([
+            OrganizeMove(mediaID: "a1.jpg", to: "A/001.jpg"),
+            OrganizeMove(mediaID: "a2.jpg", to: "A/002.jpg"),
+        ])
+        #expect(s.session.favoriteIDs == ["A/001.jpg", "b1.jpg"])
+        #expect(s.session.collections.first { $0.id == id }?.memberIDs == ["A/002.jpg", "A/001.jpg"])
+        #expect(try f.sessions.load(source: f.source) == s.session)
+    }
+
+    @Test func favoriteChangeIsSavedAndIsNotAnUndoStep() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.toggleFavorite(["a1.jpg"])
+        #expect(s.session.favoriteIDs == ["a1.jpg"])
+        #expect(try f.sessions.load(source: f.source)?.favoriteIDs == ["a1.jpg"])
+        #expect(!s.canUndo)
+        // A collection change is saved too, and does not clear redo.
+        s.dontMove(["a2.jpg"])
+        s.undo()
+        #expect(s.canRedo)
+        let id = try #require(s.createCollection(name: "Trip", adding: ["a1.jpg"]))
+        #expect(s.renameCollection(id, to: "Trips"))
+        s.addToCollection(["b1.jpg"], id)
+        s.removeFromCollection(["a1.jpg"], id)
+        #expect(s.canRedo)
+        await s.settled()
+        let saved = try #require(try f.sessions.load(source: f.source))
+        #expect(saved.collections.map(\.name) == ["Trips"] && saved.collections[0].memberIDs == ["b1.jpg"])
+        s.deleteCollection(id)
+        #expect(try f.sessions.load(source: f.source)?.collections == [])
+        #expect(s.createCollection(name: " ", adding: []) == nil)
+    }
+
+    @Test func trashedFavoriteStaysInTheSessionAndUndoBringsItBack() async throws {
+        let (f, _) = try fakeFixture()
+        let s = f.service
+        s.toggleFavorite(["a2.jpg"])
+        _ = await s.moveToTrash(["a2.jpg"])
+        #expect(s.session.favoriteIDs == ["a2.jpg"])
+        #expect(CollectionService.visibleFavorites(in: s.session).isEmpty)
+        s.undo()
+        await s.settled()
+        #expect(CollectionService.visibleFavorites(in: s.session) == ["a2.jpg"])
+    }
+
+    @Test func undoOfAMoveKeepsFavorites() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.toggleFavorite(["a1.jpg"])
+        s.move(["a2.jpg"], to: catB.id)
+        s.undo()
+        await s.settled()
+        #expect(s.session.favoriteIDs == ["a1.jpg"])
+    }
+
     /// Final review I4: a failed save sets `saveError`, and `retrySave` saves again.
     @Test func failedSaveCanBeRetried() async throws {
         let f = try fixture()
@@ -582,6 +642,17 @@ struct ReviewServiceTests {
         #expect(s.mediaByID["Holiday/p1.jpg"] != nil && s.mediaRevision == 1)
         #expect(!s.canUndo)
         #expect(s.folderError == nil)
+    }
+
+    @Test func folderRenameReKeysFavoritesAndMembers() async throws {
+        let (s, root, _, a) = try folderFixture()
+        defer { withExtendedLifetime(root) {} }
+        s.toggleFavorite(["A/p1.jpg"])
+        let id = try #require(s.createCollection(name: "Trip", adding: ["A/p2.jpg", "A/p1.jpg"]))
+        s.rename(a.id, to: "Holiday")
+        await s.settled()
+        #expect(s.session.favoriteIDs == ["Holiday/p1.jpg"])
+        #expect(s.session.collections.first { $0.id == id }?.memberIDs == ["Holiday/p2.jpg", "Holiday/p1.jpg"])
     }
 
     @Test func renamingACategoryWhoseFolderIsNotOnDiskStaysUndoable() async throws {

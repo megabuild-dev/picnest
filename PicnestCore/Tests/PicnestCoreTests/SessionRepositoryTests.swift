@@ -251,3 +251,19 @@ private func makeSession(source: String) -> Session {
     expected.collections = []
     #expect(try repo.load(source: source) == expected)
 }
+
+/// Moving the folder re-links the session. Favorites and collections stay (the ids are relative paths).
+@Test func relinkKeepsFavoritesAndCollections() throws {
+    let dir = try TempDir()
+    let repo = SessionRepository(root: dir.url.appending(path: "Sessions", directoryHint: .isDirectory))
+    let old = dir.url.appending(path: "Old", directoryHint: .isDirectory)
+    let new = dir.url.appending(path: "New", directoryHint: .isDirectory)
+    var s = makeSession(source: old.path)
+    s.favoriteIDs = ["a.jpg"]
+    s.collections = [PhotoCollection(name: "Trip", memberIDs: ["a.jpg"], order: 0)]
+    try repo.save(s)
+    let relinked = try #require(try repo.relink(from: old, to: new))
+    #expect(relinked.favoriteIDs == ["a.jpg"])
+    #expect(relinked.collections == s.collections)
+    #expect(try repo.load(source: new)?.favoriteIDs == ["a.jpg"])
+}

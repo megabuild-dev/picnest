@@ -172,7 +172,7 @@ public final class ReviewService {
     }
 
     /// Gives photos new paths: `map` holds the new path of each moved photo. Re-keys `scan.media` (id and
-    /// relativePath), `dates`, `states`, `trashed`, every `exampleIDs`, the image vectors, and the embedding
+    /// relativePath), `dates`, `states`, `trashed`, `favoriteIDs`, the collection members, every `exampleIDs`, the image vectors, and the embedding
     /// cache. Drops the duplicate state, because a moved group is a new group. Then saves the session.
     private func rekey(_ map: [MediaID: String]) async {
         var media: [MediaFile] = []
@@ -200,6 +200,7 @@ public final class ReviewService {
             moved.mediaID = map[record.mediaID] ?? record.mediaID
             return moved
         }
+        CollectionService.rekey(map, in: &session)
         session.notDuplicateKeys = []
         lastDuplicates = []
         pixelSizes = [:]
@@ -732,6 +733,48 @@ public final class ReviewService {
         let keeps = present.filter(g.keepIDs.contains)
         guard let keep = keeps.first else { return nil }
         return (g.kind, keep, keeps, present.filter { !protected.contains($0) })
+    }
+
+    // MARK: - Favorites and collections
+
+    // These are not review steps: they push no undo step and do not clear redo. They skip `perform`,
+    // because its guard compares only `categories` and `states`, so it would lose the change.
+
+    /// Adds the photos to the favorites, or removes them if all of them are favorites (`CollectionService`).
+    public func toggleFavorite(_ ids: [MediaID]) {
+        saveIfChanged(CollectionService.toggleFavorite(ids, in: &session))
+    }
+
+    /// Makes a collection with the photos. Returns nil when the name is empty or in use.
+    @discardableResult
+    public func createCollection(name: String, adding ids: [MediaID]) -> CollectionID? {
+        let id = CollectionService.create(name: name, adding: ids, in: &session)
+        saveIfChanged(id != nil)
+        return id
+    }
+
+    /// Returns false when the name is empty, in use, or the same as before.
+    @discardableResult
+    public func renameCollection(_ c: CollectionID, to name: String) -> Bool {
+        let changed = CollectionService.rename(c, to: name, in: &session)
+        saveIfChanged(changed)
+        return changed
+    }
+
+    public func deleteCollection(_ c: CollectionID) {
+        saveIfChanged(CollectionService.delete(c, in: &session))
+    }
+
+    public func addToCollection(_ ids: [MediaID], _ c: CollectionID) {
+        saveIfChanged(CollectionService.add(ids, to: c, in: &session))
+    }
+
+    public func removeFromCollection(_ ids: [MediaID], _ c: CollectionID) {
+        saveIfChanged(CollectionService.remove(ids, from: c, in: &session))
+    }
+
+    private func saveIfChanged(_ changed: Bool) {
+        if changed { save() }
     }
 
     // MARK: - Undo
