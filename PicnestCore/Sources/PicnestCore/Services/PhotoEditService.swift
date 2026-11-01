@@ -1,19 +1,27 @@
 import CoreGraphics
 import CoreImage
 import Foundation
+import ImageIO
 
-/// The Core Image pipeline of the photo editor, and (task 4.4) the export of an edited copy.
+/// The Core Image pipeline of the photo editor, and the export of an edited copy.
 public final class PhotoEditService: Sendable {
     /// The longest side of the preview, in pixels.
     public static let previewMaxPixel = 1600
+    /// The quality of a JPEG or HEIC export.
+    public static let exportQuality = 0.9
 
     private let thumbnails: ThumbnailService
     private let images: ImageRepository
+    private let writer: ImageExportRepository
     private let context: CIContext
 
-    public init(thumbnails: ThumbnailService, images: ImageRepository, context: CIContext = CIContext()) {
+    public init(
+        thumbnails: ThumbnailService, images: ImageRepository,
+        writer: ImageExportRepository = ImageExportRepository(), context: CIContext = CIContext()
+    ) {
         self.thumbnails = thumbnails
         self.images = images
+        self.writer = writer
         self.context = context
     }
 
@@ -124,5 +132,80 @@ public final class PhotoEditService: Sendable {
             ])
         }
         return ci
+    }
+
+    // MARK: - Export
+
+    /// `<stem> edited.<ext>` style names: `name`, or `name` with ` 2`, ` 3`, … before the extension,
+    /// so that no file in `folder` has it. Compares NFC and ignores case.
+    public static func uniqueName(_ name: String, in folder: URL) -> String {
+        let taken = Set(LocalFileOps().names(in: folder).map(SortPlanner.key))
+        return SortPlanner.uniqueName(name, taken: taken)
+    }
+
+    /// Writes the edited copy of `original` to `destination` and returns it. Never changes `original`.
+    /// Throws `wouldReplaceOriginal` when `destination` is the original or a protected photo. An existing
+    /// file at `destination` that is not protected is replaced. Runs off the caller's actor.
+    public func exportCopy(
+        of original: URL, edit: PhotoEdit, to destination: URL, format: ExportFormat, protected: ProtectedFiles
+    ) async throws -> URL {
+        guard !Self.isSameFile(destination, original), !protected.contains(destination) else {
+            throw PhotoExportError.wouldReplaceOriginal
+        }
+        guard FileManager.default.fileExists(atPath: original.path) else { throw PhotoExportError.originalMissing }
+        return try await Task.detached(priority: .userInitiated) { [self] in
+            guard let full = images.fullImage(at: original) else { throw PhotoExportError.cannotRead }
+            guard let edited = apply(edit, to: full.image) else {
+                throw PhotoExportError.cannotWrite("The edit cannot be applied.")
+            }
+            let replacing = FileManager.default.fileExists(atPath: destination.path)
+            try writer.write(
+                edited, to: destination, format: format, quality: Self.exportQuality,
+                properties: Self.exportProperties(from: full.properties, width: edited.width, height: edited.height),
+                replacing: replacing)
+            return destination
+        }.value
+    }
+
+    /// The properties of the original with orientation 1 (the pixels are upright), the new size, and no
+    /// thumbnail data.
+    static func exportProperties(from original: [CFString: Any], width: Int, height: Int) -> [CFString: Any] {
+        var props = original
+        props[kCGImagePropertyOrientation] = 1
+        props[kCGImagePropertyPixelWidth] = width
+        props[kCGImagePropertyPixelHeight] = height
+        props[kCGImagePropertyFileContentsDictionary] = nil
+        if var tiff = props[kCGImagePropertyTIFFDictionary] as? [CFString: Any] {
+            tiff[kCGImagePropertyTIFFOrientation] = 1
+            props[kCGImagePropertyTIFFDictionary] = tiff
+        }
+        if var exif = props[kCGImagePropertyExifDictionary] as? [CFString: Any] {
+            exif[kCGImagePropertyExifPixelXDimension] = width
+            exif[kCGImagePropertyExifPixelYDimension] = height
+            props[kCGImagePropertyExifDictionary] = exif
+        }
+        if var iptc = props[kCGImagePropertyIPTCDictionary] as? [CFString: Any] {
+            iptc[kCGImagePropertyIPTCImageOrientation] = nil
+            props[kCGImagePropertyIPTCDictionary] = iptc
+        }
+        return props
+    }
+
+    /// True when both URLs name the same file: by folder and name (NFC, ignoring case), through a symlink, or
+    /// as a hard link.
+    private static func isSameFile(_ a: URL, _ b: URL) -> Bool {
+        func key(_ u: URL) -> String {
+            (u.deletingLastPathComponent().canonicalKeyPath + "/" + u.lastPathComponent)
+                .precomposedStringWithCanonicalMapping.lowercased()
+        }
+        if key(a) == key(b) { return true }
+        func id(_ u: URL) -> [Int]? {
+            guard let attrs = try? FileManager.default.attributesOfItem(atPath: u.resolvingSymlinksInPath().path),
+                  let dev = (attrs[.systemNumber] as? NSNumber)?.intValue,
+                  let ino = (attrs[.systemFileNumber] as? NSNumber)?.intValue else { return nil }
+            return [dev, ino]
+        }
+        guard let x = id(a), let y = id(b) else { return false }
+        return x == y
     }
 }

@@ -56,11 +56,17 @@ enum TestImages {
         extra: [CFString: Any] = [:], options: [CFString: Any] = [:]
     ) throws {
         let image = try quadrantImage(width: width, height: height, orientation: orientation, colorSpace: colorSpace)
-        guard let dest = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, options as CFDictionary)
-        else { throw Failure.encode }
         var props: [CFString: Any] = extra
         if orientation != 1 { props[kCGImagePropertyOrientation] = orientation }
-        CGImageDestinationAddImage(dest, image, props as CFDictionary)
+        try save(image, to: url, type: type, properties: props, options: options)
+    }
+
+    static func save(
+        _ image: CGImage, to url: URL, type: UTType, properties: [CFString: Any] = [:], options: [CFString: Any] = [:]
+    ) throws {
+        guard let dest = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, options as CFDictionary)
+        else { throw Failure.encode }
+        CGImageDestinationAddImage(dest, image, properties as CFDictionary)
         guard CGImageDestinationFinalize(dest) else { throw Failure.encode }
     }
 
