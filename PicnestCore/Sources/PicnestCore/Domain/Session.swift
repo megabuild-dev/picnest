@@ -102,11 +102,15 @@ public struct TrashedPhoto: Codable, Sendable, Hashable {
     /// The path of the file in the Trash, from `trashItem(at:resultingItemURL:)`.
     public var trashPath: String
     public var time: Date
+    /// The state of the photo when the user trashed it. Put Back from Recently Deleted restores it.
+    /// Nil for a record from before Put Back, or for a photo that had no state. Decodes from a missing key as nil.
+    public var stateBeforeTrash: PhotoState?
 
-    public init(mediaID: MediaID, trashPath: String, time: Date) {
+    public init(mediaID: MediaID, trashPath: String, time: Date, stateBeforeTrash: PhotoState? = nil) {
         self.mediaID = mediaID
         self.trashPath = trashPath
         self.time = time
+        self.stateBeforeTrash = stateBeforeTrash
     }
 }
 

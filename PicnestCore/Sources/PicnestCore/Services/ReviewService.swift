@@ -27,6 +27,8 @@ public final class ReviewService {
     /// The photos that the last undo could not put back, or the last redo could not trash again
     /// (spec 7.4). Those photos stay as they were. Empty after an undo or redo with no error.
     public private(set) var lastUndoErrors: [TrashError] = []
+    /// The photos that the last `putBack(_:)` could not put back. They stay trashed. Empty after a good put back.
+    public private(set) var lastPutBackErrors: [TrashError] = []
     /// True while a Move to Trash, a clean-up, or a Trash undo or redo runs (final review I1). The app turns
     /// off Sort, Rescan, Done, and Undo Last Sort meanwhile; `settled()` waits until it is false.
     public private(set) var isMovingFiles = false
@@ -786,7 +788,7 @@ public final class ReviewService {
         lastUndoErrors = []
         guard fileOperations == 0, let change = undoStack.popLast() else { return }
         guard change.trashedIDs.isEmpty else {
-            runFileTask { await $0.putBack(change) }
+            runFileTask { await $0.undoTrashStep(change) }
             return
         }
         redoStack.append(snapshot())
@@ -964,7 +966,11 @@ public final class ReviewService {
         trashing.subtract(moving)
 
         // The files are in the Trash now, so record them even if the session changed meanwhile.
-        let done = result.done.filter { !session.trashedIDs.contains($0.mediaID) }
+        let done = result.done.filter { !session.trashedIDs.contains($0.mediaID) }.map { record in
+            var record = record
+            record.stateBeforeTrash = session.states[record.mediaID]
+            return record
+        }
         if !done.isEmpty {
             let moved = done.map(\.mediaID)
             var change = snapshot()
@@ -982,31 +988,37 @@ public final class ReviewService {
         return result.failed
     }
 
-    /// Undo of a Move to Trash step: puts each photo back off the main actor. A photo that comes back
-    /// gets its state and example places of `change` (the state before the trash). A photo that cannot
-    /// come back stays trashed and is reported in `lastUndoErrors`.
-    private func putBack(_ change: ReviewChange) async {
+    /// Moves the files of `records` back to their original places off the main actor. Changes no session
+    /// data: the callers do that for the photos in `back`. A photo that cannot come back is in `errors`.
+    private func putBackFiles(_ records: [TrashedPhoto]) async -> (back: Set<MediaID>, errors: [TrashError]) {
         let media = Dictionary(session.scan.media.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var errors: [TrashError] = []
         var items: [(record: TrashedPhoto, original: URL)] = []
-        for id in change.trashedIDs {
-            guard let record = session.trashed.first(where: { $0.mediaID == id }) else { continue }
-            guard let m = media[id] else {
-                errors.append(.cannotPutBack(id, "the photo is not in the session any more"))
+        for record in records {
+            guard let m = media[record.mediaID] else {
+                errors.append(.cannotPutBack(record.mediaID, "the photo is not in the session any more"))
                 continue
             }
             items.append((record, originalURL(of: m)))
         }
-        let epoch = redoEpoch
         let trash = trash
         let results = await Task.detached(priority: .userInitiated) {
             items.map { trash.putBack($0.record, to: $0.original) }
         }.value
-
         var back: Set<MediaID> = []
         for (item, error) in zip(items, results) {
             if let error { errors.append(error) } else { back.insert(item.record.mediaID) }
         }
+        return (back, errors)
+    }
+
+    /// Undo of a Move to Trash step: puts each photo back off the main actor. A photo that comes back
+    /// gets its state and example places of `change` (the state before the trash). A photo that cannot
+    /// come back stays trashed and is reported in `lastUndoErrors`.
+    private func undoTrashStep(_ change: ReviewChange) async {
+        let records = change.trashedIDs.compactMap { id in session.trashed.first { $0.mediaID == id } }
+        let epoch = redoEpoch
+        let (back, errors) = await putBackFiles(records)
         lastUndoErrors = errors
         guard !back.isEmpty else { return }
 
@@ -1024,6 +1036,36 @@ public final class ReviewService {
         updateFlags()
         save()
         recalculate()
+    }
+
+    /// Puts photos back from Recently Deleted (spec 7.4). Runs as a file task: it waits for a running undo
+    /// and blocks Sort and Rescan meanwhile (`isMovingFiles`); wait with `settled()`. A photo that comes
+    /// back gets its `stateBeforeTrash` when that state still refers to existing categories, else no state
+    /// (it is classified again). Example places do not come back. A photo that cannot come back stays
+    /// trashed and is in `lastPutBackErrors`. This is not an undo step and it clears the redo stack, so an
+    /// older undo step for the same photo does nothing for it.
+    public func putBack(_ ids: [MediaID]) {
+        lastPutBackErrors = []
+        runFileTask { service in
+            let records = ids.uniqued().compactMap { id in service.session.trashed.first { $0.mediaID == id } }
+            guard !records.isEmpty else { return }
+            let (back, errors) = await service.putBackFiles(records)
+            service.lastPutBackErrors = errors
+            guard !back.isEmpty else { return }
+
+            let categoryIDs = Set(service.session.categories.map(\.id))
+            for record in records where back.contains(record.mediaID) {
+                service.session.states[record.mediaID] = record.stateBeforeTrash.flatMap {
+                    Self.refersOnly(to: categoryIDs, $0) ? $0 : nil
+                }
+            }
+            service.session.trashed.removeAll { back.contains($0.mediaID) }
+            service.redoStack.removeAll()
+            service.redoEpoch += 1
+            service.updateFlags()
+            service.save()
+            service.recalculate()
+        }
     }
 
     private func originalURL(of m: MediaFile) -> URL {

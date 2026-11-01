@@ -995,6 +995,108 @@ struct ReviewServiceTests {
         #expect(s.session.trashedIDs == ["a2.jpg"])
     }
 
+    // MARK: - Put back from Recently Deleted
+
+    @Test func trashRecordsTheStateBeforeTrash() async throws {
+        let (f, _) = try fakeFixture()
+        let s = f.service
+        s.move(["a2.jpg"], to: catB.id)
+        _ = await s.moveToTrash(["a2.jpg", "x1.jpg"])
+        let records = Dictionary(uniqueKeysWithValues: s.session.trashed.map { ($0.mediaID, $0) })
+        #expect(records["a2.jpg"]?.stateBeforeTrash == .manual(catB.id))
+        #expect(records["x1.jpg"]?.stateBeforeTrash == .unreadable)
+    }
+
+    @Test func putBackRestoresFileStateAndFavorite() async throws {
+        let (f, ops) = try fakeFixture()
+        let s = f.service
+        s.move(["a2.jpg"], to: catB.id)
+        s.toggleFavorite(["a2.jpg"])
+        _ = await s.moveToTrash(["a2.jpg"])
+        #expect(s.session.states["a2.jpg"] == nil)
+
+        s.putBack(["a2.jpg"])
+        await s.settled()
+
+        #expect(s.lastPutBackErrors.isEmpty)
+        #expect(s.session.trashed.isEmpty)
+        #expect(ops.exists(f.source.appending(path: "a2.jpg")))
+        #expect(s.session.states["a2.jpg"] == .manual(catB.id))
+        #expect(s.session.favoriteIDs == ["a2.jpg"])
+        // Example places do not come back.
+        #expect(s.session.categories.allSatisfy { !$0.exampleIDs.contains("a2.jpg") })
+        #expect(try f.sessions.load(source: f.source) == s.session)
+    }
+
+    @Test func putBackOfAnEmptiedTrashKeepsTheRecord() async throws {
+        let (f, ops) = try fakeFixture()
+        let s = f.service
+        _ = await s.moveToTrash(["a2.jpg", "b1.jpg"])
+        ops.delete(URL(filePath: try #require(s.session.trashed.first { $0.mediaID == "a2.jpg" }).trashPath))
+
+        s.putBack(["a2.jpg", "b1.jpg"])
+        await s.settled()
+
+        #expect(s.lastPutBackErrors.count == 1)
+        #expect(s.lastPutBackErrors.first?.mediaID == "a2.jpg")
+        guard case .cannotPutBack = s.lastPutBackErrors.first else { Issue.record("expected cannotPutBack"); return }
+        #expect(s.session.trashedIDs == ["a2.jpg"])
+        #expect(ops.exists(f.source.appending(path: "b1.jpg")))
+    }
+
+    @Test func putBackWhenTheOriginalPathIsTakenKeepsTheRecord() async throws {
+        let (f, ops) = try fakeFixture()
+        let s = f.service
+        _ = await s.moveToTrash(["a2.jpg"])
+        ops.add(f.source.appending(path: "a2.jpg"))  // Another file took the place.
+
+        s.putBack(["a2.jpg"])
+        await s.settled()
+
+        #expect(s.lastPutBackErrors.count == 1)
+        #expect(s.session.trashedIDs == ["a2.jpg"])
+        s.putBack(["nope.jpg"])  // An id that is not trashed does nothing, and clears the errors.
+        await s.settled()
+        #expect(s.lastPutBackErrors.isEmpty)
+    }
+
+    @Test func putBackClearsRedo() async throws {
+        let (f, _) = try fakeFixture()
+        let s = f.service
+        _ = await s.moveToTrash(["a2.jpg"])
+        s.dontMove(["a1.jpg"])
+        s.undo()
+        #expect(s.canRedo)
+
+        s.putBack(["a2.jpg"])
+        await s.settled()
+
+        #expect(!s.canRedo)
+        // The old Trash step is still an undo step, but it does nothing for the photo now.
+        #expect(s.canUndo)
+        s.undo()  // Pops the old Trash step. The photo is not trashed any more, so nothing changes for it.
+        await s.settled()
+        #expect(s.session.trashed.isEmpty)
+        #expect(s.session.states["a2.jpg"] != nil)
+    }
+
+    @Test func putBackDropsAStateOfADeletedCategory() async throws {
+        let (f, _) = try fakeFixture()
+        let s = f.service
+        s.move(["a2.jpg"], to: catB.id)
+        _ = await s.moveToTrash(["a2.jpg"])
+        s.delete(catB.id)
+        await s.settled()
+
+        s.putBack(["a2.jpg"])
+        await s.settled()
+
+        #expect(s.session.trashed.isEmpty)
+        // The classifier sorts it again; it has no manual pick for the deleted category.
+        #expect(s.session.states["a2.jpg"] != .manual(catB.id))
+        #expect(s.session.states["a2.jpg"] != nil)
+    }
+
     /// A new action after a trash clears redo; a new trash clears redo too.
     @Test func moveToTrashClearsRedo() async throws {
         let (f, _) = try fakeFixture()

@@ -267,3 +267,13 @@ private func makeSession(source: String) -> Session {
     #expect(relinked.collections == s.collections)
     #expect(try repo.load(source: new)?.favoriteIDs == ["a.jpg"])
 }
+
+/// A record from before Put Back has no `stateBeforeTrash` key. It decodes as nil.
+@Test func oldTrashedPhotoWithoutStateDecodes() throws {
+    let json = Data(#"{"mediaID":"a.jpg","trashPath":"/Trash/a.jpg","time":1700000000}"#.utf8)
+    let record = try JSONDecoder().decode(TrashedPhoto.self, from: json)
+    #expect(record.stateBeforeTrash == nil)
+    let cat = UUID()
+    let with = TrashedPhoto(mediaID: "a.jpg", trashPath: "/Trash/a.jpg", time: Date(timeIntervalSince1970: 1), stateBeforeTrash: .manual(cat))
+    #expect(try JSONDecoder().decode(TrashedPhoto.self, from: JSONEncoder().encode(with)) == with)
+}
