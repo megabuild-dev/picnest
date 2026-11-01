@@ -41,7 +41,7 @@ struct ScanView: View {
         switch model.phase {
         case .preparingModel, .embedding:
             VStack(spacing: 10) {
-                Text(model.message).foregroundStyle(.secondary)
+                Text(model.message).foregroundStyle(Theme.textSecondary.color)
                 if let fraction = model.fraction {
                     ProgressView(value: fraction)
                 } else {
@@ -54,7 +54,7 @@ struct ScanView: View {
                     Text(count).monospacedDigit().foregroundStyle(Theme.textSecondary.color)
                 }
                 if let eta = model.etaText {
-                    Text(eta).font(.callout).foregroundStyle(.secondary)
+                    Text(eta).font(.callout).foregroundStyle(Theme.textSecondary.color)
                 }
             }
             Button("Cancel", action: model.cancel).buttonStyle(.bordered).keyboardShortcut(.cancelAction)
@@ -68,7 +68,7 @@ struct ScanView: View {
         case .permissionDenied:
             Text(model.message)
             Text("Allow access in System Settings, then choose the folder again.")
-                .font(.callout).foregroundStyle(.secondary)
+                .font(.callout).foregroundStyle(Theme.textSecondary.color)
             HStack {
                 Button("Back", action: model.back).buttonStyle(.bordered)
                 Button("Open System Settings", action: model.openSystemSettings).buttonStyle(.borderedProminent)

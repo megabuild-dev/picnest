@@ -71,11 +71,11 @@ struct SizeSlider: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: "square.grid.3x3").font(.system(size: 10)).foregroundStyle(.secondary)
+            Image(systemName: "square.grid.3x3").font(.system(size: 10)).foregroundStyle(Theme.textSecondary.color)
             Slider(value: Bindable(model).thumbnailSize, in: ReviewViewModel.thumbnailSizeRange)
                 .frame(width: 90)
                 .controlSize(.small)
-            Image(systemName: "square.grid.2x2").font(.system(size: 12)).foregroundStyle(.secondary)
+            Image(systemName: "square.grid.2x2").font(.system(size: 12)).foregroundStyle(Theme.textSecondary.color)
         }
         .help("Thumbnail size")
         .accessibilityElement(children: .combine)

@@ -77,6 +77,9 @@ enum Theme {
     /// Alpha of `badgeBackground`. At least 0.7 keeps the text readable on a white photo.
     static let badgeAlpha = 0.8
 
+    /// Shadows and the dim layer behind a blocking overlay. Used at an alpha of 0.12 to 0.2.
+    static let shadow = ThemeColor(light: 0x000000, dark: 0x000000)
+
     enum Metrics {
         static let tileCorner: CGFloat = 10
         static let gridSpacing: CGFloat = 12

@@ -133,21 +133,21 @@ struct ReviewView: View {
     @ViewBuilder private var organizingOverlay: some View {
         if model.isOrganizing {
             ZStack {
-                Color.black.opacity(0.12).ignoresSafeArea()
+                Theme.shadow.color.opacity(0.12).ignoresSafeArea()
                 VStack(spacing: 10) {
                     Text("Organizing photos…").font(.system(size: 13, weight: .semibold))
                     if let progress = model.organizeProgress, progress.total > 0 {
                         ProgressView(value: Double(progress.done), total: Double(progress.total))
                             .frame(width: 240)
                         Text("\(progress.done.formatted()) / \(progress.total.formatted())")
-                            .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary)
+                            .font(.system(size: 11)).monospacedDigit().foregroundStyle(Theme.textSecondary.color)
                     } else {
                         ProgressView().controlSize(.small)
                     }
                 }
                 .padding(20)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                .shadow(color: .black.opacity(0.2), radius: 14, y: 6)
+                .shadow(color: Theme.shadow.color.opacity(0.2), radius: 14, y: 6)
             }
         }
     }
@@ -352,7 +352,7 @@ extension ReviewView {
 }
 
 extension ReviewView {
-    /// The Not sure view: 6 uncertain photos in 3 groups.
+    /// The Needs Review view: 6 uncertain photos in 3 groups.
     fileprivate init(previewNotSure: Void) {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),

@@ -55,7 +55,7 @@ struct SidebarView: View {
         return row(counts, .category(id), Text(verbatim: category.displayName), icon: .emoji(category.emoji))
             .background {
                 if dropTarget == id {
-                    RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.22))
+                    RoundedRectangle(cornerRadius: 6).fill(Theme.accent.color.opacity(0.22))
                         .padding(-4)
                 }
             }
@@ -123,6 +123,6 @@ private struct SidebarIcon: View {
         }
         .frame(width: 22, height: 22)
         .background(.background, in: RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(0.08), lineWidth: 0.5))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.textPrimary.color.opacity(0.08), lineWidth: 0.5))
     }
 }

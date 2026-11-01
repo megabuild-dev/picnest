@@ -21,8 +21,8 @@ struct SelectionBar: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.primary.opacity(0.1), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.14), radius: 11, y: 6)
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.textPrimary.color.opacity(0.1), lineWidth: 0.5))
+        .shadow(color: Theme.shadow.color.opacity(0.14), radius: 11, y: 6)
     }
 
     private var libraryContent: some View {
@@ -56,7 +56,7 @@ struct SelectionBar: View {
             KeyCap("⌘Z")
             Text("undo")
         }
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Theme.textSecondary.color)
         .fixedSize()
     }
 
@@ -67,7 +67,7 @@ struct SelectionBar: View {
             Text(verbatim: "–")
             KeyCap("9")
         }
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Theme.textSecondary.color)
         .fixedSize()
     }
 }
@@ -80,7 +80,7 @@ struct SelectionActions: View {
     var body: some View {
         if model.canAcceptSelection {
             Button("Accept Best Guess", systemImage: "checkmark", action: model.acceptSelection)
-                .tint(.accentColor)
+                .tint(Theme.accent.color)
                 .help("Move the selected Needs Review photos to their best guess")
         }
         Menu("Move to…") { MoveToMenuItems(model: model) }
@@ -156,6 +156,6 @@ private struct KeyCap: View {
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
             .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 4))
-            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(.primary.opacity(0.15), lineWidth: 0.5))
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.textPrimary.color.opacity(0.15), lineWidth: 0.5))
     }
 }

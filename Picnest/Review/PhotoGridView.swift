@@ -31,7 +31,7 @@ struct PhotoGridView: View {
     }
 }
 
-/// A tile with its click, double-click and drag behavior. Shared by the flat grid and the Not sure groups.
+/// A tile with its click, double-click and drag behavior. Shared by the flat grid and the Needs Review groups.
 struct SelectableTile: View {
     let model: ReviewViewModel
     let id: MediaID

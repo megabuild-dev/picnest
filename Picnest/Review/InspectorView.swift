@@ -22,7 +22,7 @@ struct InspectorView: View {
                 }
             } else {
                 Text("Select a photo to see its details.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary.color)
                     .multilineTextAlignment(.center)
                     .padding(24)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -99,7 +99,7 @@ private struct SinglePhoto: View {
 
     private func row(_ label: LocalizedStringKey, @ViewBuilder value: () -> some View) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(label).foregroundStyle(.secondary)
+            Text(label).foregroundStyle(Theme.textSecondary.color)
             Spacer(minLength: 8)
             value().multilineTextAlignment(.trailing)
         }
@@ -146,7 +146,7 @@ private struct SinglePhoto: View {
         HStack(spacing: 8) {
             if facts.isUncertain {
                 Button("Accept suggestion", systemImage: "checkmark", action: model.acceptSelection)
-                    .tint(.accentColor)
+                    .tint(Theme.accent.color)
                 Menu("Choose category…") { MoveToMenuItems(model: model) }
                     .menuStyle(.button).fixedSize()
             } else {

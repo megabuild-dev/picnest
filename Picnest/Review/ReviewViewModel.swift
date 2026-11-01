@@ -45,7 +45,7 @@ final class ReviewViewModel {
         case you
     }
 
-    /// The Not sure photos with the same best guess (spec 3.4).
+    /// The Needs Review photos with the same best guess (spec 3.4).
     struct NotSureGroup: Hashable, Identifiable {
         let category: CategoryID
         let categoryName: String
@@ -181,7 +181,7 @@ final class ReviewViewModel {
     @ObservationIgnored private var sessionChanged = false
     /// The cached `notSureGroups`, for the order they were made for. Dropped with `cache` when the session changes.
     @ObservationIgnored private var groupsCache: (order: SortOrder, filter: GroupFilter, groups: [NotSureGroup])?
-    /// How many times the Not sure groups were made. For tests.
+    /// How many times the Needs Review groups were made. For tests.
     @ObservationIgnored private(set) var groupComputations = 0
     /// How many times the list was filtered and sorted. For tests.
     @ObservationIgnored private(set) var listComputations = 0
@@ -418,7 +418,7 @@ final class ReviewViewModel {
         case noneChosen
     }
 
-    /// The empty state of the flat grid, or nil when it has photos. The Not sure and Duplicates views
+    /// The empty state of the flat grid, or nil when it has photos. The Needs Review and Duplicates views
     /// have their own empty views, and a list with no search text keeps the plain "No Photos" message
     /// unless the whole folder is empty.
     var emptyState: EmptyState? {
@@ -494,15 +494,15 @@ final class ReviewViewModel {
         }
     }
 
-    // MARK: - Not sure
+    // MARK: - Needs Review
 
     /// The open Suggest Categories sheet, or nil.
     var suggest: SuggestViewModel?
 
-    /// **Suggest Categories…** shows in the Not sure view when it has at least 7 photos (spec 3.4).
+    /// **Suggest Categories…** shows in the Needs Review view when it has at least 7 photos (spec 3.4).
     var canSuggest: Bool { count(of: .notSure) >= SuggestionService.minimumPhotos }
 
-    /// Shows the Not sure view and opens the suggest sheet.
+    /// Shows the Needs Review view and opens the suggest sheet.
     func openSuggest() {
         selectedItem = .notSure
         let thumbnails = thumbnails, review = review, source = source
@@ -517,7 +517,7 @@ final class ReviewViewModel {
 
     func closeSuggest() { suggest = nil }
 
-    /// Opens the suggest sheet when a scan opened this review and many images are Not sure (spec 3.7).
+    /// Opens the suggest sheet when a scan opened this review and many images are Needs Review (spec 3.7).
     /// Runs once per review: a closed sheet does not open again until the next scan.
     func suggestAfterScanIfNeeded() {
         guard suggestAfterScanPending else { return }
@@ -785,7 +785,7 @@ final class ReviewViewModel {
     /// else `id`. Pure: it does not change the selection.
     func contextTargets(for id: MediaID) -> [MediaID] { dragIDs(for: id) }
 
-    /// True if at least 1 of `ids` is in "Not sure". Pure.
+    /// True if at least 1 of `ids` is in "Needs Review". Pure.
     func canAccept(_ ids: [MediaID]) -> Bool {
         let states = review.session.states
         return ids.contains { states[$0]?.isNotSure == true }
@@ -861,7 +861,7 @@ final class ReviewViewModel {
 
     // MARK: - Photo actions
 
-    /// True if at least 1 selected photo is in "Not sure", so **Accept Best Guess** has work to do.
+    /// True if at least 1 selected photo is in "Needs Review", so **Accept Best Guess** has work to do.
     var canAcceptSelection: Bool {
         let states = review.session.states
         return selection.contains { states[$0]?.isNotSure == true }
@@ -973,7 +973,7 @@ final class ReviewViewModel {
         review.session.categories.first { $0.id == c }?.displayName ?? ""
     }
 
-    /// Deletes `c`: its photos go to the Trash, and its folder goes. The Not sure list shows if `c` was showing.
+    /// Deletes `c`: its photos go to the Trash, and its folder goes. The Needs Review list shows if `c` was showing.
     func deleteCategory(_ c: CategoryID) async {
         guard canDeleteCategory else { return }
         if selectedItem == .category(c) { selectedItem = .notSure }
@@ -1260,7 +1260,7 @@ final class ReviewViewModel {
         return keys.sorted(by: order).map(\.id)
     }
 
-    /// "or <name> <n>%" in Not sure if there is a second guess; else the date, or "no date" when only
+    /// "or <name> <n>%" in Needs Review if there is a second guess; else the date, or "no date" when only
     /// the modification time is known (spec 3.3).
     private func secondLine(_ id: MediaID, state: PhotoState?, session: Session) -> String {
         if selectedItem == .notSure, let a = Self.assignment(state), let second = a.secondCategoryID,
