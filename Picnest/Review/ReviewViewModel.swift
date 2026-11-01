@@ -1358,6 +1358,11 @@ final class ReviewViewModel {
         }
     }
 
+    /// The collection that the open sheet renames. Its own name is not a duplicate. Nil for a new collection.
+    var collectionSheetExcluding: CollectionID? {
+        if case .rename(let c) = editingCollection { c } else { nil }
+    }
+
     /// The title of the confirmation dialog before a collection is deleted.
     func deleteCollectionTitle(for c: CollectionID) -> String {
         let name = collections.first { $0.id == c }?.name ?? ""
@@ -1595,16 +1600,6 @@ final class ReviewViewModel {
         switch state {
         case .auto(let a), .heldNotSure(let a): a
         default: nil
-        }
-    }
-}
-
-extension CollectionNameIssue {
-    /// The text under the name field of the collection sheet.
-    var message: LocalizedStringKey {
-        switch self {
-        case .empty: "Enter a name."
-        case .duplicate: "A collection with this name already exists."
         }
     }
 }

@@ -18,11 +18,9 @@ struct CollectionNameSheet: View {
         _name = State(initialValue: model.collectionSheetName)
     }
 
-    private var excluding: CollectionID? {
-        if case .rename(let c) = editor { c } else { nil }
+    private var issue: CollectionNameIssue? {
+        model.validateCollectionName(name, excluding: model.collectionSheetExcluding)
     }
-
-    private var issue: CollectionNameIssue? { model.validateCollectionName(name, excluding: excluding) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -77,5 +75,15 @@ struct CollectionNameSheet: View {
     private func save() {
         touched = true
         model.saveCollection(name: name)
+    }
+}
+
+extension CollectionNameIssue {
+    /// The text under the name field of the collection sheet.
+    var message: LocalizedStringKey {
+        switch self {
+        case .empty: "Enter a name."
+        case .duplicate: "A collection with this name already exists."
+        }
     }
 }

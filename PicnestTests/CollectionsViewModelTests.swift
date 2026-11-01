@@ -312,4 +312,56 @@ struct CollectionsViewModelTests {
         model.selectedItem = .collection(box.id)
         #expect(model.selectedCollection?.name == "Trip")
     }
+
+    // MARK: - Follow-ups of the review of 3.6 and 3.7
+
+    @Test func testPutBackSelectionSuccessReturnsThePhotos() async throws {
+        let ops = FakeTrashFileOps()
+        let (model, review) = try make(trashOps: ops)
+        select(model, ["a.jpg"])
+        await model.trashSelection()
+        #expect(review.session.trashedIDs == ["a.jpg"])
+        model.selectedItem = .recentlyDeleted
+        select(model, ["a.jpg"])
+        model.putBackSelection()
+        await model.settled()
+        #expect(model.putBackErrorMessage == nil)
+        #expect(review.session.trashedIDs.isEmpty)
+        #expect(model.visibleIDs.isEmpty)
+        #expect(model.selection.isEmpty)
+        model.selectedItem = .all
+        #expect(model.visibleIDs.contains("a.jpg"))
+    }
+
+    @Test func testPutBackErrorMessageCountsTheOtherErrors() async throws {
+        let (model, review) = try make { session in
+            session.trashed = ["a.jpg", "b.jpg", "c.jpg"].map {
+                TrashedPhoto(mediaID: $0, trashPath: "/t/\($0)", time: Date())
+            }
+        }
+        model.selectedItem = .recentlyDeleted
+        model.selectAll()
+        model.putBackSelection()
+        await model.settled()
+        let message = try #require(model.putBackErrorMessage)
+        #expect(message.hasSuffix("(and 2 more)"))
+        #expect(review.session.trashedIDs.count == 3)
+    }
+
+    @Test func testRenameCollectionToItsOwnName() throws {
+        let box = collection("Trip", ["a.jpg"])
+        let (model, review) = try make { $0.collections = [box] }
+        model.requestRenameCollection(box.id)
+        #expect(model.collectionSheetExcluding == box.id)
+        #expect(model.validateCollectionName("Trip", excluding: model.collectionSheetExcluding) == nil)
+        #expect(model.saveCollection(name: "Trip"))
+        #expect(model.editingCollection == nil)
+        #expect(review.session.collections.map(\.name) == ["Trip"])
+        // Only the case changes: allowed, because the collection does not clash with itself.
+        model.requestRenameCollection(box.id)
+        #expect(model.saveCollection(name: "trip"))
+        #expect(review.session.collections.map(\.name) == ["trip"])
+        model.requestNewCollection(adding: [])
+        #expect(model.collectionSheetExcluding == nil)
+    }
 }
