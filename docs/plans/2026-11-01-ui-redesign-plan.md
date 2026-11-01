@@ -365,10 +365,11 @@ Core tests use Swift Testing (`@Test func name()`), as in `PicnestCore/Tests/Pic
 | Move sort (`SortService.run`, mode `.move`) | Files go outside the source. The session is not re-keyed | Kept in the session. **Undo Last Sort** brings the files back to the same paths |
 | Rescan after a Move sort, with no undo | The files are not in the source folder | **Lost**, as for category picks. No key can fix this |
 | Trash, then **Put Back** (undo or Recently Deleted) | The record keeps the `MediaID`. The file returns to the same path | Kept, if trash does not strip them (task 3.3) |
+| Trash, then rescan before **Put Back** | The file is not in the new scan. Rescan clears `trashed` | **Lost**. A later Put Back in Finder gives a new photo with no favorite |
 | Source folder moved (`SessionRepository.relink`) | Only `sourcePath` changes | Kept |
 | **Start Over** (`deleteSessionFile`) | Deletes `session.json` | **Lost**. The confirmation text says so (task 3.6) |
 
-Content hash is rejected as the key, for 3 reasons:
+The plan rejects content hash as the key, for 3 reasons:
 - `HashRepository` hashes only files whose size matches another file. A key for every photo needs a full read of the library at each scan.
 - 2 exact copies have 1 hash. A favorite on 1 copy then marks both copies, and Duplicates clean-up gets confusing.
 - The only event that a hash saves is a rename in Finder. The app already treats that file as a new photo.
@@ -416,8 +417,8 @@ Each line has a test or a check in the named task.
 
 **Interfaces:**
 - Consumes: task 3.1 types.
-- Produces: `public enum CollectionService` with static, pure functions. Each `-> Bool` function returns `true` when the session changed. A "usable id" is in `scan.media` and not in `trashedIDs`. Other ids are ignored.
-  - `validateName(_ name: String, excluding: CollectionID?, among: [PhotoCollection]) -> CollectionNameIssue?`. Trim spaces. Compare `precomposedStringWithCanonicalMapping`, case-insensitive. A category with the same name is allowed.
+- Produces: `public enum CollectionService` with static, pure functions. Each `-> Bool` function returns `true` when the session changed. A "usable id" is in `scan.media` and not in `trashedIDs`. The functions ignore other ids.
+  - `validateName(_ name: String, excluding: CollectionID?, among: [PhotoCollection]) -> CollectionNameIssue?`. Trim spaces. Compare `precomposedStringWithCanonicalMapping`, case-insensitive. A category can have the same name.
   - `toggleFavorite(_ ids: [MediaID], in s: inout Session) -> Bool`. If every usable id is a favorite, remove all. Else add all (rule of Apple Photos).
   - `create(name: String, adding ids: [MediaID], in s: inout Session) -> CollectionID?`. Nil when the name has an issue. Stores the trimmed name. `order` is the highest order + 1.
   - `rename(_ c: CollectionID, to name: String, in s: inout Session) -> Bool`, `delete(_ c: CollectionID, in s: inout Session) -> Bool` (renumbers `order` from 0).
@@ -461,7 +462,7 @@ Each line has a test or a check in the named task.
 - Rule: rescan still sets `session.trashed = []`. Recently Deleted is empty after a rescan. The files stay in the macOS Trash. This is a loss and an owner question (see "Open questions").
 
 - [ ] **Step 1: Write the failing tests** with the `rescan(_:_:source:)` helper: `rescanKeepsFavoritesAndMembersAtTheSamePath`, `rescanDropsFavoritesAndMembersOfRemovedFiles`, `rescanKeepsFavoriteOfAFileThatIsBackAtItsPath` (old session lists it in `trashed`). In `LibraryServiceTests`, `moveSortThenUndoKeepsFavorites`: Move sort with a real journal (copy the setup of `undoLastSortReversesTheJournalAndClearsSortedAt`), `undoLastSort`, rescan, the favorite is there.
-- [ ] **Step 2: Run** them. Expected: the 2 prune tests FAIL. The others can pass already. Keep them as guards.
+- [ ] **Step 2: Run** them. Expected: only `rescanDropsFavoritesAndMembersOfRemovedFiles` fails (`var session = old` keeps every id). The others pass already. Keep them as guards.
 - [ ] **Step 3: Implement** the prune in `runRescan`. Update its doc comment.
 - [ ] **Step 4: Run the core tests.** Expected: PASS.
 - [ ] **Step 5: Commit** `feat(core): rescan keeps favorites and collections of found files`.
@@ -476,7 +477,7 @@ Each line has a test or a check in the named task.
 - Produces: `TrashedPhoto.stateBeforeTrash: PhotoState?` (new `init` parameter, default `nil`). Synthesized `Codable` decodes a missing key as `nil`. `trashFiles` fills it from `session.states` before `strip`.
 - Produces: `ReviewService.putBack(_ ids: [MediaID])` and `public private(set) var lastPutBackErrors: [TrashError]`. It runs through `runFileTask`, so it waits for a running ⌘Z and blocks Sort and Rescan (`isMovingFiles`). Wait with `settled()`.
 - Rule: extract 1 private helper `putBackFiles(_ records: [TrashedPhoto]) async -> (back: Set<MediaID>, errors: [TrashError])`. The undo put-back and `putBack(_:)` both call it. Do not copy the loop.
-- Rule: a photo that comes back gets `stateBeforeTrash` when `refersOnly(to:)` the current categories. Else it gets no state and is classified again. Example places do not come back. The step is not an undo step and clears the redo stack (`redoEpoch += 1`). An old undo step for the same photo then does nothing for it.
+- Rule: a photo that comes back gets `stateBeforeTrash` when `refersOnly(to:)` the current categories. Else it gets no state, and the classifier sorts it again. Example places do not come back. The step is not an undo step and clears the redo stack (`redoEpoch += 1`). An old undo step for the same photo then does nothing for it.
 - Produces: `ThumbnailService.thumbnail(at url: URL, maxPixel: Int) async -> CGImage?`. `thumbnail(for:source:maxPixel:)` calls it.
 
 - [ ] **Step 1: Write the failing tests:** `oldTrashedPhotoWithoutStateDecodes`, `trashRecordsTheStateBeforeTrash`, `putBackRestoresFileStateAndFavorite` (manual pick and favorite are back; the record is gone), `putBackOfAnEmptiedTrashKeepsTheRecord` (`FakeTrashFileOps.forget`; `lastPutBackErrors` holds 1 `cannotPutBack`; Review Focus 3), `putBackWhenTheOriginalPathIsTakenKeepsTheRecord`, `putBackClearsRedo`, `putBackDropsAStateOfADeletedCategory`, `thumbnailAtURLReadsAnyFile`.
@@ -499,7 +500,7 @@ Each line has a test or a check in the named task.
 - Produces: `EmptyState` cases `.noFavorites`, `.emptyCollection`, `.nothingDeleted`.
 - Produces: `collections: [PhotoCollection]` (by `order`), `isFavorite(_ id: MediaID) -> Bool`, `toggleFavoriteSelection()`, `addSelection(to c: CollectionID)`, `removeSelectionFromCollection()` (only when `selectedItem` is a collection), `dropOnCollection(_ ids: [MediaID], _ c: CollectionID) -> Bool`, `putBackSelection()`, `putBackErrorMessage: String?` (text from `CoreErrorMessages.text(for:)`).
 - Produces: `enum CollectionEditor: Identifiable { case new(name: String, adding: [MediaID]); case rename(CollectionID) }`, `editingCollection: CollectionEditor?`, `requestNewCollection(name: String = "", adding: [MediaID])`, `saveCollection(name: String) -> Bool`, `validateCollectionName(_ name: String, excluding: CollectionID?) -> CollectionNameIssue?`, `deletingCollection: CollectionID?`, `deleteCollection(_ c: CollectionID)`.
-- Rule: a deleted collection that is selected moves `selectedItem` to `.all`.
+- Rule: when the user deletes the selected collection, set `selectedItem` to `.all`.
 - Copy (en): **Favorites**, **Collections**, **Recently Deleted**, **No Favorites** / "Click the heart on a photo to add it here.", **This Collection Is Empty** / "Drag photos here, or click Add Photos.", **Nothing Recently Deleted** / "Photos you move to the Trash show here until the next rescan.", "A collection with this name already exists.". Reuse the key "Enter a name." Start Over text gets the sentence "Your favorites and collections are lost too." in both variants. vi draft: **Mục ưa thích**, **Bộ sưu tập**, **Đã xóa gần đây** (use the `xóa` spelling of the catalog).
 
 - [ ] **Step 1: Write the failing tests:** `testFavoritesListsOnlyVisibleFavorites` (a trashed favorite is not listed; Review Focus 2), `testCollectionListsItsMembers`, `testSidebarCountsForNewItems` (favorites, each collection, recently deleted), `testRecentlyDeletedListsNewestFirst`, `testRecentlyDeletedHonorsSearch`, `testToggleFavoriteSelection`, `testNewCollectionAddsTheSelection`, `testDeletingTheSelectedCollectionSelectsAllPhotos`, `testRemoveFromCollectionOnlyInACollection`, `testEmptyStatesOfNewItems`, `testStartOverMessageNamesFavoritesAndCollections`, `testNewItemsHideChipsAndShowSlider`.
@@ -511,7 +512,7 @@ Each line has a test or a check in the named task.
 ### Task 3.7: Sidebar sections and the collection sheet
 
 **Files:**
-- Modify: `Picnest/Review/SidebarView.swift`, `Picnest/Review/ReviewView.swift` (host the sheet and the delete dialog, as for categories)
+- Modify: `Picnest/Review/SidebarView.swift`, `Picnest/Review/ReviewView.swift` (host the sheet and the delete dialog, as for categories), `Picnest/Localizable.xcstrings`
 - Create: `Picnest/Review/CollectionNameSheet.swift`
 
 **Interfaces:**
@@ -527,11 +528,11 @@ Each line has a test or a check in the named task.
 ### Task 3.8: Favorite and collection actions, Recently Deleted screen
 
 **Files:**
-- Modify: `Picnest/Review/PhotoTile.swift`, `InspectorView.swift`, `SelectionBar.swift` (`PhotoContextMenu`, selection actions), `PhotoGridView.swift`, `PhotoListView.swift`, `ReviewView.swift`, `ReviewViewModel.swift` (thumbnail of a trashed id)
+- Modify: `Picnest/Review/PhotoTile.swift`, `InspectorView.swift`, `SelectionBar.swift` (`PhotoContextMenu`, selection actions), `PhotoGridView.swift`, `PhotoListView.swift`, `ReviewView.swift`, `ReviewViewModel.swift` (thumbnail of a trashed id), `Picnest/Localizable.xcstrings`
 
 **Interfaces:**
 - Consumes: task 3.6, `ThumbnailService.thumbnail(at:maxPixel:)` (task 3.5).
-- Produces: tile and list row show `heart.fill` in `Theme.accent` for a favorite, bottom right. The VoiceOver label adds "Favorite".
+- Produces: a heart button on the tile, bottom right. It shows on hover, and always for a favorite (`heart.fill`, `Theme.accent`). A click toggles only that photo and does not change the selection. The list row shows the same button. The VoiceOver label adds "Favorite", and an accessibility action toggles it.
 - Produces: inspector heart button next to the file name (mockup 01). Labels **Add to Favorites** and **Remove from Favorites**.
 - Produces: context menu items **Add to Favorites** or **Remove from Favorites**, **Add to Collection** (menu of collections, then **New Collection…**), and **Remove from Collection** in a collection. The selection bar more menu gets the same items. Reuse 1 view for both.
 - Produces: in Recently Deleted, the context menu has only **Put Back**. The selection bar shows **Put Back**. The inspector shows the facts and **Put Back**. `ReviewViewModel.thumbnail(_:maxPixel:)` reads `trashPath` for a trashed id.
@@ -547,7 +548,7 @@ Each line has a test or a check in the named task.
 
 **Files:**
 - Create: `Picnest/Review/AddPhotosSheet.swift`
-- Modify: `Picnest/Review/CategoryHeaderView.swift` (extract the shared header layout), `Picnest/Review/EditCategorySheet.swift`, `Picnest/Review/ReviewViewModel.swift`, `ReviewView.swift`
+- Modify: `Picnest/Review/CategoryHeaderView.swift` (extract the shared header layout), `Picnest/Review/EditCategorySheet.swift`, `Picnest/Review/ReviewViewModel.swift`, `ReviewView.swift`, `Picnest/Localizable.xcstrings`
 - Test: `PicnestTests/CollectionsViewModelTests.swift`
 
 **Interfaces:**
@@ -566,7 +567,7 @@ Each line has a test or a check in the named task.
 **Files:** `docs/dictionary.md`, `docs/specs/2026-11-01-ui-redesign-design.md`, this plan.
 
 - [ ] **Step 1: Dictionary.** Add Favorite, Collection, Recently Deleted, Put Back. Each says if it moves a file. Example: "Collection: a named group of photos. It does not move a file."
-- [ ] **Step 2: Spec 4.4.** Add 2 lines: the key is `MediaID`, and the data is in `Session`. Link to this plan section. Name the 3 loss events: Finder rename, rescan after a Move sort, **Start Over**.
+- [ ] **Step 2: Spec 4.4.** Add 2 lines: the key is `MediaID`, and the data is in `Session`. Link to this plan section. Name the 4 loss events: Finder rename, rescan after a Move sort, rescan while a photo is in the Trash, **Start Over**.
 - [ ] **Step 3: Run both test suites and the catalog check.** Expected: PASS, exit 0.
 - [ ] **Step 4: Compare** the sidebar with mockups 01, 02, 03 in Light and Dark. Write the differences in a list for the owner.
 - [ ] **Step 5: Merge phase 3** into `ui-redesign`. Tick the Status line.
