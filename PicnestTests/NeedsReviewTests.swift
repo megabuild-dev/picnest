@@ -87,14 +87,14 @@ struct NeedsReviewTests {
     @Test func testSelectGroupSelectsOnlyMatches() throws {
         let model = try makeModel()
         model.searchText = "trip"
-        model.selectGroup(at: 0)
+        model.selectGroup(model.notSureGroups[0])
         #expect(model.selection == ["trip1.jpg", "trip2.jpg"])
     }
 
     @Test func testAcceptGroupAcceptsOnlyMatches() throws {
         let model = try makeModel()
         model.searchText = "trip"
-        model.acceptGroup(at: 0)
+        model.acceptGroup(model.notSureGroups[0])
         #expect(model.count(of: .changedByYou) == 2)
         #expect(model.count(of: .notSure) == 5)
         model.searchText = ""

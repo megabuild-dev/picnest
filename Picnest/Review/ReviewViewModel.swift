@@ -591,20 +591,29 @@ final class ReviewViewModel {
         return sortedGroups
     }
 
-    /// **Accept N** of the group at `index`: the shown photos of the group go to the best guess and become
+    /// The photos of the rendered `group` that still show in its category group: visible and still Needs Review.
+    /// The order of the groups can change between the render and the click, so the group is found again by its
+    /// category and never by its position.
+    private func shownIDs(of group: NotSureGroup) -> [MediaID] {
+        guard let current = notSureGroups.first(where: { $0.category == group.category }) else { return [] }
+        let rendered = Set(group.ids)
+        return current.ids.filter(rendered.contains)
+    }
+
+    /// **Accept N** of the rendered `group`: its photos that still show go to the best guess and become
     /// "Changed by you". Hidden photos (search, issue filter) stay in Needs Review.
-    func acceptGroup(at index: Int) {
-        let groups = notSureGroups
-        guard groups.indices.contains(index) else { return }
-        review.acceptBestGuess(groups[index].ids)
+    func acceptGroup(_ group: NotSureGroup) {
+        let ids = shownIDs(of: group)
+        guard !ids.isEmpty else { return }
+        review.acceptBestGuess(ids)
         dropHiddenSelection(visible: visibleIDs)
     }
 
-    /// **Select All** of the group at `index`: replaces the selection with the shown photos of the group.
-    func selectGroup(at index: Int) {
-        let groups = notSureGroups
-        guard groups.indices.contains(index), let first = groups[index].ids.first else { return }
-        selection = Set(groups[index].ids)
+    /// **Select All** of the rendered `group`: replaces the selection with its photos that still show.
+    func selectGroup(_ group: NotSureGroup) {
+        let ids = shownIDs(of: group)
+        guard let first = ids.first else { return }
+        selection = Set(ids)
         anchor = first
     }
 
