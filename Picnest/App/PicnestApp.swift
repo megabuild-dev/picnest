@@ -11,7 +11,7 @@ struct PicnestApp: App {
         Window("Picnest", id: "main") {
             Group {
                 if let environment = delegate.environment, let app = delegate.app {
-                    RootView(app: app, environment: environment)
+                    RootView(app: app, environment: environment, relauncher: delegate.relauncher)
                 } else {
                     Color.clear
                 }
