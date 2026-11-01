@@ -12,7 +12,7 @@ struct NeedsReviewHeader: View {
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(Theme.textPrimary.color)
                     .accessibilityAddTraits(.isHeader)
-                Text("\(model.count(of: .notSure)) photos need a quick check")
+                Text(CountText.needQuickCheck(model.count(of: .notSure)))
                     .font(.system(size: 15))
                     .foregroundStyle(Theme.textSecondary.color)
             }

@@ -7,6 +7,16 @@ enum CountText {
         String(localized: "\(n) photos", locale: locale)
     }
 
+    /// "N photos need a quick check", the line under the Needs Review title.
+    static func needQuickCheck(_ n: Int, locale: Locale = .current) -> String {
+        String(localized: "\(n) photos need a quick check", locale: locale)
+    }
+
+    /// "N photos selected", the title of the inspector with many photos selected.
+    static func photosSelected(_ n: Int, locale: Locale = .current) -> String {
+        String(localized: "\(n) photos selected", locale: locale)
+    }
+
     static func folders(_ n: Int, locale: Locale = .current) -> String {
         String(localized: "\(n) folders", locale: locale)
     }

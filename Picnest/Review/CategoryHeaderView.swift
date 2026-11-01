@@ -21,7 +21,7 @@ struct CategoryHeaderView: View {
                     .foregroundStyle(Theme.textPrimary.color)
                     .lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
-                Text("\(photoCount) photos")
+                Text(CountText.photos(photoCount))
                     .font(.system(size: 15))
                     .foregroundStyle(Theme.textSecondary.color)
             }

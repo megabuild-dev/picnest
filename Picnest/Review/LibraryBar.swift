@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The row under the toolbar (spec 4.3): the filter chips, the thumbnail size slider and the sort menu.
-/// The chips show for All Photos, Needs Review and Chosen by you only.
+/// The chips show for All Photos and Chosen by you only. Needs Review has its own header and filter menus.
 struct LibraryBar: View {
     let model: ReviewViewModel
     let layout: LibraryLayout
@@ -88,7 +88,7 @@ struct LibraryFooter: View {
     let count: Int
 
     var body: some View {
-        (Text("\(count) photos") + Text(verbatim: " · ") + Text("Stored on this Mac"))
+        (Text(CountText.photos(count)) + Text(verbatim: " · ") + Text("Stored on this Mac"))
             .font(.system(size: 12))
             .foregroundStyle(Theme.textSecondary.color)
             .frame(maxWidth: .infinity)

@@ -175,7 +175,7 @@ struct ReviewView: View {
     }
 
     /// The photo count under the title, for example "2,413 photos".
-    private var countText: LocalizedStringKey { "\(model.count) photos" }
+    private var countText: String { CountText.photos(model.count) }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {

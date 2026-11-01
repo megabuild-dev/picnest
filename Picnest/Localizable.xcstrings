@@ -291,10 +291,34 @@
     },
     "%lld photos selected" : {
       "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo selected"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos selected"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã chọn %lld ảnh"
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Đã chọn %lld ảnh"
+                }
+              }
+            }
           }
         }
       }
@@ -1601,6 +1625,40 @@
         }
       }
     },
+    "Move %lld photos in both tabs to the Trash? You can put them back with Undo or from the Trash in Finder." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld photo in both tabs to the Trash? You can put them back with Undo or from the Trash in Finder."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld photos in both tabs to the Trash? You can put them back with Undo or from the Trash in Finder."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Chuyển %lld ảnh ở cả hai tab vào Thùng rác? Bạn có thể trả chúng về bằng Hoàn tác hoặc từ Thùng rác trong Finder."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Move %lld photos to the Trash? You can put them back with Undo or from the Trash in Finder." : {
       "localizations" : {
         "en" : {
@@ -1937,6 +1995,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bản gốc vẫn ở trong thư mục nguồn."
+          }
+        }
+      }
+    },
+    "Photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh"
           }
         }
       }
@@ -2440,16 +2508,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bắt đầu lại?"
-          }
-        }
-      }
-    },
-    "Stays here" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Giữ nguyên chỗ"
           }
         }
       }
