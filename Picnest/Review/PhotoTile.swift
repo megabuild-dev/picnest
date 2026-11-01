@@ -10,14 +10,6 @@ struct PhotoTile: View {
     let isSelected: Bool
 
     @State private var width: Double = 0
-    @State private var image: CGImage?
-    @State private var failed = false
-
-    private struct LoadKey: Hashable {
-        let id: MediaID
-        let maxPixel: Int
-    }
-
     /// Below this width the second line does not fit.
     private static let minWidthForSecondLine: Double = 110
 
@@ -27,7 +19,7 @@ struct PhotoTile: View {
         VStack(alignment: .leading, spacing: 6) {
             Color.clear
                 .aspectRatio(4 / 3, contentMode: .fit)
-                .overlay { thumbnail }
+                .overlay { ThumbnailImage(model: model, id: id, width: width) }
                 .overlay(alignment: .bottomLeading) { pill(tile.badge) }
                 .clipShape(shape)
                 .contentShape(shape)
@@ -39,22 +31,11 @@ struct PhotoTile: View {
             caption(tile)
         }
         .onGeometryChange(for: Double.self) { $0.size.width } action: { width = $0 }
-        .task(id: LoadKey(id: id, maxPixel: model.loadPixels(forTileWidth: width))) { await load() }
+        // The caption area takes clicks too.
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(tile.accessibilityLabel)
         .accessibilityAddTraits(isSelected ? [.isImage, .isSelected] : .isImage)
-    }
-
-    @ViewBuilder private var thumbnail: some View {
-        if let image {
-            Image(decorative: image, scale: 1).resizable().scaledToFill()
-        } else {
-            Rectangle().fill(.quaternary).overlay {
-                if failed {
-                    Image(systemName: "photo").font(.title2).foregroundStyle(.tertiary)
-                }
-            }
-        }
     }
 
     private func caption(_ tile: ReviewViewModel.TileModel) -> some View {
@@ -105,15 +86,5 @@ struct PhotoTile: View {
                 .shadow(color: Theme.badgeBackground.color.opacity(0.5), radius: 2)
                 .padding(8)
         }
-    }
-
-    /// Loads the thumbnail off the main thread. Waits until the tile knows its width.
-    private func load() async {
-        let maxPixel = model.loadPixels(forTileWidth: width)
-        guard maxPixel > 0 else { return }
-        let loaded = await model.thumbnail(id, maxPixel: maxPixel)
-        guard !Task.isCancelled else { return }
-        image = loaded
-        failed = loaded == nil
     }
 }

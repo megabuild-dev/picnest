@@ -23,8 +23,6 @@ struct SidebarView: View {
             Section {
                 row(counts, .all, "All Photos", icon: .symbol("photo.on.rectangle", Theme.textSecondary.color))
                 row(counts, .notSure, "Needs Review", icon: .symbol("exclamationmark.triangle.fill", Theme.needsReview.color))
-                // Task 2.3 replaces this row with a filter chip and removes it from the sidebar.
-                row(counts, .changedByYou, "Chosen by you", icon: .symbol("checkmark", Theme.confirmed.color))
             } header: { sectionHeader("Library") }
             Section {
                 ForEach(model.categories) { category in

@@ -25,29 +25,8 @@ struct PhotoGridView: View {
                 .padding(.bottom, 20)
             }
             .overlay {
-                if ids.isEmpty { emptyView }
+                if ids.isEmpty { LibraryEmptyView(model: model) }
             }
-        }
-    }
-}
-
-extension PhotoGridView {
-    /// The message of an empty grid, with one action (the ViewModel decides which).
-    @ViewBuilder fileprivate var emptyView: some View {
-        switch model.emptyState {
-        case .noResults:
-            VStack(spacing: 12) {
-                ContentUnavailableView.search(text: model.searchText)
-                Button("Clear Search") { model.searchText = "" }
-            }
-        case .emptyFolder:
-            VStack(spacing: 12) {
-                ContentUnavailableView("No photos in this folder.", systemImage: "photo.on.rectangle")
-                Button("Rescan", action: model.rescan).disabled(!model.canSortOrRescan)
-            }
-        case nil:
-            ContentUnavailableView("No Photos", systemImage: "photo.on.rectangle",
-                                   description: Text("No photos are in this list."))
         }
     }
 }
@@ -60,11 +39,23 @@ struct SelectableTile: View {
     /// Runs after a click, so the grid takes the keyboard focus.
     let onTap: () -> Void
 
-    /// The AppKit view of the tile: the share sheet points its popover at it.
-    @State private var shareAnchor = ShareAnchor()
-
     var body: some View {
         PhotoTile(model: model, id: id, isSelected: isSelected)
+            .photoInteractions(model: model, id: id, onTap: onTap)
+    }
+}
+
+/// The click, double-click, drag and context menu of 1 photo. Shared by the tiles of the grid and the rows of the list.
+private struct PhotoInteractions: ViewModifier {
+    let model: ReviewViewModel
+    let id: MediaID
+    let onTap: () -> Void
+
+    /// The AppKit view of the photo: the share sheet points its popover at it.
+    @State private var shareAnchor = ShareAnchor()
+
+    func body(content: Content) -> some View {
+        content
             .onTapGesture(count: 2) { model.openPreview(id) }
             .simultaneousGesture(TapGesture().onEnded {
                 model.click(id, modifiers: PhotoGridInteractions<EmptyView>.currentModifiers)
@@ -73,6 +64,13 @@ struct SelectableTile: View {
             .draggable(MediaIDs(ids: model.dragIDs(for: id)))
             .background { ShareAnchorView(anchor: shareAnchor) }
             .contextMenu { PhotoContextMenu(model: model, id: id, anchor: shareAnchor.view) }
+    }
+}
+
+extension View {
+    /// Selection by click, Quick Look by double-click, drag to a sidebar category, and the context menu.
+    func photoInteractions(model: ReviewViewModel, id: MediaID, onTap: @escaping () -> Void) -> some View {
+        modifier(PhotoInteractions(model: model, id: id, onTap: onTap))
     }
 }
 

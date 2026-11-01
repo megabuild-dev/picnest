@@ -419,6 +419,16 @@
         }
       }
     },
+    "All" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tất cả"
+          }
+        }
+      }
+    },
     "All Photos" : {
       "localizations" : {
         "vi" : {
@@ -959,6 +969,16 @@
         }
       }
     },
+    "Filter" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ lọc"
+          }
+        }
+      }
+    },
     "Find Folder…" : {
       "localizations" : {
         "vi" : {
@@ -975,6 +995,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không tìm thấy thư mục"
+          }
+        }
+      }
+    },
+    "Grid" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưới"
+          }
+        }
+      }
+    },
+    "Grid or list" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưới hoặc danh sách"
           }
         }
       }
@@ -1059,6 +1099,16 @@
         }
       }
     },
+    "Layout" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bố cục"
+          }
+        }
+      }
+    },
     "Leave in the source folder" : {
       "localizations" : {
         "vi" : {
@@ -1095,6 +1145,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sáng"
+          }
+        }
+      }
+    },
+    "List" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh sách"
           }
         }
       }
@@ -1367,6 +1427,16 @@
         }
       }
     },
+    "Needs review" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cần xem lại"
+          }
+        }
+      }
+    },
     "New Category" : {
       "localizations" : {
         "vi" : {
@@ -1443,6 +1513,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không có ảnh trong thư mục này."
+          }
+        }
+      }
+    },
+    "No photos need review." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có ảnh nào cần xem lại."
           }
         }
       }
@@ -2030,6 +2110,16 @@
         }
       }
     },
+    "Stored on this Mac" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu trên máy Mac này"
+          }
+        }
+      }
+    },
     "Suggest Categories" : {
       "localizations" : {
         "vi" : {
@@ -2356,6 +2446,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Video"
+          }
+        }
+      }
+    },
+    "You have not chosen a category for any photo yet." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn chưa chọn danh mục cho ảnh nào."
           }
         }
       }

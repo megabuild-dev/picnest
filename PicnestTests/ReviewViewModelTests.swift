@@ -200,6 +200,39 @@ struct ReviewViewModelTests {
         #expect(model.emptyState == nil)
     }
 
+    @Test func testEmptyStatePerChip() throws {
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.states = session.states.filter { !$0.value.isManual && !$0.value.isNotSure }
+            return session
+        })
+        model.filter = .chosenByYou
+        #expect(model.emptyState == .noneChosen)
+        model.filter = .needsReview
+        #expect(model.emptyState == .nothingToReview)
+        model.filter = .all
+        #expect(model.emptyState == nil)
+        let full = try makeModel()
+        full.filter = .chosenByYou
+        #expect(full.emptyState == nil)
+        full.filter = .needsReview
+        #expect(full.emptyState == nil)
+    }
+
+    @Test func testListRowShowsNameCategoryDateAndSize() throws {
+        let model = try makeModel()
+        let a = model.listRow("a.jpg")
+        #expect(a.name == "a.jpg")
+        #expect(a.categoryText == "🍜 Food")
+        #expect(a.date == day(2024, 5, 12))
+        #expect(a.fileSize == 10)
+        #expect(model.listRow("c.jpg").categoryText == "🍜 Food")
+        #expect(model.listRow("d.jpg").categoryText == String(localized: "Needs Review"))
+        #expect(model.listRow("e.jpg").categoryText == String(localized: "Don't move"))
+        #expect(model.listRow("f.jpg").categoryText == "—")
+        #expect(model.listRow("h.jpg").date == nil)
+    }
+
     @Test func testSearchDoesNotChangeSidebarCounts() throws {
         let model = try makeModel()
         let before = model.sidebarCounts

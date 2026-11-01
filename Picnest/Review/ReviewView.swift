@@ -12,6 +12,8 @@ struct ReviewView: View {
     @State private var suggestAfterSort = false
     /// Whether the inspector at the right shows. Kept per window.
     @SceneStorage("inspectorShown") private var inspectorShown = true
+    /// Grid or list. Kept for the app.
+    @AppStorage(LibraryLayout.storageKey) private var layout: LibraryLayout = .grid
 
     private let review: ReviewService
     private let sortService: SortService
@@ -138,15 +140,26 @@ struct ReviewView: View {
     }
 
     @ViewBuilder private var detail: some View {
-        switch model.selectedItem {
-        case .notSure:
-            NotSureView(model: model)
-        case .duplicates:
+        if model.selectedItem == .duplicates {
             DuplicatesView(model: model.duplicates)
-        default:
-            PhotoGridView(model: model)
+        } else {
+            VStack(spacing: 0) {
+                LibraryBar(model: model)
+                if model.selectedItem == .notSure {
+                    NotSureView(model: model)
+                } else {
+                    switch layout {
+                    case .grid: PhotoGridView(model: model)
+                    case .list: PhotoListView(model: model)
+                    }
+                    LibraryFooter(count: model.count)
+                }
+            }
         }
     }
+
+    /// The grid and the list layouts are the flat views. Needs Review and Duplicates have their own.
+    private var showsLayoutPicker: Bool { model.selectedItem != .notSure && model.selectedItem != .duplicates }
 
     /// The photo count under the title, for example "2,413 photos".
     private var countText: LocalizedStringKey { "\(model.count) photos" }
@@ -156,13 +169,9 @@ struct ReviewView: View {
             if model.selectedItem == .duplicates {
                 CleanUpAllButton(model: model.duplicates)
             } else {
-                SizeSlider(model: model)
-                Picker("Sort Order", selection: Bindable(model).sortOrder) {
-                    ForEach(ReviewViewModel.SortOrder.allCases) { Text($0.title).tag($0) }
+                if showsLayoutPicker {
+                    LibraryLayoutPicker(layout: $layout)
                 }
-                .pickerStyle(.menu)
-                .fixedSize()
-                .help("Sort order")
             }
             Button(inspectorShown ? "Hide Inspector" : "Show Inspector", systemImage: "sidebar.trailing") {
                 inspectorShown.toggle()
@@ -236,24 +245,6 @@ struct ReviewView: View {
 
     private var organizeErrorBinding: Binding<Bool> {
         Binding(get: { model.organizeErrorMessage != nil }, set: { if !$0 { model.dismissOrganizeError() } })
-    }
-}
-
-/// Thumbnail size: left is small (80 pt), right is large (240 pt).
-private struct SizeSlider: View {
-    let model: ReviewViewModel
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "square.grid.3x3").font(.system(size: 10)).foregroundStyle(.secondary)
-            Slider(value: Bindable(model).thumbnailSize, in: ReviewViewModel.thumbnailSizeRange)
-                .frame(width: 90)
-                .controlSize(.small)
-            Image(systemName: "square.grid.2x2").font(.system(size: 12)).foregroundStyle(.secondary)
-        }
-        .help("Thumbnail size")
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Thumbnail size")
     }
 }
 

@@ -393,15 +393,24 @@ final class ReviewViewModel {
         case noResults
         /// The folder has no photos. The action is **Rescan**.
         case emptyFolder
+        /// The Needs Review chip has no photo. No action.
+        case nothingToReview
+        /// The Chosen by you chip has no photo. No action.
+        case noneChosen
     }
 
     /// The empty state of the flat grid, or nil when it has photos. The Not sure and Duplicates views
     /// have their own empty views, and a list with no search text keeps the plain "No Photos" message
     /// unless the whole folder is empty.
     var emptyState: EmptyState? {
-        guard selectedItem != .notSure, selectedItem != .duplicates, visibleIDs.isEmpty else { return nil }
-        if Self.searchNeedle(searchText) != nil { return .noResults }
-        return count(of: .all) == 0 ? .emptyFolder : nil
+        guard selectedItem != .duplicates, visibleIDs.isEmpty else { return nil }
+        if selectedItem != .notSure, Self.searchNeedle(searchText) != nil { return .noResults }
+        if count(of: .all) == 0 { return selectedItem == .notSure ? nil : .emptyFolder }
+        switch selectedItem {
+        case .notSure: return .nothingToReview
+        case .changedByYou: return .noneChosen
+        default: return nil
+        }
     }
 
     /// The Needs Review item ignores the search text (it does not filter its groups yet), so the search
@@ -494,6 +503,30 @@ final class ReviewViewModel {
         return TileModel(
             name: name, secondLine: secondLine(id, state: state, session: session), badge: badge,
             accessibilityLabel: accessibilityLabel(id, name: name, state: state, session: session))
+    }
+
+    /// What a row of the list layout shows for `id`. The category text is the emoji and name, "Needs Review", or "—".
+    struct ListRowModel: Equatable {
+        let name: String
+        let categoryText: String
+        /// Nil when only the modification time is known.
+        let date: Date?
+        let fileSize: Int64
+        let accessibilityLabel: String
+    }
+
+    func listRow(_ id: MediaID) -> ListRowModel {
+        let tile = tile(id)
+        let facts = inspectorFacts(for: id)
+        let categoryText: String = switch facts?.status ?? InspectorFacts.Status.none {
+        case .category(let emoji, let name): "\(emoji) \(name)"
+        case .notSure: String(localized: "Needs Review")
+        case .staysHere: String(localized: "Don't move")
+        case .none: "—"
+        }
+        return ListRowModel(
+            name: tile.name, categoryText: categoryText, date: facts?.date, fileSize: facts?.fileSize ?? 0,
+            accessibilityLabel: tile.accessibilityLabel)
     }
 
     private func accessibilityLabel(_ id: MediaID, name: String, state: PhotoState?, session: Session) -> String {
