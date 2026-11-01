@@ -1427,16 +1427,6 @@
         }
       }
     },
-    "Not sure" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chưa chắc"
-          }
-        }
-      }
-    },
     "Nothing left to check." : {
       "localizations" : {
         "vi" : {

@@ -25,7 +25,7 @@ struct InspectorFacts: Equatable {
     /// The percent of the app's guess. Nil for a photo that the user chose by hand, and for one with no guess.
     let confidence: Int?
     let isChosenByYou: Bool
-    /// Set for a photo in Not sure.
+    /// Set for a photo in Needs Review.
     let suggestion: Suggestion?
     let isUncertain: Bool
 }

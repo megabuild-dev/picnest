@@ -16,6 +16,7 @@ struct InspectorView: View {
             } else if let id = selection.first, let facts = model.inspectorFacts(for: id) {
                 ScrollView {
                     SinglePhoto(model: model, facts: facts)
+                        // A new id makes a new view, so both .task loads of the old photo are cancelled.
                         .id(id)
                         .padding(16)
                 }
@@ -76,7 +77,7 @@ private struct SinglePhoto: View {
                 row("File size") { Text(facts.fileSize, format: .byteCount(style: .file)) }
                 row("Confidence") { confidence }
             }
-            if facts.isUncertain, let suggestion = facts.suggestion { suggestionBlock(suggestion) }
+            if let suggestion = facts.suggestion { suggestionBlock(suggestion) }
             actions
         }
         .font(.system(size: 13))
@@ -107,7 +108,7 @@ private struct SinglePhoto: View {
     @ViewBuilder private var status: some View {
         switch facts.status {
         case .category(let emoji, let name): Text(verbatim: "\(emoji) \(name)")
-        case .notSure: Text("Not sure").foregroundStyle(Theme.needsReview.color)
+        case .notSure: Text("Needs Review").foregroundStyle(Theme.needsReview.color)
         case .staysHere: Text("Stays here")
         case .none: Text(verbatim: "—")
         }
