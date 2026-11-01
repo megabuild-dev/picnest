@@ -668,7 +668,7 @@ struct ReviewViewModelTests {
         let model = try makeModel()
         model.selectedItem = .category(food.id)
         #expect(model.tile("a.jpg").name == "a.jpg")
-        #expect(model.tile("a.jpg").secondLine == "2024-05-12")
+        #expect(model.tile("a.jpg").secondLine == day(2024, 5, 12).formatted(.dateTime.year().month().day()))
         #expect(model.tile("h.jpg").secondLine == "no date")
         #expect(model.tile("e.jpg").secondLine == "no date")
     }
@@ -677,7 +677,7 @@ struct ReviewViewModelTests {
         let model = try makeModel()
         model.selectedItem = .notSure
         #expect(model.tile("d.jpg").secondLine == "or Documents 38%")
-        #expect(model.tile("b.jpg").secondLine == "2023-11-02")  // No second guess: the date.
+        #expect(model.tile("b.jpg").secondLine == day(2023, 11, 2).formatted(.dateTime.year().month().day()))  // No second guess: the date.
     }
 
     // MARK: - Toolbar
@@ -1420,6 +1420,33 @@ struct ReviewViewModelTests {
     }
 
     // MARK: - Inspector (UI redesign 4.2, 6)
+
+    @Test func inspectorContentFollowsSelectionThenCategory() throws {
+        let model = try makeModelAndReview(folderExists: { _ in false }).model
+        #expect(model.inspectorContent == .hint)
+        model.selectedItem = .notSure
+        #expect(model.inspectorContent == .hint)  // Only a category shows facts without a photo.
+        model.selectedItem = .category(food.id)
+        let expected = CategoryFacts(
+            id: food.id, emoji: "🍜", name: "Food", photoCount: model.count(of: .category(food.id)),
+            folderName: "Food", canReveal: false)  // The folder is not on disk before Done.
+        #expect(model.inspectorContent == .category(expected))
+        #expect(expected.photoCount > 0)
+        model.click("a.jpg", modifiers: [])
+        guard case .photo(let facts) = model.inspectorContent else { Issue.record("a photo was selected"); return }
+        #expect(facts.id == "a.jpg")
+        model.click("b.jpg", modifiers: .command)
+        if case .many(let count) = model.inspectorContent { #expect(count == 2) } else { Issue.record("2 photos were selected") }
+        model.clearSelection()
+        #expect(model.inspectorContent == .category(expected))
+    }
+
+    @Test func inspectorCategoryCanRevealWhenTheFolderIsOnDisk() throws {
+        let model = try makeModel()  // The folder exists in this fixture.
+        model.selectedItem = .category(food.id)
+        guard case .category(let facts) = model.inspectorContent else { Issue.record("a category shows"); return }
+        #expect(facts.canReveal)
+    }
 
     @Test func inspectorFactsOfOnePhoto() throws {
         let model = try makeModel()

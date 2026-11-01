@@ -198,6 +198,48 @@ struct NeedsReviewTests {
         #expect(model.count(of: .notSure) == 5)
     }
 
+    @Test func testLeavingTheSimilarFilterCancelsTheSearch() async throws {
+        let model = try makeModel()
+        model.reviewIssue = .similarPhotos
+        let search = try #require(model.similarSearch)
+        model.reviewIssue = nil
+        #expect(search.isCancelled)
+        #expect(model.similarSearch == nil)
+        await search.value
+        #expect(model.duplicates.state == .idle)  // A cancelled search is idle, not found and not stuck finding.
+        #expect(model.visibleIDs.count == 7)
+    }
+
+    @Test func testChoosingAnotherIssueOrItemCancelsTheSearch() async throws {
+        let model = try makeModel()
+        model.reviewIssue = .similarPhotos
+        let first = try #require(model.similarSearch)
+        model.reviewIssue = .lowConfidence
+        #expect(first.isCancelled)
+        model.reviewIssue = .similarPhotos
+        let second = try #require(model.similarSearch)
+        model.selectedItem = .all  // Leaving Needs Review clears the issue.
+        #expect(second.isCancelled)
+        #expect(model.similarSearch == nil)
+        await first.value
+        await second.value
+        #expect(model.duplicates.state == .idle)
+    }
+
+    @Test func testSimilarSearchRunsAgainAfterACancel() async throws {
+        let model = try makeModel()
+        model.reviewIssue = .similarPhotos
+        let first = try #require(model.similarSearch)
+        model.reviewIssue = nil
+        await first.value
+        model.reviewIssue = .similarPhotos
+        let second = try #require(model.similarSearch)
+        await second.value
+        #expect(Set(model.visibleIDs) == ["n3.jpg", "trip4.jpg"])
+        #expect(model.duplicates.state == .ready)
+        #expect(model.similarSearch != nil)  // Finished: the task stays until the filter changes, and is harmless.
+    }
+
     @Test func testLeavingNeedsReviewClearsIssue() throws {
         let model = try makeModel()
         model.reviewIssue = .noCategory

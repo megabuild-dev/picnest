@@ -4,8 +4,6 @@ import Observation
 import PicnestCore
 import SwiftUI
 
-/// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
-/// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
 /// The 3 filters of the toolbar. Each one is a sidebar item (`ReviewViewModel.filter`).
 enum PhotoFilter: CaseIterable {
     case all, needsReview, chosenByYou
@@ -16,6 +14,8 @@ enum ReviewIssue: CaseIterable {
     case lowConfidence, noCategory, similarPhotos
 }
 
+/// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
+/// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
 @MainActor
 @Observable
 final class ReviewViewModel {
@@ -81,10 +81,24 @@ final class ReviewViewModel {
     var reviewIssue: ReviewIssue? {
         didSet {
             guard reviewIssue != oldValue else { return }
-            if reviewIssue == .similarPhotos { Task { await duplicates.find() } }
+            startOrCancelSimilarSearch()
             dropSelectionHiddenByFilter()
         }
     }
+    /// The search that the similar-photos filter started, or nil. Another issue, another sidebar item, or the end
+    /// of the model cancels it; a cancelled search is idle again (`DuplicatesViewModel.find`).
+    @ObservationIgnored nonisolated(unsafe) private(set) var similarSearch: Task<Void, Never>?
+
+    private func startOrCancelSimilarSearch() {
+        similarSearch?.cancel()
+        similarSearch = nil
+        guard reviewIssue == .similarPhotos else { return }
+        guard let duplicates else { return }
+        similarSearch = Task { await duplicates.find() }
+    }
+
+    deinit { similarSearch?.cancel() }
+
     /// True after the user closes the amber notice of Needs Review. A rescan makes a new view model, so it shows again.
     var isNoticeDismissed = false
 
@@ -189,8 +203,6 @@ final class ReviewViewModel {
     /// Only `createNewCategory` and `cancelNewCategory` clear it.
     private var pendingMoveIDs: [MediaID]?
 
-    private static let dayFormat = Date.ISO8601FormatStyle(timeZone: .current).year().month().day()
-
     /// `app` holds the undo flag that every window shares, and starts over (`startOver`). `afterScan` is true
     /// when a scan or a rescan opened this review.
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
@@ -267,9 +279,7 @@ final class ReviewViewModel {
 
     var count: Int { count(of: selectedItem) }
 
-    /// The source folder path with the home folder as `~`.
-    var sourcePathText: String { Self.abbreviate(review.session.sourcePath, home: NSHomeDirectory()) }
-
+    /// A path with the home folder as `~`.
     nonisolated static func abbreviate(_ path: String, home: String) -> String {
         let home = home.hasSuffix("/") && home.count > 1 ? String(home.dropLast()) : home
         if path == home { return "~" }
@@ -711,6 +721,19 @@ final class ReviewViewModel {
         if state?.isManual == true { parts.append(String(localized: "Chosen by you")) }
         if selection.contains(id) { parts.append(String(localized: "selected")) }
         return parts.joined(separator: ", ")
+    }
+
+    /// What the inspector shows. A photo selection comes first, then the category of the screen, else a hint.
+    var inspectorContent: InspectorContent {
+        if selection.count > 1 { return .many(selection.count) }
+        if let id = selection.first, let facts = inspectorFacts(for: id) { return .photo(facts) }
+        if let category = selectedCategory {
+            return .category(CategoryFacts(
+                id: category.id, emoji: category.emoji, name: category.displayName,
+                photoCount: count(of: .category(category.id)), folderName: categoryFolderName(category.id),
+                canReveal: categoryFolder(category.id) != nil))
+        }
+        return .hint
     }
 
     /// The facts of the inspector for `id`, or nil if the photo is unknown.
@@ -1278,7 +1301,7 @@ final class ReviewViewModel {
             return String(localized: "or \(category.displayName) \(percent)%")
         }
         guard let date = session.scan.dates[id], date.source != .modificationTime else { return Self.noDate }
-        return date.date.formatted(Self.dayFormat)
+        return date.date.formatted(.dateTime.year().month().day())
     }
 
     private static func assignment(_ state: PhotoState?) -> Assignment? {

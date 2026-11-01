@@ -1,26 +1,28 @@
 import PicnestCore
 import SwiftUI
 
-/// The panel at the right (spec 4.2): a hint with no photo selected, the facts and actions of 1 selected
-/// photo, or the count and the batch actions for more.
+/// The panel at the right (spec 4.2): the facts and actions of 1 selected photo, the count and the batch
+/// actions for more, the facts of the open category with no photo selected, or a hint.
 struct InspectorView: View {
     let model: ReviewViewModel
 
     init(model: ReviewViewModel) { self.model = model }
 
     var body: some View {
-        let selection = model.selection
         Group {
-            if selection.count > 1 {
-                ManyPhotos(model: model, count: selection.count)
-            } else if let id = selection.first, let facts = model.inspectorFacts(for: id) {
+            switch model.inspectorContent {
+            case .many(let count):
+                ManyPhotos(model: model, count: count)
+            case .photo(let facts):
                 ScrollView {
                     SinglePhoto(model: model, facts: facts)
                         // A new id makes a new view, so both .task loads of the old photo are cancelled.
-                        .id(id)
+                        .id(facts.id)
                         .padding(16)
                 }
-            } else {
+            case .category(let facts):
+                CategoryDetails(model: model, facts: facts)
+            case .hint:
                 Text("Select a photo to see its details.")
                     .foregroundStyle(Theme.textSecondary.color)
                     .multilineTextAlignment(.center)
@@ -33,13 +35,54 @@ struct InspectorView: View {
     }
 }
 
+/// The open category with no photo selected: icon, name, photo count, and the folder name (read-only).
+private struct CategoryDetails: View {
+    let model: ReviewViewModel
+    let facts: CategoryFacts
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(verbatim: facts.emoji)
+                .font(.system(size: 36))
+                .frame(width: 64, height: 64)
+                .background(Theme.accent.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                .accessibilityHidden(true)
+            Text(verbatim: facts.name)
+                .font(.system(size: 15, weight: .bold))
+                .textSelection(.enabled)
+            VStack(alignment: .leading, spacing: 8) {
+                row("Photos") { Text(CountText.photos(facts.photoCount)) }
+                row("Folder") { Text(verbatim: facts.folderName).textSelection(.enabled) }
+            }
+            Button("Reveal in Finder") { model.showCategoryInFinder(facts.id) }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .disabled(!facts.canReveal)
+            Text("Select a photo to see its details.")
+                .foregroundStyle(Theme.textSecondary.color)
+            Spacer()
+        }
+        .font(.system(size: 13))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+    }
+
+    private func row(_ label: LocalizedStringKey, @ViewBuilder value: () -> some View) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label).foregroundStyle(Theme.textSecondary.color)
+            Spacer(minLength: 8)
+            value().multilineTextAlignment(.trailing)
+        }
+    }
+}
+
 private struct ManyPhotos: View {
     let model: ReviewViewModel
     let count: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("\(count) photos selected")
+            Text(CountText.photosSelected(count))
                 .font(.system(size: 15, weight: .bold))
             SelectionActions(model: model)
                 .buttonStyle(.bordered)
@@ -109,7 +152,7 @@ private struct SinglePhoto: View {
         switch facts.status {
         case .category(let emoji, let name): Text(verbatim: "\(emoji) \(name)")
         case .notSure: Text("Needs Review").foregroundStyle(Theme.needsReview.color)
-        case .staysHere: Text("Stays here")
+        case .staysHere: Text("Don't move")
         case .none: Text(verbatim: "—")
         }
     }
