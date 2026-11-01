@@ -20,6 +20,15 @@ struct LibraryEmptyView: View {
             ContentUnavailableView("No photos need review.", systemImage: "checkmark.circle")
         case .noneChosen:
             ContentUnavailableView("You have not chosen a category for any photo yet.", systemImage: "photo.on.rectangle")
+        case .noFavorites:
+            ContentUnavailableView("No Favorites", systemImage: "heart",
+                                   description: Text("Click the heart on a photo to add it here."))
+        case .emptyCollection:
+            ContentUnavailableView("This Collection Is Empty", systemImage: "square.stack",
+                                   description: Text("Drag photos here, or click Add Photos."))
+        case .nothingDeleted:
+            ContentUnavailableView("Nothing Recently Deleted", systemImage: "trash",
+                                   description: Text("Photos you move to the Trash show here until the next rescan."))
         case .findingSimilar, .similarSearchFailed:
             EmptyView()  // Only the Needs Review view has these.
         case nil:

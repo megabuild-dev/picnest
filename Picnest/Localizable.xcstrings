@@ -445,6 +445,16 @@
         }
       }
     },
+    "A collection with this name already exists." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã có bộ sưu tập với tên này."
+          }
+        }
+      }
+    },
     "A copy did not match its original. The original was kept." : {
       "localizations" : {
         "vi" : {
@@ -899,6 +909,16 @@
         }
       }
     },
+    "Click the heart on a photo to add it here." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhấp vào hình trái tim trên ảnh để thêm ảnh vào đây."
+          }
+        }
+      }
+    },
     "Click to mark Keep." : {
       "localizations" : {
         "vi" : {
@@ -915,6 +935,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đóng"
+          }
+        }
+      }
+    },
+    "Collection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ sưu tập"
           }
         }
       }
@@ -1129,6 +1159,16 @@
         }
       }
     },
+    "Drag photos here, or click Add Photos." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kéo ảnh vào đây, hoặc nhấp Thêm ảnh."
+          }
+        }
+      }
+    },
     "Drop a folder of photos here" : {
       "localizations" : {
         "vi" : {
@@ -1215,6 +1255,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bản sao giống hệt (%lld)"
+          }
+        }
+      }
+    },
+    "Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục ưa thích"
           }
         }
       }
@@ -1823,6 +1873,16 @@
         }
       }
     },
+    "No Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa có mục ưa thích"
+          }
+        }
+      }
+    },
     "No Photos" : {
       "localizations" : {
         "vi" : {
@@ -1929,6 +1989,16 @@
         }
       }
     },
+    "Nothing Recently Deleted" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có ảnh nào đã xóa gần đây"
+          }
+        }
+      }
+    },
     "Nothing left to check." : {
       "localizations" : {
         "vi" : {
@@ -2005,6 +2075,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ảnh"
+          }
+        }
+      }
+    },
+    "Photos you move to the Trash show here until the next rescan." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh bạn chuyển vào Thùng rác hiện ở đây cho đến lần quét lại tiếp theo."
           }
         }
       }
@@ -2148,6 +2228,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thư mục gần đây"
+          }
+        }
+      }
+    },
+    "Recently Deleted" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã xóa gần đây"
           }
         }
       }
@@ -2602,22 +2692,22 @@
         }
       }
     },
-    "The app scans the folder again and proposes new categories. Your categories and picks are lost." : {
+    "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất."
+            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Mục ưa thích và bộ sưu tập của bạn cũng sẽ mất."
           }
         }
       }
     },
-    "The app scans the folder again and proposes new categories. Your categories and picks are lost. The last sort can no longer be undone." : {
+    "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too. The last sort can no longer be undone." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Không thể hoàn tác lần sắp xếp trước nữa."
+            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Mục ưa thích và bộ sưu tập của bạn cũng sẽ mất. Không thể hoàn tác lần sắp xếp trước nữa."
           }
         }
       }
@@ -2778,6 +2868,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Những ảnh này khó phân loại hơn. Hãy xem nhanh và xác nhận hoặc chọn danh mục phù hợp hơn."
+          }
+        }
+      }
+    },
+    "This Collection Is Empty" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ sưu tập này trống"
           }
         }
       }

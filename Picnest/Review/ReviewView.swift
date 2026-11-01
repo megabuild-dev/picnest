@@ -161,7 +161,7 @@ struct ReviewView: View {
             DuplicatesView(model: model.duplicates)
         case .needsReview:
             NotSureView(model: model)
-        case .library:
+        case .library, .recentlyDeleted:
             VStack(spacing: 0) {
                 if let category = model.selectedCategory {
                     CategoryHeaderView(model: model, category: category, photoCount: model.count)
