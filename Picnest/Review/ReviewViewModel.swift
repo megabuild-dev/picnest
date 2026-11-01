@@ -81,7 +81,7 @@ final class ReviewViewModel {
     var reviewIssue: ReviewIssue? {
         didSet {
             guard reviewIssue != oldValue else { return }
-            startOrCancelSimilarSearch()
+            startOrCancelSimilarSearch(leaving: oldValue == .similarPhotos)
             dropSelectionHiddenByFilter()
         }
     }
@@ -89,9 +89,11 @@ final class ReviewViewModel {
     /// of the model cancels it; a cancelled search is idle again (`DuplicatesViewModel.find`).
     @ObservationIgnored nonisolated(unsafe) private(set) var similarSearch: Task<Void, Never>?
 
-    private func startOrCancelSimilarSearch() {
+    private func startOrCancelSimilarSearch(leaving: Bool) {
         similarSearch?.cancel()
         similarSearch = nil
+        // Leaving the filter frees the search at once, so the Duplicates view or the filter can start it again.
+        if leaving { duplicates?.cancelFind() }
         guard reviewIssue == .similarPhotos else { return }
         guard let duplicates else { return }
         similarSearch = Task { await duplicates.find() }
@@ -210,7 +212,7 @@ final class ReviewViewModel {
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
-         defaults: UserDefaults = .standard) {
+         defaults: UserDefaults = .standard, duplicateSearch: DuplicatesViewModel.Search? = nil) {
         self.defaults = defaults
         let saved = defaults.object(forKey: Self.thumbnailSizeKey) as? Double
         thumbnailSize = Self.clampedThumbnailSize(saved ?? Self.defaultThumbnailSize)
@@ -233,7 +235,8 @@ final class ReviewViewModel {
                 guard let file = await review.mediaByID[id] else { return nil }
                 return await thumbnails.thumbnail(for: file, source: source, maxPixel: maxPixel)
             },
-            onTrashErrors: { [weak self] in self?.showTrashErrors($0) })
+            onTrashErrors: { [weak self] in self?.showTrashErrors($0) },
+            search: duplicateSearch)
         watchSession()
     }
 

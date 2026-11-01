@@ -49,6 +49,7 @@ private struct CategoryDetails: View {
                 .accessibilityHidden(true)
             Text(verbatim: facts.name)
                 .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Theme.textPrimary.color)
                 .textSelection(.enabled)
             VStack(alignment: .leading, spacing: 8) {
                 row("Photos") { Text(CountText.photos(facts.photoCount)) }
@@ -84,6 +85,7 @@ private struct ManyPhotos: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(CountText.photosSelected(count))
                 .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Theme.textPrimary.color)
             SelectionActions(model: model)
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
