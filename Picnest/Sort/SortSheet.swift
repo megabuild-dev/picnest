@@ -100,6 +100,7 @@ struct SortSheet: View {
                 } label: { EmptyView() }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .accessibilityLabel("Mode")
                 if isMove {
                     Label(SortViewModel.moveDetail, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(Theme.destructive.color)

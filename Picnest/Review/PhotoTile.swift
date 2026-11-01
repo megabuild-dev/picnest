@@ -9,9 +9,14 @@ struct PhotoTile: View {
     let id: MediaID
     let isSelected: Bool
 
-    @State private var width: Double = 0
+    /// The tile width, nil until the first measure.
+    @State private var measuredWidth: Double?
     /// Below this width the second line does not fit.
     private static let minWidthForSecondLine: Double = 110
+
+    private var width: Double { measuredWidth ?? 0 }
+    /// Before the first measure the second line shows, so a normal tile does not jump when the width arrives.
+    private var showsSecondLine: Bool { (measuredWidth ?? Self.minWidthForSecondLine) >= Self.minWidthForSecondLine }
 
     var body: some View {
         let tile = model.tile(id)
@@ -30,7 +35,7 @@ struct PhotoTile: View {
                 .overlay(alignment: .topTrailing) { checkCircle }
             caption(tile)
         }
-        .onGeometryChange(for: Double.self) { $0.size.width } action: { width = $0 }
+        .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
         // The caption area takes clicks too.
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
@@ -44,7 +49,7 @@ struct PhotoTile: View {
                 .font(.system(size: 12.5, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary.color)
                 .lineLimit(1).truncationMode(.middle)
-            if width >= Self.minWidthForSecondLine {
+            if showsSecondLine {
                 if tile.badge == .you {
                     Label("Chosen by you", systemImage: "checkmark")
                         .font(.system(size: 11.5)).foregroundStyle(Theme.confirmed.color)

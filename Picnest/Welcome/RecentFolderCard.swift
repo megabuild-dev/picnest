@@ -35,9 +35,6 @@ struct RecentFolderCard: View {
                     .foregroundStyle(Theme.textSecondary.color)
                     .monospacedDigit()
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(name))
-            .accessibilityValue(Text(detail))
             Spacer(minLength: 8)
             if isUndoing {
                 ProgressView().controlSize(.small)
@@ -49,11 +46,22 @@ struct RecentFolderCard: View {
             Button("Open", action: open)
                 .buttonStyle(.borderedProminent)
                 .tint(Theme.accent.color)
-                .accessibilityLabel(Text("Open \(name)"))
         }
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 14).fill(Theme.surface.color))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.textSecondary.color.opacity(0.18)))
+        // The whole card opens the folder, as the old row did. Open and Undo keep their own clicks.
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .onTapGesture(perform: open)
+        // VoiceOver reads 1 element: Open is the default action, Undo Last Sort a custom action.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(name))
+        .accessibilityValue(Text(detail))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default, open)
+        .accessibilityActions {
+            if canUndo && !isUndoing { Button("Undo Last Sort", action: undo) }
+        }
     }
 
     private var detail: String {
