@@ -81,6 +81,50 @@ struct PhotoEditServiceTests {
         expect(out, size: (20, 20), tl: red, tr: red, bl: blue, br: blue)
     }
 
+    @Test func cropTopLeftQuarterAfterATurnIsBlue() throws {
+        var e = PhotoEdit.original
+        e.rotate(clockwise: true)  // Shown: blue red / white green.
+        e.crop = NormalizedRect(x: 0, y: 0, width: 0.5, height: 0.5)
+        let out = try #require(service.apply(e, to: try quadrants()))
+        expect(out, size: (10, 20), tl: blue, tr: blue, bl: blue, br: blue)
+    }
+
+    @Test func cropTopLeftQuarterAfterAFlipIsGreen() throws {
+        var e = PhotoEdit.original
+        e.flip(horizontal: true)  // Shown: green red / white blue.
+        e.crop = NormalizedRect(x: 0, y: 0, width: 0.5, height: 0.5)
+        let out = try #require(service.apply(e, to: try quadrants()))
+        expect(out, size: (20, 10), tl: green, tr: green, bl: green, br: green)
+    }
+
+    /// The share of sampled pixels where `a` and `b` differ by more than 40 in a channel.
+    private func mismatch(_ a: CGImage, _ b: CGImage, mirrorX: Bool, mirrorY: Bool) -> Double {
+        var bad = 0, total = 0
+        for y in stride(from: 2, to: a.height - 2, by: 5) {
+            for x in stride(from: 2, to: a.width - 2, by: 5) {
+                let ca = TestImages.color(at: (x, y), in: a)
+                let cb = TestImages.color(at: (mirrorX ? a.width - 1 - x : x, mirrorY ? a.height - 1 - y : y), in: b)
+                total += 1
+                if abs(Int(ca.r) - Int(cb.r)) > 40 || abs(Int(ca.g) - Int(cb.g)) > 40 || abs(Int(ca.b) - Int(cb.b)) > 40 { bad += 1 }
+            }
+        }
+        return Double(bad) / Double(total)
+    }
+
+    @Test func flipAfterStraightenIsTheMirrorOfTheStraightenedImage() throws {
+        var straight = PhotoEdit.original
+        straight.straighten = 5
+        let base = try #require(service.apply(straight, to: try quadrants(400, 200)))
+        var h = straight; h.flip(horizontal: true)
+        var v = straight; v.flip(horizontal: false)
+        let flippedH = try #require(service.apply(h, to: try quadrants(400, 200)))
+        let flippedV = try #require(service.apply(v, to: try quadrants(400, 200)))
+        #expect(mismatch(flippedH, base, mirrorX: true, mirrorY: false) < 0.02)
+        #expect(mismatch(flippedV, base, mirrorX: false, mirrorY: true) < 0.02)
+        // The mirror is not the same as the picture itself, so the test can fail.
+        #expect(mismatch(flippedH, base, mirrorX: false, mirrorY: false) > 0.1)
+    }
+
     @Test func croppingFalseKeepsTheWholeFrame() throws {
         var e = PhotoEdit.original
         e.rotate(clockwise: true)

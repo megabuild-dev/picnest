@@ -614,7 +614,7 @@ Core tests use Swift Testing (`@Test func name()`). App tests use XCTest (`func 
 
 **Where it opens.** The editor replaces the detail column of `ReviewView`. While it is open, the sidebar collapses (`NavigationSplitViewVisibility.detailOnly`), the inspector hides, and the toolbar shows only the editor items. On close, the sidebar, the inspector state, the selection, and the scroll position come back. There is no tab bar (spec 6 and call 7).
 
-**The edit value.** `PhotoEdit` in `PicnestCore/Domain` holds the full edit. The pipeline order is fixed: EXIF orientation, straighten, quarter turns, flip, crop, adjustments.
+**The edit value.** `PhotoEdit` in `PicnestCore/Domain` holds the full edit. The pipeline order is fixed: EXIF orientation, quarter turns, flip, straighten, crop, adjustments, all in the frame the user sees. `PhotoEdit.flip` negates `straighten`, so a flip keeps the same picture, mirrored.
 - Straighten turns the image about its center and scales it up so that no empty corner shows (`CropGeometry.straightenScale`).
 - The crop is a rect in 0…1 units of the frame after straighten, quarter turns, and flip. Origin is top left. So 1 value works on the preview and on the full-size image.
 - A quarter turn or a flip moves the crop rect with the image.

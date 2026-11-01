@@ -126,6 +126,78 @@ struct PhotoExportTests {
         #expect(try FileFingerprint(of: other) == before)
     }
 
+    @Test func exportOverALinkToAnotherSessionPhotoIsRefused() async throws {
+        let f = try fixture()
+        let other = f.source.appending(path: "Other.jpg")
+        try TestImages.writeJPEG(to: other, color: (1, 2, 3))
+        let before = try FileFingerprint(of: other)
+        let link = f.source.appending(path: "link.jpg")
+        let hard = f.source.appending(path: "hard.jpg")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: other)
+        try FileManager.default.linkItem(at: other, to: hard)
+        for dest in [link, hard] {
+            await #expect(throws: PhotoExportError.wouldReplaceOriginal) {
+                try await service().exportCopy(
+                    of: f.original, edit: .original, to: dest, format: .jpeg,
+                    protected: protected(f.source, ids: ["IMG_2048.jpg", "Other.jpg"]))
+            }
+        }
+        #expect(try FileFingerprint(of: other) == before)
+        #expect(leftovers(in: f.source) == ["IMG_2048.jpg", "Other.jpg", "hard.jpg", "link.jpg"])
+    }
+
+    @Test func otherPathsResolveSymlinks() throws {
+        let dir = try TempDir()
+        let real = dir.url.appending(path: "RealTrash", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        let alias = dir.url.appending(path: "Alias")
+        try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: real)
+        let source = dir.url.appending(path: "Photos", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        let p = ProtectedFiles(source: source, mediaIDs: [], otherPaths: [alias.appending(path: "Gone.jpg").path])
+        #expect(p.contains(real.appending(path: "gone.jpg")))
+        #expect(p.contains(alias.appending(path: "Gone.jpg")))
+    }
+
+    @Test func exportKeepsGPS() async throws {
+        let f = try fixture()
+        let gps: [CFString: Any] = [
+            kCGImagePropertyGPSLatitude: 10.5, kCGImagePropertyGPSLatitudeRef: "N",
+            kCGImagePropertyGPSLongitude: 20.25, kCGImagePropertyGPSLongitudeRef: "E",
+        ]
+        try TestImages.writeQuadrants(
+            to: f.original, type: .jpeg, width: 80, height: 40, extra: [kCGImagePropertyGPSDictionary: gps])
+        let dest = f.source.appending(path: "gps edited.jpg")
+        _ = try await service().exportCopy(
+            of: f.original, edit: .original, to: dest, format: .jpeg, protected: protected(f.source))
+        let out = properties(of: dest)[kCGImagePropertyGPSDictionary] as? [CFString: Any]
+        #expect((out?[kCGImagePropertyGPSLatitude] as? NSNumber)?.doubleValue == 10.5)
+        #expect((out?[kCGImagePropertyGPSLongitude] as? NSNumber)?.doubleValue == 20.25)
+    }
+
+    @Test func aCancelledExportWritesNothing() async throws {
+        let f = try fixture()
+        let dest = f.source.appending(path: "x edited.jpg")
+        let svc = service()
+        let prot = protected(f.source)
+        let task = Task { try await svc.exportCopy(of: f.original, edit: .original, to: dest, format: .jpeg, protected: prot) }
+        task.cancel()
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(leftovers(in: f.source) == ["IMG_2048.jpg"])
+    }
+
+    @Test func aCancelledWriteRemovesTheTempFile() async throws {
+        let dir = try TempDir()
+        let image = try TestImages.quadrantImage(width: 20, height: 10)
+        let task = Task {
+            try ImageExportRepository().write(
+                image, to: dir.url.appending(path: "x.jpg"), format: .jpeg, quality: 0.9, properties: [:], replacing: false)
+        }
+        task.cancel()
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(leftovers(in: dir.url).isEmpty)
+    }
+
     @Test func protectedFilesCompareCanonicalNfcAndCase() throws {
         let dir = try TempDir()
         let source = dir.url.appending(path: "Photos", directoryHint: .isDirectory)

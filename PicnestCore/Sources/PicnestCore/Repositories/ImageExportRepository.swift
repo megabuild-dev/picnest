@@ -21,6 +21,7 @@ public struct ImageExportRepository: Sendable {
             .appending(path: ".\(url.lastPathComponent).\(UUID().uuidString).tmp", directoryHint: .notDirectory)
         do {
             try encode(image, to: temp, format: format, quality: quality, properties: properties)
+            try Task.checkCancellation()
             if replacing {
                 _ = try FileManager.default.replaceItemAt(url, withItemAt: temp)
             } else {
@@ -28,7 +29,7 @@ public struct ImageExportRepository: Sendable {
             }
         } catch {
             try? fileOps.remove(temp)
-            if let error = error as? PhotoExportError { throw error }
+            if error is CancellationError || error is PhotoExportError { throw error }
             throw PhotoExportError.cannotWrite(error.localizedDescription)
         }
     }

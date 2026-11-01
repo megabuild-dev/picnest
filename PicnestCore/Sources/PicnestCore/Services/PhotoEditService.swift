@@ -153,18 +153,22 @@ public final class PhotoEditService: Sendable {
             throw PhotoExportError.wouldReplaceOriginal
         }
         guard FileManager.default.fileExists(atPath: original.path) else { throw PhotoExportError.originalMissing }
-        return try await Task.detached(priority: .userInitiated) { [self] in
+        try Task.checkCancellation()
+        // A detached task does not inherit the cancellation of the caller, so pass it on.
+        let work = Task.detached(priority: .userInitiated) { [self] in
             guard let full = images.fullImage(at: original) else { throw PhotoExportError.cannotRead }
             guard let edited = apply(edit, to: full.image) else {
                 throw PhotoExportError.cannotWrite("The edit cannot be applied.")
             }
+            try Task.checkCancellation()
             let replacing = FileManager.default.fileExists(atPath: destination.path)
             try writer.write(
                 edited, to: destination, format: format, quality: Self.exportQuality,
                 properties: Self.exportProperties(from: full.properties, width: edited.width, height: edited.height),
                 replacing: replacing)
             return destination
-        }.value
+        }
+        return try await withTaskCancellationHandler { try await work.value } onCancel: { work.cancel() }
     }
 
     /// The properties of the original with orientation 1 (the pixels are upright), the new size, and no

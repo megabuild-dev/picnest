@@ -194,4 +194,35 @@ import Testing
         h.undo()
         #expect(h.current == .original)
     }
+
+    @Test func flipMirrorsTheStraightenAngle() {
+        var e = PhotoEdit.original
+        e.straighten = 5
+        e.flip(horizontal: true)
+        #expect(e.straighten == -5)
+        e.flip(horizontal: false)
+        #expect(e.straighten == 5)
+    }
+
+    @Test func flippingTwiceRestoresTheEdit() {
+        var e = PhotoEdit.original
+        e.straighten = 7
+        e.crop = NormalizedRect(x: 0.125, y: 0.25, width: 0.25, height: 0.5)
+        let before = e
+        e.flip(horizontal: true)
+        e.flip(horizontal: true)
+        #expect(e == before)
+        e.flip(horizontal: false)
+        e.flip(horizontal: false)
+        #expect(e == before)
+    }
+
+    @Test func quarterTurnKeepsTheStraightenAngle() {
+        var e = PhotoEdit.original
+        e.straighten = 5
+        e.rotate(clockwise: true)
+        #expect(e.straighten == 5)
+        e.rotate(clockwise: false)
+        #expect(e.straighten == 5)
+    }
 }

@@ -45,8 +45,8 @@ public enum AspectRatio: String, CaseIterable, Sendable, Hashable {
     }
 }
 
-/// The edit recipe of one photo. The flips apply after the quarter turns,
-/// in the frame the user sees. `crop` is in that same frame.
+/// The edit recipe of one photo. The pipeline order is: quarter turns, flips, straighten, crop, adjustments,
+/// all in the frame the user sees. `straighten` is clockwise on screen. `crop` is in that same frame.
 public struct PhotoEdit: Sendable, Hashable {
     public var straighten: Double = 0 {
         didSet { straighten = min(max(straighten, -45), 45) }
@@ -88,6 +88,9 @@ public struct PhotoEdit: Sendable, Hashable {
     }
 
     public mutating func flip(horizontal: Bool) {
+        // The straighten turns the frame after the flips. A mirror reverses a turn, so the angle changes
+        // sign: a flip then keeps the same picture, mirrored.
+        straighten = -straighten
         if horizontal {
             flipHorizontal.toggle()
             crop.x = 1 - crop.x - crop.width
