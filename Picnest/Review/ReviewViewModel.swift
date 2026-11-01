@@ -32,11 +32,11 @@ final class ReviewViewModel {
         }
     }
 
-    /// The badge at the top left of a tile. Tiles without a score (Don't move, videos, unreadable) have none.
+    /// The badge of a tile. Tiles without a score (Don't move, videos, unreadable) have none.
+    /// The tile shows an uncertain score on the photo and "Chosen by you" below the photo.
     enum Badge: Hashable {
-        /// Green if not uncertain, amber if uncertain.
         case percent(Int, isUncertain: Bool)
-        /// A manual pick: "✓ You".
+        /// A manual pick.
         case you
     }
 
@@ -54,6 +54,8 @@ final class ReviewViewModel {
         let name: String
         let secondLine: String
         let badge: Badge?
+        /// The VoiceOver label: file name, category, and state.
+        let accessibilityLabel: String
     }
 
     static let noDate = String(localized: "no date")
@@ -489,7 +491,25 @@ final class ReviewViewModel {
         case .heldNotSure(let a): .percent(a.percent, isUncertain: true)
         case .dontMove, .unreadable, nil: nil
         }
-        return TileModel(name: name, secondLine: secondLine(id, state: state, session: session), badge: badge)
+        return TileModel(
+            name: name, secondLine: secondLine(id, state: state, session: session), badge: badge,
+            accessibilityLabel: accessibilityLabel(id, name: name, state: state, session: session))
+    }
+
+    private func accessibilityLabel(_ id: MediaID, name: String, state: PhotoState?, session: Session) -> String {
+        var parts = [name]
+        let categoryID: CategoryID? = switch state {
+        case .manual(let c): c
+        case .auto(let a) where !a.uncertain: a.categoryID
+        default: nil
+        }
+        if let categoryID, let category = session.categories.first(where: { $0.id == categoryID }) {
+            parts.append(category.displayName)
+        }
+        if state?.isNotSure == true { parts.append(String(localized: "Needs Review")) }
+        if state?.isManual == true { parts.append(String(localized: "Chosen by you")) }
+        if selection.contains(id) { parts.append(String(localized: "selected")) }
+        return parts.joined(separator: ", ")
     }
 
     /// The facts of the inspector for `id`, or nil if the photo is unknown.

@@ -510,6 +510,17 @@ struct ReviewViewModelTests {
         #expect(model.tile("g.mov").badge == nil)
     }
 
+    @Test func tileAccessibilityLabel() throws {
+        let model = try makeModel()
+        #expect(model.tile("c.jpg").accessibilityLabel.contains("Chosen by you"))
+        #expect(model.tile("c.jpg").accessibilityLabel.hasPrefix("c.jpg"))
+        #expect(model.tile("d.jpg").accessibilityLabel.contains("Needs Review"))
+        #expect(!model.tile("a.jpg").accessibilityLabel.contains("Needs Review"))
+        #expect(!model.tile("a.jpg").accessibilityLabel.contains("selected"))
+        model.click("a.jpg", modifiers: [])
+        #expect(model.tile("a.jpg").accessibilityLabel.hasSuffix("selected"))
+    }
+
     @Test func secondLineIsDateOrNoDateInCategoryViews() throws {
         let model = try makeModel()
         model.selectedItem = .category(food.id)

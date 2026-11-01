@@ -69,6 +69,12 @@ enum Theme {
     /// Selected sidebar row (mockup #F3E3E4).
     static let selection = ThemeColor(light: 0xF3E3E4, dark: 0x3A2A30)
 
+    /// Dark pill on a photo (used at alpha 0.8) and its text. Same in light and dark, because the photo decides the ground.
+    static let badgeBackground = ThemeColor(light: 0x1A1618, dark: 0x1A1618)
+    static let onBadge = ThemeColor(light: 0xFFFFFF, dark: 0xFFFFFF)
+    /// Alpha of `badgeBackground`. At least 0.7 keeps the text readable on a white photo.
+    static let badgeAlpha = 0.8
+
     enum Metrics {
         static let tileCorner: CGFloat = 10
         static let gridSpacing: CGFloat = 12

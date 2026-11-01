@@ -44,6 +44,17 @@ final class ThemeTests: XCTestCase {
         }
     }
 
+    func testBadgeTextIsReadableOnBadgeBackgroundOverWhitePhoto() {
+        XCTAssertGreaterThanOrEqual(Theme.badgeAlpha, 0.7)
+        // Worst case: the pill over a white photo.
+        func blend(_ c: RGB) -> RGB {
+            let a = Theme.badgeAlpha
+            return RGB(r: c.r * a + (1 - a), g: c.g * a + (1 - a), b: c.b * a + (1 - a))
+        }
+        XCTAssertGreaterThanOrEqual(Theme.onBadge.light.contrast(with: blend(Theme.badgeBackground.light)), 4.5)
+        XCTAssertGreaterThanOrEqual(Theme.onBadge.dark.contrast(with: blend(Theme.badgeBackground.dark)), 4.5)
+    }
+
     func testColorResolvesPerAppearance() throws {
         let accent = Theme.accent
         XCTAssertNotEqual(accent.light, accent.dark)

@@ -2430,6 +2430,16 @@
         }
       }
     },
+    "selected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "đã chọn"
+          }
+        }
+      }
+    },
     "the file is not in the Trash any more" : {
       "localizations" : {
         "vi" : {
@@ -2456,16 +2466,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%@” đã bị di chuyển, đổi tên hoặc xóa. Hãy tìm nó để tiếp tục."
-          }
-        }
-      }
-    },
-    "✓ You" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "✓ Bạn"
           }
         }
       }
