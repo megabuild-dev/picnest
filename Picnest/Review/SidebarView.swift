@@ -1,7 +1,7 @@
 import PicnestCore
 import SwiftUI
 
-/// Review sidebar (spec 3.3): sections Review, Categories, Tools and Other, each item with a count.
+/// Review sidebar (spec 4.2): sections Library, Categories and Tools, each item with a count.
 /// Category rows take dropped photos, drag to change the order, and have a context menu: Rename,
 /// Change Icon, Merge Into…, Delete.
 struct SidebarView: View {
@@ -20,12 +20,13 @@ struct SidebarView: View {
     var body: some View {
         let counts = model.sidebarCounts
         return List(selection: selection) {
-            Section("Review") {
-                row(counts, .all, "All photos", icon: .symbol("photo.on.rectangle", .secondary))
-                row(counts, .notSure, "Not sure", icon: .symbol("exclamationmark.triangle.fill", Theme.needsReview.color))
-                row(counts, .changedByYou, "Changed by you", icon: .symbol("checkmark", Theme.confirmed.color))
-            }
-            Section("Categories") {
+            Section {
+                row(counts, .all, "All Photos", icon: .symbol("photo.on.rectangle", Theme.textSecondary.color))
+                row(counts, .notSure, "Needs Review", icon: .symbol("exclamationmark.triangle.fill", Theme.needsReview.color))
+                // Task 2.3 replaces this row with a filter chip and removes it from the sidebar.
+                row(counts, .changedByYou, "Chosen by you", icon: .symbol("checkmark", Theme.confirmed.color))
+            } header: { sectionHeader("Library") }
+            Section {
                 ForEach(model.categories) { category in
                     categoryRow(counts, category)
                 }
@@ -36,19 +37,18 @@ struct SidebarView: View {
                     Label("New Category…", systemImage: "plus")
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary.color)
                 .selectionDisabled()
-            }
-            Section("Tools") {
-                row(counts, .duplicates, "Duplicates", icon: .symbol("square.on.square", .secondary))
-            }
-            Section("Other") {
-                row(counts, .dontMove, "Don't move", icon: .symbol("nosign", .secondary))
-                row(counts, .videos, "Videos", icon: .symbol("video", .secondary))
-                row(counts, .unreadable, "Unreadable", icon: .symbol("exclamationmark.octagon", .secondary))
-            }
+            } header: { sectionHeader("Categories") }
+            Section {
+                row(counts, .duplicates, "Duplicates", icon: .symbol("square.on.square", Theme.textSecondary.color))
+                row(counts, .dontMove, "Don't move", icon: .symbol("nosign", Theme.textSecondary.color))
+                row(counts, .videos, "Videos", icon: .symbol("video", Theme.textSecondary.color))
+                row(counts, .unreadable, "Unreadable", icon: .symbol("exclamationmark.octagon", Theme.textSecondary.color))
+            } header: { sectionHeader("Tools") }
         }
         .listStyle(.sidebar)
+        .tint(Theme.accent.color)
         .alert("Rename Category", isPresented: isPresented($renaming)) {
             TextField("Name", text: $nameDraft)
             Button("Rename") { if let renaming { model.renameCategory(renaming, to: nameDraft) } }
@@ -60,6 +60,11 @@ struct SidebarView: View {
         } message: {
             Text(deleting.map(model.deleteMessage(for:)) ?? "")
         }
+    }
+
+    /// A section title as in the mockups: regular weight, secondary color, no capitals.
+    private func sectionHeader(_ title: LocalizedStringKey) -> some View {
+        Text(title).font(.system(size: 13)).foregroundStyle(Theme.textSecondary.color)
     }
 
     private var deletingTitle: String { deleting.map(model.deleteConfirmation(for:)) ?? "" }

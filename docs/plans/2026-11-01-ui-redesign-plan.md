@@ -27,7 +27,7 @@ links:
 ## Status (update after each task)
 
 - [x] Phase 0: Foundation (tasks 0.1 to 0.7). Merged into `ui-redesign`. Manual checks A and B wait for the owner.
-- [ ] Phase 1: App shell (tasks 1.1 to 1.4)
+- [x] Phase 1: App shell (tasks 1.1 to 1.4). Merged into `ui-redesign`. Manual checks C and D wait for the owner.
 - [ ] Phase 2: Screens (tasks 2.1 to 2.8)
 - [ ] Phase 3: Favorites, Collections, Recently Deleted. Write a detailed plan after phase 2 (section "Later phases").
 - [ ] Phase 4: Photo Editor. Same rule.
@@ -298,6 +298,7 @@ For each task: restyle on `Theme`, add new strings with `vi`, keep ViewModel rul
 - [ ] **Step 1: Write failing tests** in `ReviewViewModelTests`: `testIssueFilterLowConfidence`, `testIssueFilterNoCategory`, `testIssueFilterSimilar`, `testNilIssueShowsAllNeedsReview`. Use the fixtures in `PicnestTests/Support.swift`.
 - [ ] **Step 2: Run them.** Expected: FAIL.
 - [ ] **Step 3: Implement** `ReviewIssue` and the filter.
+- [ ] **Step 3b: Search in Needs Review (open decision from task 1.1).** `notSureGroups`, `selectGroup`, `acceptGroup`, and `acceptAll` ignore `searchText`, while `visibleIDs` honors it. Make what the view shows and what **Accept** acts on the same set. Rule: show only matching photos, and make Accept N, Select Group, and Accept All Best Guesses act on matching photos only. Add tests for each.
 - [ ] **Step 4: Restyle** the view: title with "N photos need a quick check", amber banner (closable), 3 filter menus, sort menu, floating selection bar (thumbnails of selected photos, "N selected", **Move to…**, **Ignore**, more menu). Use **Accept suggestion** in the inspector.
 - [ ] **Step 5: Run tests.** Expected: PASS. Commit `feat(ui): restyle Needs Review`.
 

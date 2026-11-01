@@ -10,16 +10,7 @@ struct SelectionBar: View {
     var body: some View {
         HStack(spacing: 10) {
             Text("\(model.selection.count) selected").fontWeight(.bold).monospacedDigit()
-            if model.canAcceptSelection {
-                Button("Accept Best Guess", systemImage: "checkmark", action: model.acceptSelection)
-                    .tint(.accentColor)
-                    .help("Move the selected Not sure photos to their best guess")
-            }
-            moveMenu
-            Button("Don't Move", action: model.dontMoveSelection)
-                .help("Keep the selected photos where they are")
-            Button("Move to Trash", systemImage: "trash") { Task { await model.trashSelection() } }
-                .help("Move the selected photos to the Trash. Undo puts them back.")
+            SelectionActions(model: model)
             // The hints drop out, the right one first, when the window is narrow.
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 10) {
@@ -45,12 +36,6 @@ struct SelectionBar: View {
         .shadow(color: .black.opacity(0.14), radius: 11, y: 6)
     }
 
-    private var moveMenu: some View {
-        Menu("Move to…") { MoveToMenuItems(model: model) }
-            .menuStyle(.button)
-            .fixedSize()
-    }
-
     private var shortcuts: some View {
         HStack(spacing: 4) {
             KeyCap("⌘A")
@@ -71,6 +56,27 @@ struct SelectionBar: View {
         }
         .foregroundStyle(.secondary)
         .fixedSize()
+    }
+}
+
+/// The buttons that act on the selection: **Accept Best Guess**, **Move to…**, **Don't Move**, **Move to Trash**.
+/// The selection bar and the inspector share them. The caller puts them in a stack.
+struct SelectionActions: View {
+    let model: ReviewViewModel
+
+    var body: some View {
+        if model.canAcceptSelection {
+            Button("Accept Best Guess", systemImage: "checkmark", action: model.acceptSelection)
+                .tint(.accentColor)
+                .help("Move the selected Not sure photos to their best guess")
+        }
+        Menu("Move to…") { MoveToMenuItems(model: model) }
+            .menuStyle(.button)
+            .fixedSize()
+        Button("Don't Move", action: model.dontMoveSelection)
+            .help("Keep the selected photos where they are")
+        Button("Move to Trash", systemImage: "trash") { Task { await model.trashSelection() } }
+            .help("Move the selected photos to the Trash. Undo puts them back.")
     }
 }
 

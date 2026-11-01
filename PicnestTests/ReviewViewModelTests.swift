@@ -71,10 +71,12 @@ struct ReviewViewModelTests {
     private func makeModelAndReview(
         onRescan: @escaping () -> Void = {}, trashOps: FakeTrashFileOps = FakeTrashFileOps(), openURL: @escaping @MainActor (URL) -> Void = { _ in },
         revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in },
-        folderExists: @escaping (URL) -> Bool = { _ in true }) throws -> (model: ReviewViewModel, review: ReviewService) {
+        folderExists: @escaping (URL) -> Bool = { _ in true },
+        session makeCustom: ((URL) -> Session)? = nil,
+        defaults: UserDefaults? = nil) throws -> (model: ReviewViewModel, review: ReviewService) {
         let source = try temp.folder("Photos")
         let review = ReviewService(
-            session: makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
+            session: makeCustom?(source) ?? makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
             sessions: SessionRepository(root: temp.url.appending(path: "Sessions")),
             embeddings: EmbeddingRepository(embedder: FakeEmbedder(), cacheDirectory: temp.url.appending(path: "Cache")),
             trash: TrashService(fileOps: trashOps))
@@ -82,8 +84,143 @@ struct ReviewViewModelTests {
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
             library: environment.library, app: AppModel(environment: environment), onRescan: onRescan,
-            openURL: openURL, revealURLs: revealURLs, folderExists: folderExists)
+            openURL: openURL, revealURLs: revealURLs, folderExists: folderExists,
+            defaults: defaults ?? suite.defaults)
         return (model, review)
+    }
+
+    // MARK: - Filter, search, thumbnail size (UI redesign 4.2)
+
+    private func namedSession(_ names: [String]) -> (URL) -> Session {
+        { source in
+            var session = makeSession(source: source)
+            let extra = names.map { file($0) }
+            session.scan = ScanResult(media: session.scan.media + extra, dates: session.scan.dates, skipped: [:])
+            return session
+        }
+    }
+
+    @Test func testFilterMapsToSidebarItem() throws {
+        let model = try makeModel()
+        for (filter, item) in [(PhotoFilter.all, ReviewViewModel.SidebarItem.all),
+                               (.needsReview, .notSure), (.chosenByYou, .changedByYou)] {
+            model.filter = filter
+            #expect(model.selectedItem == item)
+            model.selectedItem = .duplicates
+            model.selectedItem = item
+            #expect(model.filter == filter)
+        }
+        model.selectedItem = .category(food.id)
+        #expect(model.filter == .all)
+        #expect(PhotoFilter.allCases.count == 3)
+    }
+
+    @Test func testSearchMatchesFileNameIgnoringCaseAndDiacritics() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Ảnh_01.jpg", "Trip/Anh_Dir.jpg", "zzz.jpg"]))
+        model.searchText = "anh"
+        #expect(Set(model.visibleIDs) == ["Ảnh_01.jpg", "Trip/Anh_Dir.jpg"])
+        model.searchText = "ẢNH_01"
+        #expect(model.visibleIDs == ["Ảnh_01.jpg"])
+    }
+
+    @Test func testSearchUsesFileNameNotFolder() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Holiday/x.jpg"]))
+        model.searchText = "holiday"
+        #expect(model.visibleIDs.isEmpty)
+    }
+
+    @Test func testSearchFoldsVietnameseD() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Đà_Lạt.jpg", "other.jpg"]))
+        model.searchText = "da lat".replacingOccurrences(of: " ", with: "_")
+        #expect(model.visibleIDs == ["Đà_Lạt.jpg"])
+        model.searchText = "đà"
+        #expect(model.visibleIDs == ["Đà_Lạt.jpg"])
+    }
+
+    @Test func testSearchEmptyShowsAll() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Ảnh_01.jpg"]))
+        let all = model.visibleIDs
+        model.searchText = "Ảnh"
+        #expect(model.visibleIDs.count == 1)
+        model.searchText = ""
+        #expect(model.visibleIDs == all)
+        model.searchText = "   "
+        #expect(model.visibleIDs == all)
+    }
+
+    @Test func testSearchWorksWithItemAndSortOrder() throws {
+        let model = try makeModel()
+        model.sortOrder = .name
+        model.selectedItem = .all
+        model.searchText = ".jpg"
+        #expect(model.visibleIDs == ["a.jpg", "b.jpg", "c.jpg", "d.jpg", "e.jpg", "f.jpg", "h.jpg"].filter { model.visibleIDs.contains($0) })
+        model.selectedItem = .changedByYou
+        model.searchText = "c"
+        #expect(model.visibleIDs == ["c.jpg"])
+        model.searchText = "a"
+        #expect(model.visibleIDs.isEmpty)
+        model.selectedItem = .notSure
+        model.searchText = "d"
+        #expect(model.searchText.isEmpty)
+    }
+
+    @Test func testEnteringNeedsReviewClearsSearchAndDisablesIt() throws {
+        let model = try makeModel()
+        #expect(model.isSearchEnabled)
+        model.searchText = "jpg"
+        model.selectedItem = .notSure
+        #expect(model.searchText.isEmpty)
+        #expect(!model.isSearchEnabled)
+        model.searchText = "x"
+        #expect(model.searchText.isEmpty)
+        model.selectedItem = .all
+        #expect(model.isSearchEnabled)
+    }
+
+    @Test func testEmptyStateNoResultsWhenSearchMatchesNothing() throws {
+        let model = try makeModel()
+        #expect(model.emptyState == nil)
+        model.searchText = "no-such-file"
+        #expect(model.emptyState == .noResults)
+        model.searchText = "   "
+        #expect(model.emptyState == nil)
+    }
+
+    @Test func testEmptyStateEmptyFolderWhenNoPhotos() throws {
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.scan = ScanResult(media: [], dates: [:], skipped: [:])
+            session.states = [:]
+            return session
+        })
+        #expect(model.emptyState == .emptyFolder)
+        model.searchText = "x"
+        #expect(model.emptyState == .noResults)
+        model.selectedItem = .notSure
+        #expect(model.emptyState == nil)
+    }
+
+    @Test func testSearchDoesNotChangeSidebarCounts() throws {
+        let model = try makeModel()
+        let before = model.sidebarCounts
+        model.searchText = "zzz-no-match"
+        #expect(model.sidebarCounts == before)
+        #expect(model.count == model.count(of: model.selectedItem))
+    }
+
+    @Test func testThumbnailSizeIsClampedAndSaved() throws {
+        let defaults = suite.defaults
+        let (model, _) = try makeModelAndReview(defaults: defaults)
+        #expect(model.thumbnailSize == 160)
+        model.thumbnailSize = 50
+        #expect(model.thumbnailSize == 80)
+        #expect(defaults.double(forKey: "thumbnailSize") == 80)
+        model.thumbnailSize = 999
+        #expect(model.thumbnailSize == 240)
+        #expect(defaults.double(forKey: "thumbnailSize") == 240)
+        model.thumbnailSize = 120
+        let (again, _) = try makeModelAndReview(defaults: defaults)
+        #expect(again.thumbnailSize == 120)
     }
 
     // MARK: - Save errors (final review I4)
@@ -393,20 +530,11 @@ struct ReviewViewModelTests {
 
     @Test func titleShowsEmojiForCategories() throws {
         let model = try makeModel()
-        #expect(model.title == "All photos")
+        #expect(model.title == "All Photos")
         model.selectedItem = .category(food.id)
         #expect(model.title == "🍜 Food")
         model.selectedItem = .notSure
-        #expect(model.title == "Not sure")
-    }
-
-    @Test func columnsDefaultToThreeAndStayInRange() throws {
-        let model = try makeModel()
-        #expect(model.columns == 3)
-        model.columns = 12
-        #expect(model.columns == 8)
-        model.columns = 0
-        #expect(model.columns == 2)
+        #expect(model.title == "Needs Review")
     }
 
     @Test func pathAbbreviatesHome() {
@@ -1109,5 +1237,54 @@ struct ReviewViewModelTests {
         #expect(seven.suggest != nil)
         seven.closeSuggest()
         #expect(seven.suggest == nil)
+    }
+
+    // MARK: - Inspector (UI redesign 4.2, 6)
+
+    @Test func inspectorFactsOfOnePhoto() throws {
+        let model = try makeModel()
+        let a = try #require(model.inspectorFacts(for: "a.jpg"))
+        #expect(a.name == "a.jpg")
+        #expect(a.status == .category(emoji: "🍜", name: "Food"))
+        #expect(a.confidence == 91)
+        #expect(a.fileSize == 10)
+        #expect(a.date == day(2024, 5, 12))
+        #expect(a.suggestion == nil)
+        #expect(!a.isUncertain)
+        #expect(model.inspectorFacts(for: "nope.jpg") == nil)
+    }
+
+    @Test func inspectorFactsOfNotSurePhotoHaveSuggestionAndAlternative() throws {
+        let model = try makeModel()
+        let d = try #require(model.inspectorFacts(for: "d.jpg"))
+        #expect(d.status == .notSure)
+        #expect(d.isUncertain)
+        #expect(d.confidence == 41)
+        #expect(d.suggestion == .init(categoryName: "Food", alternativeName: "Documents", alternativePercent: 38))
+    }
+
+    @Test func inspectorFactsOfHandChosenPhotoShowNoConfidence() throws {
+        let model = try makeModel()
+        let c = try #require(model.inspectorFacts(for: "c.jpg"))
+        #expect(c.isChosenByYou)
+        #expect(c.confidence == nil)
+        #expect(c.status == .category(emoji: "🍜", name: "Food"))
+    }
+
+    @Test func inspectorFactsDateIsNilWhenOnlyModificationTimeIsKnown() throws {
+        let model = try makeModel()
+        #expect(try #require(model.inspectorFacts(for: "h.jpg")).date == nil)
+        #expect(try #require(model.inspectorFacts(for: "e.jpg")).status == .staysHere)
+        #expect(try #require(model.inspectorFacts(for: "f.jpg")).status == .none)
+    }
+
+    @Test func pixelSizeLoadsOffMainAndIsNilForUnreadableFile() async throws {
+        let (model, _) = try makeModelAndReview()
+        let source = try temp.folder("Photos")
+        try writeTestJPEG(to: source.appending(path: "a.jpg"), red: 0.1, green: 0.2, blue: 0.3, size: 48)
+        try Data("not an image".utf8).write(to: source.appending(path: "b.jpg"))
+        #expect(await model.pixelSize(of: "a.jpg") == PixelSize(width: 48, height: 48))
+        #expect(await model.pixelSize(of: "b.jpg") == nil)
+        #expect(await model.pixelSize(of: "missing.jpg") == nil)
     }
 }

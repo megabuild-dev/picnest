@@ -20,6 +20,15 @@ public final class ThumbnailService: Sendable {
         await images.thumbnail(for: source.appending(path: media.relativePath), maxPixel: maxPixel)
     }
 
+    /// The pixel size of `media`, read from the image properties off the caller's actor. Nil if unreadable.
+    public func pixelSize(of media: MediaFile, source: URL) async -> PixelSize? {
+        let url = source.appending(path: media.relativePath)
+        let images = images
+        return await Task.detached(priority: .utility) {
+            images.pixelSize(for: url).map { PixelSize(width: $0.width, height: $0.height) }
+        }.value
+    }
+
     /// 2 × the tile width in points (for Retina screens), rounded up to the next step.
     /// Widths above the last step use the last step.
     public static func maxPixel(forTileWidth width: Double) -> Int {

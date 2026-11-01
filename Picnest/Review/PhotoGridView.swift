@@ -4,7 +4,7 @@ import PicnestCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The photo grid (spec 3.3): `columns` flexible columns. Click, ⌘-click and ⇧-click select, ⌘A selects
+/// The photo grid (spec 3.3): columns that are at least `thumbnailSize` wide. Click, ⌘-click and ⇧-click select, ⌘A selects
 /// all, Space, Return and double-click open Quick Look, keys 1 to 9 move the selection, and tiles drag to a
 /// sidebar category. The selection bar shows at the bottom while photos are selected.
 struct PhotoGridView: View {
@@ -25,11 +25,29 @@ struct PhotoGridView: View {
                 .padding(.bottom, 20)
             }
             .overlay {
-                if ids.isEmpty {
-                    ContentUnavailableView("No Photos", systemImage: "photo.on.rectangle",
-                                           description: Text("No photos are in this list."))
-                }
+                if ids.isEmpty { emptyView }
             }
+        }
+    }
+}
+
+extension PhotoGridView {
+    /// The message of an empty grid, with one action (the ViewModel decides which).
+    @ViewBuilder fileprivate var emptyView: some View {
+        switch model.emptyState {
+        case .noResults:
+            VStack(spacing: 12) {
+                ContentUnavailableView.search(text: model.searchText)
+                Button("Clear Search") { model.searchText = "" }
+            }
+        case .emptyFolder:
+            VStack(spacing: 12) {
+                ContentUnavailableView("No photos in this folder.", systemImage: "photo.on.rectangle")
+                Button("Rescan", action: model.rescan).disabled(!model.canSortOrRescan)
+            }
+        case nil:
+            ContentUnavailableView("No Photos", systemImage: "photo.on.rectangle",
+                                   description: Text("No photos are in this list."))
         }
     }
 }
@@ -65,7 +83,7 @@ final class ShareAnchor {
 
 /// An invisible background that gives its tile a view for `ShareAnchor`. It lets clicks and the
 /// right-click pass through to the tile above it.
-private struct ShareAnchorView: NSViewRepresentable {
+struct ShareAnchorView: NSViewRepresentable {
     let anchor: ShareAnchor
 
     func makeNSView(context: Context) -> NSView {

@@ -6,6 +6,11 @@ import SwiftUI
 
 /// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
 /// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
+/// The 3 filters of the toolbar. Each one is a sidebar item (`ReviewViewModel.filter`).
+enum PhotoFilter: CaseIterable {
+    case all, needsReview, chosenByYou
+}
+
 @MainActor
 @Observable
 final class ReviewViewModel {
@@ -51,21 +56,64 @@ final class ReviewViewModel {
         let badge: Badge?
     }
 
-    static let columnRange = 2...8
     static let noDate = String(localized: "no date")
     /// The emoji of a category that the user makes with **New Category…**.
     static let newCategoryEmoji = "📁"
 
     var selectedItem: SidebarItem = .all {
-        didSet { if selectedItem != oldValue { clearSelection() } }
+        didSet {
+            guard selectedItem != oldValue else { return }
+            // Needs Review does not honor the search text, so entering it clears the text.
+            if selectedItem == .notSure { searchText = "" }
+            clearSelection()
+        }
     }
     var sortOrder: SortOrder = .lowestConfidence
-    /// Grid columns, 2...8. The toolbar slider sets it.
-    var columns = 3 {
-        didSet {
-            let clamped = min(max(columns, Self.columnRange.lowerBound), Self.columnRange.upperBound)
-            if clamped != columns { columns = clamped }
+
+    /// The toolbar filter. It reads and writes `selectedItem`; a category reads as `.all`.
+    var filter: PhotoFilter {
+        get {
+            switch selectedItem {
+            case .notSure: .needsReview
+            case .changedByYou: .chosenByYou
+            default: .all
+            }
         }
+        set {
+            selectedItem = switch newValue {
+            case .all: .all
+            case .needsReview: .notSure
+            case .chosenByYou: .changedByYou
+            }
+        }
+    }
+
+    /// Shows only the photos whose file name contains this text, ignoring case and diacritics.
+    /// Empty or blank text shows all. Sidebar counts do not change.
+    var searchText = "" {
+        didSet {
+            // Needs Review does not honor the search text yet, so it keeps no text.
+            if !isSearchEnabled, !searchText.isEmpty { searchText = ""; return }
+            if searchText != oldValue { cache = nil }
+        }
+    }
+
+    static let thumbnailSizeRange: ClosedRange<Double> = 80...240
+    static let defaultThumbnailSize = 160.0
+    private static let thumbnailSizeKey = "thumbnailSize"
+
+    /// The grid thumbnail size in points, 80...240. Saved in `UserDefaults` key `thumbnailSize`.
+    var thumbnailSize: Double {
+        didSet {
+            let clamped = Self.clampedThumbnailSize(thumbnailSize)
+            if clamped != thumbnailSize { thumbnailSize = clamped; return }
+            defaults.set(clamped, forKey: Self.thumbnailSizeKey)
+        }
+    }
+    @ObservationIgnored private let defaults: UserDefaults
+
+    private static func clampedThumbnailSize(_ value: Double) -> Double {
+        min(max(value, thumbnailSizeRange.lowerBound), thumbnailSizeRange.upperBound)
     }
     /// The selected photos. Only visible photos stay selected.
     private(set) var selection: Set<MediaID> = []
@@ -109,7 +157,7 @@ final class ReviewViewModel {
 
     /// The cached `visibleIDs`, for the item and order they were made for. Selection changes re-render the
     /// grid, so the list must not be filtered and sorted again then (spec 12, risk 3).
-    @ObservationIgnored private var cache: (item: SidebarItem, order: SortOrder, ids: [MediaID])?
+    @ObservationIgnored private var cache: (item: SidebarItem, order: SortOrder, search: String, ids: [MediaID])?
     /// Set when `review.session` changes; the next read of `visibleIDs` makes the list again.
     @ObservationIgnored private var sessionChanged = false
     /// The cached `notSureGroups`, for the order they were made for. Dropped with `cache` when the session changes.
@@ -130,7 +178,11 @@ final class ReviewViewModel {
          app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
-         folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) {
+         folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
+         defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        let saved = defaults.object(forKey: Self.thumbnailSizeKey) as? Double
+        thumbnailSize = Self.clampedThumbnailSize(saved ?? Self.defaultThumbnailSize)
         self.folderExists = folderExists
         self.openURL = openURL
         self.revealURLs = revealURLs
@@ -181,9 +233,9 @@ final class ReviewViewModel {
 
     var title: String {
         switch selectedItem {
-        case .all: String(localized: "All photos")
-        case .notSure: String(localized: "Not sure")
-        case .changedByYou: String(localized: "Changed by you")
+        case .all: String(localized: "All Photos")
+        case .notSure: String(localized: "Needs Review")
+        case .changedByYou: String(localized: "Chosen by you")
         case .category(let c):
             review.session.categories.first { $0.id == c }.map { "\($0.emoji) \($0.displayName)" }
                 ?? String(localized: "Category")
@@ -303,28 +355,56 @@ final class ReviewViewModel {
     /// The photos of `selectedItem` in `sortOrder`. Made again only when the item, the order, or the
     /// session changes.
     var visibleIDs: [MediaID] {
-        let item = selectedItem, order = sortOrder
+        let item = selectedItem, order = sortOrder, search = searchText
         let session = review.session  // Also makes the reading view depend on the session.
         refreshIfSessionChanged()
-        if let cache, cache.item == item, cache.order == order { return cache.ids }
-        let ids: [MediaID]
+        if let cache, cache.item == item, cache.order == order, cache.search == search { return cache.ids }
+        var ids: [MediaID]
         if item == .notSure {
             // The grouped view shows the photos group by group, so grid order is the flattened groups.
             ids = notSureGroups.flatMap(\.ids)
+            if let needle = Self.searchNeedle(search) {
+                ids = ids.filter { mediaByID[$0].map { Self.matches($0, needle: needle) } ?? false }
+            }
         } else {
-            let files = session.visibleMedia.filter { Self.includes($0, state: session.states[$0.id], in: item) }
+            let needle = Self.searchNeedle(search)
+            let files = session.visibleMedia.filter { media in
+                Self.includes(media, state: session.states[media.id], in: item)
+                    && (needle.map { Self.matches(media, needle: $0) } ?? true)
+            }
             ids = sorted(files, session: session)
         }
-        cache = (item, order, ids)
+        cache = (item, order, search, ids)
         listComputations += 1
         dropHiddenSelection(visible: ids)
         return ids
     }
 
-    /// The grid columns for `columns`.
+    /// The grid columns: as many as fit, each at least `thumbnailSize` wide.
     var gridColumns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: Theme.Metrics.gridSpacing), count: columns)
+        [GridItem(.adaptive(minimum: thumbnailSize), spacing: Theme.Metrics.gridSpacing)]
     }
+
+    /// What the grid shows instead of tiles when it has none.
+    enum EmptyState: Equatable {
+        /// The search text matches no photo. The action is **Clear Search**.
+        case noResults
+        /// The folder has no photos. The action is **Rescan**.
+        case emptyFolder
+    }
+
+    /// The empty state of the flat grid, or nil when it has photos. The Not sure and Duplicates views
+    /// have their own empty views, and a list with no search text keeps the plain "No Photos" message
+    /// unless the whole folder is empty.
+    var emptyState: EmptyState? {
+        guard selectedItem != .notSure, selectedItem != .duplicates, visibleIDs.isEmpty else { return nil }
+        if Self.searchNeedle(searchText) != nil { return .noResults }
+        return count(of: .all) == 0 ? .emptyFolder : nil
+    }
+
+    /// The Needs Review item ignores the search text (it does not filter its groups yet), so the search
+    /// field is off there.
+    var isSearchEnabled: Bool { selectedItem != .notSure }
 
     // MARK: - Not sure
 
@@ -410,6 +490,45 @@ final class ReviewViewModel {
         case .dontMove, .unreadable, nil: nil
         }
         return TileModel(name: name, secondLine: secondLine(id, state: state, session: session), badge: badge)
+    }
+
+    /// The facts of the inspector for `id`, or nil if the photo is unknown.
+    func inspectorFacts(for id: MediaID) -> InspectorFacts? {
+        guard let media = mediaByID[id] else { return nil }
+        let session = review.session
+        let state = session.states[id]
+        func name(_ c: CategoryID) -> String? { session.categories.first { $0.id == c }?.displayName }
+        let assignment = Self.assignment(state)
+        let status: InspectorFacts.Status
+        switch state {
+        case .manual(let c):
+            let category = session.categories.first { $0.id == c }
+            status = category.map { .category(emoji: $0.emoji, name: $0.displayName) } ?? .none
+        case .dontMove: status = .staysHere
+        case .unreadable, nil: status = .none
+        case .auto, .heldNotSure:
+            if state?.isNotSure == true { status = .notSure }
+            else if let a = assignment, let category = session.categories.first(where: { $0.id == a.categoryID }) {
+                status = .category(emoji: category.emoji, name: category.displayName)
+            } else { status = .none }
+        }
+        var suggestion: InspectorFacts.Suggestion?
+        if state?.isNotSure == true, let a = assignment, let best = name(a.categoryID) {
+            suggestion = InspectorFacts.Suggestion(
+                categoryName: best, alternativeName: a.secondCategoryID.flatMap(name),
+                alternativePercent: classify.secondPercent(of: a))
+        }
+        let date = session.scan.dates[id].flatMap { $0.source == .modificationTime ? nil : $0.date }
+        return InspectorFacts(
+            id: id, name: Self.fileName(media), status: status, date: date, fileSize: media.size,
+            confidence: assignment?.percent, isChosenByYou: state?.isManual == true, suggestion: suggestion,
+            isUncertain: state?.isNotSure == true)
+    }
+
+    /// The pixel size of `id`, read off the main thread. Nil if the file cannot be read.
+    func pixelSize(of id: MediaID) async -> PixelSize? {
+        guard let media = mediaByID[id] else { return nil }
+        return await thumbnails.pixelSize(of: media, source: source)
     }
 
     /// The decode size for a tile of `width` points, or 0 while the tile has no width yet. The tile
@@ -776,6 +895,22 @@ final class ReviewViewModel {
 
     private static func fileName(_ media: MediaFile) -> String {
         (media.relativePath as NSString).lastPathComponent
+    }
+
+    /// The folded search text, or nil when it is empty or blank.
+    private static func searchNeedle(_ text: String) -> String? {
+        let needle = fold(text.trimmingCharacters(in: .whitespacesAndNewlines))
+        return needle.isEmpty ? nil : needle
+    }
+
+    /// Lowercase, no diacritics. `đ` has no decomposition, so it folds to `d` by hand.
+    private static func fold(_ text: String) -> String {
+        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+            .replacingOccurrences(of: "đ", with: "d")
+    }
+
+    private static func matches(_ media: MediaFile, needle: String) -> Bool {
+        fold(fileName(media)).contains(needle)
     }
 
     private static func includes(_ media: MediaFile, state: PhotoState?, in item: SidebarItem) -> Bool {

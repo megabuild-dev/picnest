@@ -24,6 +24,16 @@ struct ThumbnailServiceTests {
         #expect(await ThumbnailService(images: ImageRepository()).thumbnail(for: media, source: source, maxPixel: 200) == nil)
     }
 
+    @Test func pixelSizeReadsTheFileAndGivesNilWhenMissing() async throws {
+        let dir = try TempDir()
+        try TestImages.writeJPEG(to: dir.url.appending(path: "a.jpg"), color: (1, 2, 3), size: 48)
+        let service = ThumbnailService(images: ImageRepository())
+        let media = MediaFile(id: "a.jpg", relativePath: "a.jpg", kind: .image, size: 1, modified: Date(timeIntervalSince1970: 0))
+        #expect(await service.pixelSize(of: media, source: dir.url) == PixelSize(width: 48, height: 48))
+        let gone = MediaFile(id: "x.jpg", relativePath: "x.jpg", kind: .image, size: 1, modified: Date(timeIntervalSince1970: 0))
+        #expect(await service.pixelSize(of: gone, source: dir.url) == nil)
+    }
+
     @Test func maxPixelRoundsTwiceTheWidthUpToAStep() {
         #expect(ThumbnailService.maxPixel(forTileWidth: 0) == 200)
         #expect(ThumbnailService.maxPixel(forTileWidth: 90) == 200)
