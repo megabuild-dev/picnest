@@ -91,7 +91,7 @@ struct SortSheet: View {
         if let notice = model.notice {
             Label(notice, systemImage: "exclamationmark.circle")
                 .font(.system(size: 12))
-                .foregroundStyle(ReviewStyle.amber)
+                .foregroundStyle(Theme.needsReview.color)
                 .padding(.bottom, 10)
         }
 
@@ -195,9 +195,9 @@ struct SortSheet: View {
 
     private var summaryIcon: (name: String, color: Color) {
         switch model.state {
-        case .finished: ("checkmark.circle.fill", ReviewStyle.green)
-        case .stopped: ("pause.circle.fill", ReviewStyle.amber)
-        default: ("exclamationmark.triangle.fill", ReviewStyle.amber)
+        case .finished: ("checkmark.circle.fill", Theme.confirmed.color)
+        case .stopped: ("pause.circle.fill", Theme.needsReview.color)
+        default: ("exclamationmark.triangle.fill", Theme.needsReview.color)
         }
     }
 }

@@ -22,8 +22,8 @@ struct SidebarView: View {
         return List(selection: selection) {
             Section("Review") {
                 row(counts, .all, "All photos", icon: .symbol("photo.on.rectangle", .secondary))
-                row(counts, .notSure, "Not sure", icon: .symbol("exclamationmark.triangle.fill", ReviewStyle.amber))
-                row(counts, .changedByYou, "Changed by you", icon: .symbol("checkmark", ReviewStyle.green))
+                row(counts, .notSure, "Not sure", icon: .symbol("exclamationmark.triangle.fill", Theme.needsReview.color))
+                row(counts, .changedByYou, "Changed by you", icon: .symbol("checkmark", Theme.confirmed.color))
             }
             Section("Categories") {
                 ForEach(model.categories) { category in

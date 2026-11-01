@@ -321,7 +321,7 @@ final class ReviewViewModel {
 
     /// The grid columns for `columns`.
     var gridColumns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: ReviewStyle.gridSpacing), count: columns)
+        Array(repeating: GridItem(.flexible(), spacing: Theme.Metrics.gridSpacing), count: columns)
     }
 
     // MARK: - Not sure

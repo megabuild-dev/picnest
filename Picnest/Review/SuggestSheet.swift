@@ -43,7 +43,7 @@ struct SuggestSheet: View {
                 .multilineTextAlignment(.center)
         case .failed(let message):
             Label(message, systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(ReviewStyle.amber)
+                .foregroundStyle(Theme.needsReview.color)
                 .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
         case .ready:
             ScrollView {

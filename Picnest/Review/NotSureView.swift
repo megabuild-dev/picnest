@@ -26,11 +26,11 @@ struct NotSureView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 9)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(ReviewStyle.amber.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
+                            .background(Theme.needsReview.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
                             .padding(.bottom, 6)
                         ForEach(Array(groups.enumerated()), id: \.element.id) { index, group in
                             Section {
-                                LazyVGrid(columns: model.gridColumns, spacing: ReviewStyle.gridSpacing) {
+                                LazyVGrid(columns: model.gridColumns, spacing: Theme.Metrics.gridSpacing) {
                                     ForEach(group.ids, id: \.self) { id in
                                         SelectableTile(model: model, id: id, isSelected: selection.contains(id), onTap: onTap)
                                     }
@@ -52,7 +52,7 @@ struct NotSureView: View {
 private struct NoticeLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 10) {
-            configuration.icon.foregroundStyle(ReviewStyle.amber)
+            configuration.icon.foregroundStyle(Theme.needsReview.color)
             configuration.title
         }
     }

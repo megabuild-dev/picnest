@@ -235,8 +235,8 @@ struct ReviewView: View {
 
     private var chipTint: Color {
         switch model.selectedItem {
-        case .notSure: ReviewStyle.amber
-        case .changedByYou: ReviewStyle.green
+        case .notSure: Theme.needsReview.color
+        case .changedByYou: Theme.confirmed.color
         case .category: .accentColor
         default: .secondary
         }
