@@ -72,7 +72,6 @@ Terms are defined in [[dictionary]]. Section 13 adds the new app terms.
 - Content classification of videos.
 - Duplicate detection of videos.
 - Photos library (Photos.app) import. The app works only on Finder folders.
-- Interface languages other than English.
 - iOS or iPadOS versions.
 
 ### 1.5 Anti-goals

@@ -34,9 +34,59 @@ The app tests need the model files. The core tests do not.
 ## Translate Picnest
 
 All UI text is in `Picnest/Localizable.xcstrings`. English is the source language, and `vi` is the first translation.
-After you add or change a text in Swift, build the app, then run `python3 -I scripts/sync-string-catalog.py`.
-The script adds each new key to the catalog. Give every new key a `vi` value with state `translated`.
-`python3 -I scripts/sync-string-catalog.py --check` shows keys that the catalog lacks. The tests fail on a key with no `vi` value.
+
+### Add a language
+
+1. Open `Picnest/Localizable.xcstrings` in Xcode.
+2. Click the **+** button under the language list. Choose your language.
+3. Fill in every key for the new language. Set each value to the state `Translated`.
+4. Run `xcodegen generate`. It reads the languages from the catalog and updates `knownRegions` in the project file.
+5. Add the language to the Settings picker. See "Show the language in Settings".
+6. Run `PicnestTests/CatalogTests` (see "Check the catalog").
+
+### Keep the catalog in step with the code
+
+After you add or change a text in Swift, build the app. Then run `python3 -I scripts/sync-string-catalog.py`.
+The script adds each new key to the catalog. It marks each key that the code no longer uses as `stale`.
+Give every new key a `vi` value with the state `translated`.
+Run `python3 -I scripts/sync-string-catalog.py --check` to see the differences without a change.
+The `--check` option changes no file. It shows the keys that the catalog lacks and the keys that the code no longer uses. It exits with code 1 when it finds a difference.
+
+### Check the catalog
+
+Run the catalog tests:
+
+```bash
+xcodebuild test -project Picnest.xcodeproj -scheme Picnest -destination 'platform=macOS' -only-testing:PicnestTests/CatalogTests
+```
+
+The tests fail when a key has no `translated` value for `vi`. They also fail when the catalog has a `stale` key.
+The tests check `vi` only. They do not check a new language.
+To check a new language, search the catalog for keys that lack it. Xcode shows these keys as empty in the language column.
+
+### Show the language in Settings
+
+Settings > Language lets the user pick **System**, **English**, or **Tiếng Việt**. To add a language, change `AppLanguage` in `Picnest/Settings/LanguageStore.swift`:
+
+1. Add a `case` with the language code, for example `case system, en, vi, fr`.
+2. Add a line to `displayName` with the name of the language in that language, for example `case .fr: "Français"`. Do not translate this name.
+
+`AppLanguage` is a `CaseIterable` enum, so the picker shows the new case with no other change. `LanguageStoreTests` shows how to test it.
+
+### Test the layout
+
+Long text can break a layout. Run the app with a long pseudo-language:
+
+1. Choose **Product > Scheme > Edit Scheme**.
+2. Select **Run**, then the **Options** tab.
+3. Set **App Language** to **Double-Length Pseudolanguage**.
+4. Click Run. Look for clipped or overlapping text.
+
+### Rules
+
+- Settings > Language picks English or Tiếng Việt. A new language also needs an entry in `AppLanguage`.
+- Category names and CLIP prompts are data. Never translate them.
+- A plural key needs the variants `one` and `other`. Add more variants only when your language needs them.
 
 ## Code rules
 
