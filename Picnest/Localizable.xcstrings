@@ -1527,6 +1527,16 @@
         }
       }
     },
+    "Mode" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chế độ"
+          }
+        }
+      }
+    },
     "More" : {
       "localizations" : {
         "vi" : {
@@ -1901,16 +1911,6 @@
         }
       }
     },
-    "Open %@" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mở %@"
-          }
-        }
-      }
-    },
     "Open System Settings" : {
       "localizations" : {
         "vi" : {
@@ -1950,6 +1950,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Picnest không thể mở thư mục này."
+          }
+        }
+      }
+    },
+    "Picnest checks for a new version once a day. It sends no photos and no personal data." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest kiểm tra phiên bản mới mỗi ngày một lần. Ứng dụng không gửi ảnh và không gửi dữ liệu cá nhân."
           }
         }
       }
@@ -2836,6 +2846,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không đọc được"
+          }
+        }
+      }
+    },
+    "Updates" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cập nhật"
           }
         }
       }
