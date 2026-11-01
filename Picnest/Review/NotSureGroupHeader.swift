@@ -16,10 +16,10 @@ struct NotSureGroupHeader: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.textSecondary.color)
             Spacer()
-            Button("Select All") { model.selectGroup(at: index) }
+            Button("Select All") { model.selectGroup(group) }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
-            Button("Accept \(group.ids.count.formatted())", systemImage: "checkmark") { model.acceptGroup(at: index) }
+            Button("Accept \(group.ids.count.formatted())", systemImage: "checkmark") { model.acceptGroup(group) }
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.capsule)
                 .tint(Theme.accent.color)
@@ -28,6 +28,6 @@ struct NotSureGroupHeader: View {
         .padding(.top, index == 0 ? 8 : 18)
         .padding(.bottom, 10)
         // An opaque header, so tiles that scroll under it do not show through.
-        .background(.background)
+        .background(Theme.background.color)
     }
 }

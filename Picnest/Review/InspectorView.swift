@@ -87,7 +87,7 @@ private struct SinglePhoto: View {
 
     private var preview: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: Theme.Metrics.tileCorner).fill(.quaternary)
+            RoundedRectangle(cornerRadius: Theme.Metrics.tileCorner).fill(Theme.placeholderFill.color)
             if let image {
                 Image(decorative: image, scale: 1).resizable().scaledToFit()
                     .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.tileCorner))
@@ -167,7 +167,7 @@ private struct ConfidenceBar: View {
     let isUncertain: Bool
 
     var body: some View {
-        Capsule().fill(.quaternary)
+        Capsule().fill(Theme.placeholderFill.color)
             .frame(height: 6)
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in

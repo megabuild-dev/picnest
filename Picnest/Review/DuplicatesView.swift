@@ -123,6 +123,6 @@ struct CleanUpAllButton: View {
                                              "z7913505267104_a3f.jpg"],
                        keepIDs: ["z7913505267101_a3f.jpg"]),
     ])
-    return DuplicatesView(model: model).background(.background)
+    return DuplicatesView(model: model).background(Theme.background.color)
 }
 #endif
