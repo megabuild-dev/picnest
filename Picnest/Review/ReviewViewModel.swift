@@ -247,15 +247,14 @@ final class ReviewViewModel {
     /// `app` holds the undo flag that every window shares, and starts over (`startOver`). `afterScan` is true
     /// when a scan or a rescan opened this review.
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
-         app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
+         photoEdits: PhotoEditService, app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
          defaults: UserDefaults = .standard, duplicateSearch: DuplicatesViewModel.Search? = nil,
-         photoEdits: PhotoEditService? = nil,
          chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil) {
         self.defaults = defaults
-        self.photoEdits = photoEdits ?? PhotoEditService(thumbnails: thumbnails, images: ImageRepository())
+        self.photoEdits = photoEdits
         self.chooseExportDestination = chooseExportDestination ?? { name, folder, format in
             await EditorSavePanel.choose(suggestedName: name, folder: folder, format: format)
         }
@@ -1000,7 +999,8 @@ final class ReviewViewModel {
             photos: photos, start: start, service: photoEdits, protected: protected,
             chooseDestination: chooseExportDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
-            onClose: { [weak self] in self?.closeEditor() })
+            onClose: { [weak self] in self?.closeEditor() },
+            onCancelClose: { [weak self] in self?.itemAfterClose = nil })
     }
 
     /// Closes the photo editor and drops its edit. The selection stays. A sidebar item that the user chose

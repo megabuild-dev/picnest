@@ -145,6 +145,20 @@ struct EditorEntryTests {
         #expect(model.editor == nil && model.selectedItem == .videos)
     }
 
+    @Test func testCancelledSidebarChangeDoesNotJumpLater() throws {
+        let (model, _) = try makeModel()
+        model.openEditor("a.jpg")
+        let editor = try #require(model.editor)
+        editor.rotate(clockwise: true)
+        model.selectedItem = .videos
+        #expect(editor.isConfirmingDiscard)
+        editor.cancelDiscard()
+        #expect(model.editor === editor && model.selectedItem == .all)
+        editor.undo()  // no changes now
+        editor.requestClose()
+        #expect(model.editor == nil && model.selectedItem == .all)
+    }
+
     @Test func testSidebarChangeWithoutEditsClosesAtOnce() throws {
         let (model, _) = try makeModel()
         model.selectedItem = .all

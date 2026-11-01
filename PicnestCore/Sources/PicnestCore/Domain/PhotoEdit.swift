@@ -145,6 +145,8 @@ public struct EditHistory: Sendable {
 
     public var canUndo: Bool { !past.isEmpty }
     public var canRedo: Bool { !future.isEmpty }
+    /// True when `show` changed `current` and no `commit` followed. `undo` drops that value.
+    public var hasPendingChange: Bool { current != committed }
 
     public mutating func show(_ e: PhotoEdit) { current = e }
 

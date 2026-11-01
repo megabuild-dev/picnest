@@ -26,15 +26,15 @@ struct ReviewView: View {
     /// opened this review (spec 3.7).
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, sortService: SortService,
          library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil,
-         photoEdits: PhotoEditService? = nil) {
+         photoEdits: PhotoEditService) {
         self.preferences = preferences
         self.review = review
         self.sortService = sortService
         self.library = library
         self.app = app
         _model = State(initialValue: ReviewViewModel(
-            review: review, classify: classify, thumbnails: thumbnails, library: library, app: app,
-            afterScan: afterScan, onRescan: app.rescan, photoEdits: photoEdits))
+            review: review, classify: classify, thumbnails: thumbnails, library: library, photoEdits: photoEdits, app: app,
+            afterScan: afterScan, onRescan: app.rescan))
     }
 
     var body: some View {
@@ -328,6 +328,11 @@ enum ReviewPreviewData {
     }
 
     /// A library over a temporary sessions folder and a private defaults suite.
+    static func photoEdits() -> PhotoEditService {
+        let images = ImageRepository()
+        return PhotoEditService(thumbnails: ThumbnailService(images: images), images: images)
+    }
+
     static func library() -> LibraryService {
         let root = FileManager.default.temporaryDirectory.appending(path: "PicnestPreview", directoryHint: .isDirectory)
         let sessions = SessionRepository(root: root.appending(path: "Sessions"))
@@ -395,7 +400,8 @@ extension ReviewView {
     fileprivate init(previewSelecting ids: [MediaID]) {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),
-                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app())
+                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app(),
+                  photoEdits: ReviewPreviewData.photoEdits())
         let model = _model.wrappedValue
         for id in ids { model.click(id, modifiers: .command) }
     }
@@ -406,7 +412,8 @@ extension ReviewView {
     fileprivate init(previewNotSure: Void) {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),
-                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app())
+                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app(),
+                  photoEdits: ReviewPreviewData.photoEdits())
         _model.wrappedValue.selectedItem = .notSure
     }
 }

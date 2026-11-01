@@ -58,7 +58,7 @@ struct DuplicatesViewModelTests {
             embedder: FakeEmbedder(), sessionsRoot: temp.url.appending(path: "Sessions"), defaults: suite.defaults)
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), onRescan: {})
+            library: environment.library, photoEdits: environment.photoEdits, app: AppModel(environment: environment), onRescan: {})
         return Fixture(model: model, review: review, ops: ops)
     }
 

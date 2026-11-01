@@ -251,7 +251,7 @@ private struct ConfidenceBar: View {
     let model = ReviewViewModel(
         review: ReviewPreviewData.review(), classify: ClassifyService(),
         thumbnails: ThumbnailService(images: ImageRepository()), library: ReviewPreviewData.library(),
-        app: ReviewPreviewData.app(), onRescan: {})
+        photoEdits: ReviewPreviewData.photoEdits(), app: ReviewPreviewData.app(), onRescan: {})
     model.selectedItem = .notSure
     if let first = model.visibleIDs.first { model.click(first, modifiers: []) }
     return InspectorView(model: model)

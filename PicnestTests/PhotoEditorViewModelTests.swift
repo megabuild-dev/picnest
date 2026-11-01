@@ -30,16 +30,18 @@ struct PhotoEditorViewModelTests {
         var revealed: [URL] = []
     }
 
-    @MainActor final class Closed { var count = 0 }
+    @MainActor final class Closed { var count = 0; var cancels = 0 }
 
     /// 3 landscape photos a.jpg, b.jpg, c.jpg (40 × 20 pixels).
     private func makeModel(
-        names: [String] = ["a.jpg", "b.jpg", "c.jpg"], start: String? = nil, protectedIDs: Set<MediaID> = []
+        names: [String] = ["a.jpg", "b.jpg", "c.jpg"], start: String? = nil, protectedIDs: Set<MediaID> = [],
+        portrait: Set<String> = []
     ) throws -> Fixture {
         var photos: [EditorPhoto] = []
         for name in names {
             let url = folder.appending(path: name)
-            try writeTestJPEG(to: url, red: 0.8, green: 0.2, blue: 0.1, size: 40, height: 20)
+            try writeTestJPEG(to: url, red: 0.8, green: 0.2, blue: 0.1,
+                              size: portrait.contains(name) ? 20 : 40, height: portrait.contains(name) ? 40 : 20)
             photos.append(EditorPhoto(id: name, url: url, fileName: name))
         }
         let panel = Panel()
@@ -53,7 +55,8 @@ struct PhotoEditorViewModelTests {
                 return (url, format)
             },
             revealURL: { [panel] in panel.revealed.append($0) },
-            onClose: { [closed] in closed.count += 1 })
+            onClose: { [closed] in closed.count += 1 },
+            onCancelClose: { [closed] in closed.cancels += 1 })
         return Fixture(model: model, panel: panel, closed: closed)
     }
 
@@ -203,5 +206,72 @@ struct PhotoEditorViewModelTests {
         #expect(m.previewImage?.width == 20)
         m.isShowingOriginal = true
         try await waitUntil { m.previewImage?.width == before }
+    }
+
+    // MARK: - Fix round 1
+
+    @Test func testCancelDiscardDropsTheWaitingAction() throws {
+        let fx = try makeModel()
+        fx.model.rotate(clockwise: true)
+        fx.model.step(by: 1)
+        #expect(fx.model.isConfirmingDiscard)
+        fx.model.cancelDiscard()
+        #expect(!fx.model.isConfirmingDiscard && fx.closed.cancels == 1)
+        fx.model.confirmDiscard()  // nothing waits now
+        #expect(fx.model.current.id == "a.jpg" && fx.model.edit.quarterTurns == 1 && fx.closed.count == 0)
+    }
+
+    @Test func testDragCropIsOneUndoStep() throws {
+        let m = try makeModel().model
+        m.setAspect(.freeform)
+        m.dragCrop(.right, dx: -0.25, dy: 0)
+        m.dragCrop(.right, dx: -0.25, dy: 0)
+        #expect(abs(m.edit.crop.width - 0.5) < 0.001 && abs(m.edit.crop.x) < 0.001)
+        m.endDrag()
+        m.undo()
+        #expect(m.edit.crop == .full && m.edit.aspect == .freeform)
+        m.dragCrop(.move, dx: 0.5, dy: 0.5)  // a full-size crop cannot move
+        #expect(m.edit.crop == .full)
+    }
+
+    @Test func testUndoMidDragDropsTheDrag() throws {
+        let m = try makeModel().model
+        m.setStraighten(10)
+        #expect(m.canUndo && m.hasChanges)
+        m.undo()
+        #expect(m.edit.isOriginal && !m.canUndo && !m.canRedo)
+        m.rotate(clockwise: true)
+        m.setAdjustment(.contrast, 30)
+        m.undo()  // drops the contrast only
+        #expect(m.edit.quarterTurns == 1 && m.edit[.contrast] == 0 && m.canUndo)
+    }
+
+    @Test func testAspectSetBeforeThePreviewLoadsFitsTheCropAfterwards() async throws {
+        let m = try makeModel().model
+        m.setAspect(.square)  // the base preview is not loaded yet
+        try await waitUntil { m.previewImage != nil }
+        #expect(abs(m.edit.crop.width - 0.5) < 0.001 && abs(m.edit.crop.height - 1) < 0.001)
+        m.undo()  // 1 step for the aspect and its fit
+        #expect(m.edit.isOriginal && !m.canUndo)
+    }
+
+    @Test func testOnlyTheLatestEditReachesThePreview() async throws {
+        let m = try makeModel().model
+        try await waitUntil { m.previewImage != nil }
+        for _ in 0..<5 {
+            m.rotate(clockwise: true)  // 40x20 -> 20x40 -> ...
+        }
+        // 5 turns: a portrait frame. Older results must not replace it.
+        try await waitUntil { m.previewImage?.width == 20 }
+        try await Task.sleep(for: .milliseconds(150))
+        #expect(m.previewImage?.width == 20 && m.previewImage?.height == 40)
+    }
+
+    @Test func testPreviewOfAnOldPhotoNeverShowsOnTheNewOne() async throws {
+        let m = try makeModel(portrait: ["b.jpg"]).model
+        m.step(by: 1)  // at once, while a.jpg loads
+        try await waitUntil { m.previewImage != nil }
+        try await Task.sleep(for: .milliseconds(150))
+        #expect(m.current.id == "b.jpg" && m.previewImage?.width == 20 && m.previewImage?.height == 40)
     }
 }

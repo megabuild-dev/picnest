@@ -54,6 +54,11 @@ final class PhotoEditorViewModel {
     @ObservationIgnored private let chooseDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
     @ObservationIgnored private let revealURL: @MainActor (URL) -> Void
     @ObservationIgnored private let onClose: @MainActor () -> Void
+    @ObservationIgnored private let onCancelClose: @MainActor () -> Void
+    /// The decode of the base preview of the shown photo. An edit never restarts it.
+    @ObservationIgnored private var baseTask: (id: MediaID, task: Task<CGImage?, Never>)?
+    /// True when `setAspect` ran before the base preview loaded, so the crop still needs to fit.
+    @ObservationIgnored private var needsFit = false
     @ObservationIgnored private var pending: Pending?
     @ObservationIgnored nonisolated(unsafe) private var previewTask: Task<Void, Never>?
 
@@ -63,7 +68,8 @@ final class PhotoEditorViewModel {
     init(photos: [EditorPhoto], start: MediaID, service: PhotoEditService, protected: ProtectedFiles,
          chooseDestination: @escaping @MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?,
          revealURL: @escaping @MainActor (URL) -> Void,
-         onClose: @escaping @MainActor () -> Void) {
+         onClose: @escaping @MainActor () -> Void,
+         onCancelClose: @escaping @MainActor () -> Void = {}) {
         precondition(!photos.isEmpty, "The editor needs at least 1 photo.")
         self.photos = photos
         index = photos.firstIndex { $0.id == start } ?? 0
@@ -72,6 +78,7 @@ final class PhotoEditorViewModel {
         self.chooseDestination = chooseDestination
         self.revealURL = revealURL
         self.onClose = onClose
+        self.onCancelClose = onCancelClose
         refreshPreview()
     }
 
@@ -83,7 +90,7 @@ final class PhotoEditorViewModel {
     var current: EditorPhoto { photos[index] }
     var allPhotos: [EditorPhoto] { photos }
     var positionText: String { String(localized: "\(index + 1) of \(photos.count)") }
-    var canUndo: Bool { history.canUndo }
+    var canUndo: Bool { history.canUndo || history.hasPendingChange }
     var canRedo: Bool { history.canRedo }
     var hasChanges: Bool { !edit.isOriginal }
 
@@ -121,10 +128,18 @@ final class PhotoEditorViewModel {
     func setAspect(_ aspect: AspectRatio) {
         var e = edit
         e.aspect = aspect
-        if let frame, let ratio = aspect.ratio(frame: frame.size, original: frame.original) {
-            e.crop = CropGeometry.fit(e.crop, ratio: ratio, frameAspect: frameAspect)
+        if let frame {
+            if let ratio = aspect.ratio(frame: frame.size, original: frame.original) {
+                e.crop = CropGeometry.fit(e.crop, ratio: ratio, frameAspect: frameAspect)
+            }
+            change(e, commit: true)
+        } else if aspect == .freeform {
+            change(e, commit: true)  // no ratio, so nothing to fit
+        } else {
+            // The frame is not known yet. Show the aspect now; the crop fits and the step commits on load.
+            needsFit = true
+            change(e, commit: false)
         }
-        change(e, commit: true)
     }
 
     /// Moves a crop handle by `dx` and `dy`, in 0…1 units of the frame, from where the crop is now.
@@ -206,6 +221,13 @@ final class PhotoEditorViewModel {
         }
     }
 
+    /// **Cancel** in the Discard Edits dialog: the waiting action is dropped.
+    func cancelDiscard() {
+        pending = nil
+        isConfirmingDiscard = false
+        onCancelClose()
+    }
+
     private func move(to id: MediaID) {
         if hasChanges {
             ask(.show(id))
@@ -224,6 +246,8 @@ final class PhotoEditorViewModel {
         index = target
         history = EditHistory()
         base = nil
+        baseTask = nil
+        needsFit = false
         previewImage = nil
         lastExport = nil
         exportError = nil
@@ -232,27 +256,54 @@ final class PhotoEditorViewModel {
 
     // MARK: - Preview
 
-    /// Cancels the last preview task and starts 1 new task. The task decodes the base preview once per photo,
-    /// then applies the edit off the main actor.
+    /// Cancels the last preview task and starts 1 new task. The new task waits for the old one, so at most 1
+    /// edit renders at a time, and a cancelled task skips its render. The base preview decodes once per photo,
+    /// in its own task that an edit does not cancel. The render runs off the main actor.
     private func refreshPreview() {
-        previewTask?.cancel()
+        let previous = previewTask
+        previous?.cancel()
         let photo = current, edit = edit, service = service
-        let cropping = tool != .crop, plain = isShowingOriginal || edit.isOriginal
-        let known = base?.id == photo.id ? base?.image : nil
+        let showCropped = tool != .crop, plain = isShowingOriginal || edit.isOriginal
+        let decode = baseDecode(for: photo)
         previewTask = Task { [weak self] in
-            var source = known
-            if source == nil {
-                source = await service.preview(at: photo.url)
-                guard !Task.isCancelled, let self, current.id == photo.id else { return }
-                if let image = source { base = (photo.id, image) }
-            }
-            guard let source else { return }
-            let result: CGImage? = plain
-                ? source
-                : await Task.detached(priority: .userInitiated) { service.apply(edit, to: source, cropping: cropping) }.value
+            await previous?.value
+            guard !Task.isCancelled else { return }
+            guard let source = await decode.value else { return }
             guard !Task.isCancelled, let self, current.id == photo.id else { return }
+            if base?.id != photo.id {
+                base = (photo.id, source)
+                fitCropIfNeeded()
+            }
+            // `fitCropIfNeeded` may have changed the edit; the next refresh draws it.
+            let drawn = self.edit
+            let result: CGImage? = plain && drawn == edit
+                ? source
+                : await Task.detached(priority: .userInitiated) {
+                    service.apply(drawn, to: source, cropping: showCropped)
+                }.value
+            guard !Task.isCancelled, current.id == photo.id else { return }
             previewImage = result
         }
+    }
+
+    private func baseDecode(for photo: EditorPhoto) -> Task<CGImage?, Never> {
+        if let baseTask, baseTask.id == photo.id { return baseTask.task }
+        let service = service
+        let task = Task { await service.preview(at: photo.url) }
+        baseTask = (photo.id, task)
+        return task
+    }
+
+    /// After the base loads: fits the crop to an aspect that was set before, as part of the same undo step.
+    private func fitCropIfNeeded() {
+        guard needsFit else { return }
+        needsFit = false
+        var e = edit
+        if let frame, let ratio = e.aspect.ratio(frame: frame.size, original: frame.original) {
+            e.crop = CropGeometry.fit(e.crop, ratio: ratio, frameAspect: frameAspect)
+        }
+        history.show(e)
+        history.commit()
     }
 
     // MARK: - Export

@@ -225,4 +225,14 @@ import Testing
         e.rotate(clockwise: false)
         #expect(e.straighten == 5)
     }
+
+    @Test func historyReportsAShownValueThatIsNotCommitted() {
+        var h = EditHistory()
+        var e = PhotoEdit()
+        e.straighten = 5
+        h.show(e)
+        #expect(h.hasPendingChange && !h.canUndo)
+        h.commit()
+        #expect(!h.hasPendingChange && h.canUndo)
+    }
 }
