@@ -176,6 +176,8 @@ struct PhotoContextMenu: View {
     @ViewBuilder private var libraryItems: some View {
         Button("Quick Look") { model.contextMenuSelect(id); model.openPreview(id) }
         Button("Open") { model.contextMenuSelect(id); model.openInDefaultApp(id) }
+        Button("Edit Photo…") { model.contextMenuSelect(id); model.openEditor(id) }
+            .disabled(!model.canEdit(id))
         Button("Show in Finder") { model.contextMenuSelect(id); model.showInFinder() }
         Button("Share…") {
             model.contextMenuSelect(id)

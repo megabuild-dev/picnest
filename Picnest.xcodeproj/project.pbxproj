@@ -54,6 +54,7 @@
 		8BC37175B0038D10E4C56B1A /* PhotoEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0321215776146C6BB5EAD25F /* PhotoEditorViewModel.swift */; };
 		8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501266281830058D97AF399D /* DuplicatesView.swift */; };
 		8E076CDAFBC919D5236CF251 /* SortMessagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6DD9B8F4192F4739C37783 /* SortMessagesTests.swift */; };
+		8ECE94F910932E67F160BBE5 /* EditorEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD350E0A13EAACDEEF9AC23 /* EditorEntryTests.swift */; };
 		8F7397435B480CED47B11A02 /* LibraryBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70D0A331898AF2010A6CB0B /* LibraryBar.swift */; };
 		9395AF3BEDCC01FED02365BC /* AppDelegateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */; };
 		97486C098A9BF55A6CD6EB3C /* QuickLookPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A582EB3063F6C786DBEDF4B /* QuickLookPreview.swift */; };
@@ -77,6 +78,7 @@
 		D54CFD0B3713BDC63BE47DEE /* SortSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A0384D25A40836DB152C65 /* SortSheet.swift */; };
 		D5E02ACC4D238BF7ACF5EEBE /* SortMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70654CE25C0D4A3AEB26F66C /* SortMessages.swift */; };
 		D7D1CF7EE65EA3EDABBF7499 /* LanguageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F2D9F900CB1D1EE3B6762AD /* LanguageStore.swift */; };
+		DDCF3F7C99463801A1349EB6 /* EditorSavePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9597E21F66B3D0A193D9FD71 /* EditorSavePanel.swift */; };
 		E3CBD322C27A8077774D9E12 /* PhotoTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35166FEF0689ABA60577363E /* PhotoTile.swift */; };
 		EA36A8DE47D86EFB35CB4388 /* LibraryEmptyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA4DF53998705918C42D33E /* LibraryEmptyView.swift */; };
 		EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */; };
@@ -133,6 +135,7 @@
 		61D2AE119E80A1489AD6B28D /* PhotoEditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoEditorViewModelTests.swift; sourceTree = "<group>"; };
 		6454171A84EC6C4B6543899A /* CountText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountText.swift; sourceTree = "<group>"; };
 		65043FDF2E3D7F22128AA68E /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		6AD350E0A13EAACDEEF9AC23 /* EditorEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorEntryTests.swift; sourceTree = "<group>"; };
 		6F2D9F900CB1D1EE3B6762AD /* LanguageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageStore.swift; sourceTree = "<group>"; };
 		70654CE25C0D4A3AEB26F66C /* SortMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMessages.swift; sourceTree = "<group>"; };
 		7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeViewModelTests.swift; sourceTree = "<group>"; };
@@ -147,6 +150,7 @@
 		8A3282C6F3F954018F0612B4 /* CollectionsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsViewModelTests.swift; sourceTree = "<group>"; };
 		8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndToEndTests.swift; sourceTree = "<group>"; };
 		920C3114E14A8F5535838C19 /* NotSureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotSureView.swift; sourceTree = "<group>"; };
+		9597E21F66B3D0A193D9FD71 /* EditorSavePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSavePanel.swift; sourceTree = "<group>"; };
 		989FD2A75D20A49C2832027B /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
 		9A31D0E98B158679E420F241 /* RecentFolderCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentFolderCard.swift; sourceTree = "<group>"; };
 		9A582EB3063F6C786DBEDF4B /* QuickLookPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLookPreview.swift; sourceTree = "<group>"; };
@@ -233,6 +237,7 @@
 				47958C12A51561B635AA7868 /* CatalogTests.swift */,
 				8A3282C6F3F954018F0612B4 /* CollectionsViewModelTests.swift */,
 				7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */,
+				6AD350E0A13EAACDEEF9AC23 /* EditorEntryTests.swift */,
 				8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */,
 				1A5060CB5489B7E0B2EDC4F9 /* LanguageStoreTests.swift */,
 				413D1ED4265E0D34E102A090 /* NeedsReviewTests.swift */,
@@ -252,6 +257,7 @@
 		64F0574028015946FD0C568C /* Editor */ = {
 			isa = PBXGroup;
 			children = (
+				9597E21F66B3D0A193D9FD71 /* EditorSavePanel.swift */,
 				0321215776146C6BB5EAD25F /* PhotoEditorViewModel.swift */,
 			);
 			path = Editor;
@@ -532,6 +538,7 @@
 				17B6C890FD0E7560878A2EC6 /* CatalogTests.swift in Sources */,
 				D100DAAA6E9733D1CBEEC47C /* CollectionsViewModelTests.swift in Sources */,
 				2AA7F661CDC1E5AF2268CA06 /* DuplicatesViewModelTests.swift in Sources */,
+				8ECE94F910932E67F160BBE5 /* EditorEntryTests.swift in Sources */,
 				EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */,
 				70AEC711BE310E3279C3D9F9 /* LanguageStoreTests.swift in Sources */,
 				48453A60B6CD8431AAFF9078 /* NeedsReviewTests.swift in Sources */,
@@ -565,6 +572,7 @@
 				8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */,
 				219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */,
 				7EAEAD07DB874250C302D278 /* EditCategorySheet.swift in Sources */,
+				DDCF3F7C99463801A1349EB6 /* EditorSavePanel.swift in Sources */,
 				BC3A30688044029B80F5A1C1 /* FavoriteButton.swift in Sources */,
 				6AF4AD4BF74A2CD8197249D3 /* InspectorFacts.swift in Sources */,
 				65F6FE0F9538CBEEA30D9721 /* InspectorView.swift in Sources */,

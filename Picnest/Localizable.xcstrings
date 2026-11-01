@@ -1353,12 +1353,42 @@
         }
       }
     },
+    "Edit" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉnh sửa"
+          }
+        }
+      }
+    },
     "Edit Category" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sửa danh mục"
+          }
+        }
+      }
+    },
+    "Edit Photo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉnh sửa ảnh"
+          }
+        }
+      }
+    },
+    "Edit Photo…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉnh sửa ảnh…"
           }
         }
       }
@@ -1463,6 +1493,16 @@
         }
       }
     },
+    "Format" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng"
+          }
+        }
+      }
+    },
     "Grid" : {
       "localizations" : {
         "vi" : {
@@ -1529,6 +1569,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bỏ qua"
+          }
+        }
+      }
+    },
+    "Image" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hình ảnh"
           }
         }
       }

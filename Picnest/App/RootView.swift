@@ -29,7 +29,8 @@ struct RootView: View {
                        sortService: environment.sortService, library: environment.library, app: app,
                        afterScan: afterScan,
                        preferences: SidebarPreferences(appearance: environment.appearance, language: environment.language,
-                                                       relauncher: relauncher))
+                                                       relauncher: relauncher),
+                       photoEdits: environment.photoEdits)
                 .id(ObjectIdentifier(review))
         }
     }

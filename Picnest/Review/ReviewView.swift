@@ -25,7 +25,8 @@ struct ReviewView: View {
     /// (`rescan`) and closes the session after a sort (`done`, spec 9.1). `afterScan` is true when a scan
     /// opened this review (spec 3.7).
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, sortService: SortService,
-         library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil) {
+         library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil,
+         photoEdits: PhotoEditService? = nil) {
         self.preferences = preferences
         self.review = review
         self.sortService = sortService
@@ -33,7 +34,7 @@ struct ReviewView: View {
         self.app = app
         _model = State(initialValue: ReviewViewModel(
             review: review, classify: classify, thumbnails: thumbnails, library: library, app: app,
-            afterScan: afterScan, onRescan: app.rescan))
+            afterScan: afterScan, onRescan: app.rescan, photoEdits: photoEdits))
     }
 
     var body: some View {
