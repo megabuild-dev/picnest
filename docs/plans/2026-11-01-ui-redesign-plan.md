@@ -27,7 +27,7 @@ links:
 ## Status (update after each task)
 
 - [x] Phase 0: Foundation (tasks 0.1 to 0.7). Merged into `ui-redesign`. Manual checks A and B wait for the owner.
-- [ ] Phase 1: App shell (tasks 1.1 to 1.4)
+- [x] Phase 1: App shell (tasks 1.1 to 1.4). Merged into `ui-redesign`. Manual checks C and D wait for the owner.
 - [ ] Phase 2: Screens (tasks 2.1 to 2.8)
 - [ ] Phase 3: Favorites, Collections, Recently Deleted. Write a detailed plan after phase 2 (section "Later phases").
 - [ ] Phase 4: Photo Editor. Same rule.
