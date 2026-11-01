@@ -29,7 +29,7 @@ links:
 - [x] Phase 0: Foundation (tasks 0.1 to 0.7). Merged into `ui-redesign`. Manual checks A and B wait for the owner.
 - [x] Phase 1: App shell (tasks 1.1 to 1.4). Merged into `ui-redesign`. Manual checks C and D wait for the owner.
 - [x] Phase 2: Screens (tasks 2.1 to 2.8). Merged into `ui-redesign`. Owner steps open: manual checklist, mockup comparison, native-speaker review of the Vietnamese text.
-- [ ] Phase 3: Favorites, Collections, Recently Deleted (tasks 3.1 to 3.10). Planned in section "Phase 3". Not started.
+- [x] Phase 3: Favorites, Collections, Recently Deleted (tasks 3.1 to 3.10). Merged into `ui-redesign`. Manual checks F, G, H and the sidebar comparison with mockups 01 to 03 wait for the owner.
 - [ ] Phase 4: Photo Editor. Same rule.
 - [ ] Phase 5: Layout Editor. Same rule.
 
