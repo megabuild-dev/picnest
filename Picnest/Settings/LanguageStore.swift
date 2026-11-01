@@ -43,6 +43,7 @@ final class LanguageStore {
     /// An unknown or missing saved code gives `.system`. `domain` is the persistent domain of `defaults`.
     /// It reads that domain only, so a launch argument such as `-AppleLanguages (en)` does not hide the saved value.
     init(defaults: UserDefaults, domain: String = Bundle.main.bundleIdentifier ?? "") {
+        // A missing bundle id falls back to "", a domain with no saved value, so it reads as System.
         self.defaults = defaults
         let codes = defaults.persistentDomain(forName: domain)?[Self.defaultsKey] as? [String]
         let saved = codes?.first.flatMap(AppLanguage.init(rawValue:)) ?? .system

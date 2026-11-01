@@ -5,10 +5,12 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable var appearance: AppearanceStore
     @Bindable var language: LanguageStore
+    let relauncher: AppRelauncher
 
-    init(appearance: AppearanceStore, language: LanguageStore) {
+    init(appearance: AppearanceStore, language: LanguageStore, relauncher: AppRelauncher) {
         self.appearance = appearance
         self.language = language
+        self.relauncher = relauncher
     }
 
     var body: some View {
@@ -30,7 +32,9 @@ struct SettingsView: View {
                     HStack {
                         Text("Restart Picnest to change the language.")
                         Spacer()
-                        Button("Restart", action: Self.relaunch)
+                        Button("Restart") {
+                            if relauncher.request() { NSApp.terminate(nil) }
+                        }
                     }
                 }
             }
@@ -38,14 +42,5 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 420)
         .fixedSize(horizontal: false, vertical: true)
-    }
-
-    /// Opens a new copy of the app, then quits this one the normal way, so the sort-in-progress prompt still shows.
-    private static func relaunch() {
-        let process = Process()
-        process.executableURL = URL(filePath: "/usr/bin/open")
-        process.arguments = ["-n", Bundle.main.bundleURL.path]
-        try? process.run()
-        NSApp.terminate(nil)
     }
 }

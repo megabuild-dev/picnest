@@ -35,7 +35,8 @@ struct PicnestApp: App {
         // Settings (⌘,). Nothing in the test host, which has no environment.
         Settings {
             if let environment = delegate.environment {
-                SettingsView(appearance: environment.appearance, language: environment.language)
+                SettingsView(appearance: environment.appearance, language: environment.language,
+                             relauncher: delegate.relauncher)
             } else {
                 Color.clear
             }

@@ -18,6 +18,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// the network or the login Keychain.
     let updater: (any AppUpdater)?
 
+    /// Relaunches the app at a confirmed quit, for the Restart button in Settings.
+    let relauncher: AppRelauncher
+
+    /// Replaces the library check. Tests use it to fake a running sort.
+    private let sortRunningCheck: (() -> Bool)?
+
+    /// Shows the "sort is running" alert. Tests replace it.
+    var showSortRunningAlert: () -> Void = {
+        let alert = NSAlert()
+        alert.messageText = AppDelegate.sortRunningMessage
+        alert.addButton(withTitle: String(localized: "OK"))
+        alert.runModal()
+    }
+
     /// The app: the bundled model, Application Support, standard defaults, and the updater.
     /// The test host must not read the real Application Support or standard defaults, or use the
     /// network, so it gets neither.
@@ -28,8 +42,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             makeUpdater: isTestHost ? nil : { SparkleAppUpdater() })
     }
 
-    init(environment: AppEnvironment?, makeUpdater: (() -> any AppUpdater)? = nil) {
+    init(
+        environment: AppEnvironment?, makeUpdater: (() -> any AppUpdater)? = nil,
+        relauncher: AppRelauncher = AppRelauncher(), sortRunningCheck: (() -> Bool)? = nil
+    ) {
+        self.sortRunningCheck = sortRunningCheck
         self.environment = environment
+        self.relauncher = relauncher
         app = environment.map { AppModel(environment: $0) }
         // Checks the appcast on a schedule and installs a new version at quit.
         updater = makeUpdater?()
@@ -38,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// True while a sort or an undo changes files.
     func isSortRunning() -> Bool {
-        environment?.library.isSortRunning ?? false
+        sortRunningCheck?() ?? environment?.library.isSortRunning ?? false
     }
 
     /// The answer to a quit: cancel while a sort or an undo runs.
@@ -54,11 +73,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let reply = Self.terminateReply(sortIsRunning: isSortRunning())
         if reply == .terminateCancel {
-            let alert = NSAlert()
-            alert.messageText = Self.sortRunningMessage
-            alert.addButton(withTitle: String(localized: "OK"))
-            alert.runModal()
+            relauncher.cancel()
+            showSortRunningAlert()
         }
         return reply
+    }
+
+    /// Runs only when the quit goes ahead.
+    func applicationWillTerminate(_ notification: Notification) {
+        relauncher.relaunchIfRequested()
     }
 }
