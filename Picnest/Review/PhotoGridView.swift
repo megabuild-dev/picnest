@@ -15,7 +15,7 @@ struct PhotoGridView: View {
         let selection = model.selection
         PhotoGridInteractions(model: model) { onTap in
             ScrollView {
-                LazyVGrid(columns: model.gridColumns, spacing: ReviewStyle.gridSpacing) {
+                LazyVGrid(columns: model.gridColumns, spacing: Theme.Metrics.gridSpacing) {
                     ForEach(ids, id: \.self) { id in
                         SelectableTile(model: model, id: id, isSelected: selection.contains(id), onTap: onTap)
                     }

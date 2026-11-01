@@ -45,7 +45,7 @@ struct ReviewView: View {
             Button("Create") { model.createNewCategory(name: newCategoryName) }
             Button("Cancel", role: .cancel) { model.cancelNewCategory() }
         } message: {
-            Text(model.newCategoryMovesPhotos ? "The selected photos go to the new category." : "Name the new category.")
+            model.newCategoryMovesPhotos ? Text("The selected photos go to the new category.") : Text("Name the new category.")
         }
         .sheet(item: $sort, onDismiss: {
             if suggestAfterSort {
@@ -235,8 +235,8 @@ struct ReviewView: View {
 
     private var chipTint: Color {
         switch model.selectedItem {
-        case .notSure: ReviewStyle.amber
-        case .changedByYou: ReviewStyle.green
+        case .notSure: Theme.needsReview.color
+        case .changedByYou: Theme.confirmed.color
         case .category: .accentColor
         default: .secondary
         }

@@ -9,6 +9,7 @@ links:
   - "[[2026-10-21-macos-app-plan]]"
   - "[[BUILD]]"
   - "[[2026-10-23-picnest-split-plan]]"
+  - "[[2026-11-01-ui-redesign-design]]"
 ---
 
 # Picnest macOS App Design
@@ -71,7 +72,6 @@ Terms are defined in [[dictionary]]. Section 13 adds the new app terms.
 - Content classification of videos.
 - Duplicate detection of videos.
 - Photos library (Photos.app) import. The app works only on Finder folders.
-- Interface languages other than English.
 - iOS or iPadOS versions.
 
 ### 1.5 Anti-goals

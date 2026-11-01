@@ -22,8 +22,8 @@ struct SidebarView: View {
         return List(selection: selection) {
             Section("Review") {
                 row(counts, .all, "All photos", icon: .symbol("photo.on.rectangle", .secondary))
-                row(counts, .notSure, "Not sure", icon: .symbol("exclamationmark.triangle.fill", ReviewStyle.amber))
-                row(counts, .changedByYou, "Changed by you", icon: .symbol("checkmark", ReviewStyle.green))
+                row(counts, .notSure, "Not sure", icon: .symbol("exclamationmark.triangle.fill", Theme.needsReview.color))
+                row(counts, .changedByYou, "Changed by you", icon: .symbol("checkmark", Theme.confirmed.color))
             }
             Section("Categories") {
                 ForEach(model.categories) { category in
@@ -66,7 +66,7 @@ struct SidebarView: View {
 
     private func categoryRow(_ counts: [ReviewViewModel.SidebarItem: Int], _ category: PicnestCore.Category) -> some View {
         let id = category.id
-        return row(counts, .category(id), category.displayName, icon: .emoji(category.emoji))
+        return row(counts, .category(id), Text(verbatim: category.displayName), icon: .emoji(category.emoji))
             .background {
                 if dropTarget == id {
                     RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.22))
@@ -86,7 +86,9 @@ struct SidebarView: View {
                 Button("Change Icon…") { editingIcon = id }
                 Menu("Merge Into…") {
                     ForEach(model.mergeTargets(for: id)) { target in
-                        Button("\(target.emoji) \(target.displayName)") { model.merge(id, into: target.id) }
+                        Button { model.merge(id, into: target.id) } label: {
+                            Text(verbatim: "\(target.emoji) \(target.displayName)")
+                        }
                     }
                 }
                 .disabled(model.mergeTargets(for: id).isEmpty)
@@ -106,9 +108,14 @@ struct SidebarView: View {
             }
     }
 
-    private func row(_ counts: [ReviewViewModel.SidebarItem: Int], _ item: ReviewViewModel.SidebarItem, _ title: String, icon: SidebarIcon) -> some View {
+    private func row(_ counts: [ReviewViewModel.SidebarItem: Int], _ item: ReviewViewModel.SidebarItem, _ title: LocalizedStringKey, icon: SidebarIcon) -> some View {
+        row(counts, item, Text(title), icon: icon)
+    }
+
+    /// A row whose title is already a `Text`: a category name is data and stays as the user typed it.
+    private func row(_ counts: [ReviewViewModel.SidebarItem: Int], _ item: ReviewViewModel.SidebarItem, _ title: Text, icon: SidebarIcon) -> some View {
         Label {
-            Text(title).lineLimit(1)
+            title.lineLimit(1)
         } icon: {
             icon
         }

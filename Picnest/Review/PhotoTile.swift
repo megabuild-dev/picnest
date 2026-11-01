@@ -19,7 +19,7 @@ struct PhotoTile: View {
 
     var body: some View {
         let tile = model.tile(id)
-        let shape = RoundedRectangle(cornerRadius: ReviewStyle.tileCorner)
+        let shape = RoundedRectangle(cornerRadius: Theme.Metrics.tileCorner)
         Color.clear
             .aspectRatio(4 / 3, contentMode: .fit)
             .overlay { thumbnail }
@@ -73,11 +73,12 @@ struct PhotoTile: View {
 
     @ViewBuilder private func badge(_ badge: ReviewViewModel.Badge?) -> some View {
         if let badge {
-            let (text, color): (String, Color) = switch badge {
-            case .percent(let percent, let isUncertain): ("\(percent)%", isUncertain ? ReviewStyle.amber : ReviewStyle.green)
-            case .you: ("✓ You", ReviewStyle.green)
+            let (text, color): (Text, Color) = switch badge {
+            case .percent(let percent, let isUncertain):
+                (Text(verbatim: "\(percent)%"), isUncertain ? Theme.needsReview.color : Theme.confirmed.color)
+            case .you: (Text("✓ You"), Theme.confirmed.color)
             }
-            Text(text)
+            text
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(color)
                 .padding(.horizontal, 8)

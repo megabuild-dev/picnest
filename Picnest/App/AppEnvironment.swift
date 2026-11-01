@@ -20,6 +20,10 @@ final class AppEnvironment {
     let trashService: TrashService
     let library: LibraryService
     let thumbnails: ThumbnailService
+    /// The System, Light, and Dark setting. The Settings scene reads it.
+    let appearance: AppearanceStore
+    /// The System, English, and Tiếng Việt setting. The Settings scene reads it.
+    let language: LanguageStore
 
     /// The app environment: the bundled Core ML model, Application Support, and standard defaults.
     /// The model loads on first use, not here.
@@ -58,6 +62,8 @@ final class AppEnvironment {
             sessions: sessions, bookmarks: bookmarks, scanService: scanService, classify: classifyService,
             sortService: sortService, trashService: trashService, images: images)
         thumbnails = ThumbnailService(images: images)
+        appearance = AppearanceStore(defaults: defaults)
+        language = LanguageStore(defaults: defaults)
     }
 
     /// The model size from the bundle's Info.plist. A missing or unknown stem is a build error, so stop.

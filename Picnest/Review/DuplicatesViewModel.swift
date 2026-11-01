@@ -35,8 +35,8 @@ final class DuplicatesViewModel {
         let fileSize: String
     }
 
-    static let notice = "Check each group. The app moves the photos that are not marked Keep to the Trash."
-    static let emptyText = "No duplicates found."
+    static let notice = String(localized: "Check each group. The app moves the photos that are not marked Keep to the Trash.")
+    static let emptyText = String(localized: "No duplicates found.")
     /// The width of a tile in a card, in points.
     static let tileWidth: Double = 200
     /// The decode size of a tile thumbnail.
@@ -106,7 +106,7 @@ final class DuplicatesViewModel {
         } catch is CancellationError {
             phase = .idle
         } catch {
-            phase = .failed("Picnest could not look for duplicates: \(error.localizedDescription)")
+            phase = .failed(String(localized: "Picnest could not look for duplicates: \(CoreErrorMessages.text(for: error))"))
         }
     }
 
@@ -167,7 +167,7 @@ final class DuplicatesViewModel {
     /// The count of **Move <N> to Trash**: the photos of the group that are not Keep (spec 3.6).
     func trashCount(of g: DuplicateGroup) -> Int { g.ids.count { !g.keepIDs.contains($0) } }
 
-    func trashTitle(of g: DuplicateGroup) -> String { "Move \(trashCount(of: g)) to Trash" }
+    func trashTitle(of g: DuplicateGroup) -> String { String(localized: "Move \(trashCount(of: g)) to Trash") }
 
     /// The photos that **Clean Up All** moves to the Trash: the photos of the shown groups that are not
     /// Keep, each 1 time. It is also the count of the **Duplicates** sidebar item (0 until found).
@@ -176,11 +176,10 @@ final class DuplicatesViewModel {
         return Set(s.groups.flatMap(\.ids)).subtracting(s.keeps).count
     }
 
-    var cleanUpTitle: String { "Clean Up All (\(cleanUpCount))" }
+    var cleanUpTitle: String { String(localized: "Clean Up All (\(cleanUpCount))") }
 
     var cleanUpConfirmation: String {
-        let n = cleanUpCount
-        return "Move \(n) \(n == 1 ? "photo" : "photos") to the Trash? You can put them back with Undo or from the Trash in Finder."
+        String(localized: "Move \(cleanUpCount) photos to the Trash? You can put them back with Undo or from the Trash in Finder.")
     }
 
     // MARK: - Actions

@@ -16,7 +16,7 @@ final class WelcomeViewModel {
         let sortedText: String
     }
 
-    static let newSortMessage = "If you start a new sort, the last sort can no longer be undone."
+    static let newSortMessage = String(localized: "If you start a new sort, the last sort can no longer be undone.")
 
     /// The most recent folders, newest first. At most `BookmarkRepository.maxRecent`.
     private(set) var recent: [RecentFolder] = []
@@ -122,7 +122,7 @@ final class WelcomeViewModel {
         if let sortedAt = library.isSorted(url, previousPath: previousPath) {
             newSortRequest = NewSortRequest(
                 url: url, previousPath: previousPath, canUndo: library.canUndoLastSort(source: url),
-                sortedText: "This folder was sorted on \(dateFormatter.string(from: sortedAt)).")
+                sortedText: String(localized: "This folder was sorted on \(dateFormatter.string(from: sortedAt))."))
             return
         }
         app.open(url, previousPath: previousPath)
@@ -133,7 +133,7 @@ final class WelcomeViewModel {
 
     /// "Sorted <date>" for a sorted folder, with the medium date style. Nil when it was not sorted.
     func sortedText(_ f: RecentFolder) -> String? {
-        f.sortedAt.map { "Sorted \(dateFormatter.string(from: $0))" }
+        f.sortedAt.map { String(localized: "Sorted \(dateFormatter.string(from: $0))") }
     }
 
     /// True when the row shows **Undo Last Sort**. False for a folder that moved after the sort.
@@ -209,7 +209,7 @@ final class WelcomeViewModel {
     }
 
     func photoCountText(_ f: RecentFolder) -> String {
-        f.photoCount == 1 ? "1 photo" : "\(f.photoCount.formatted()) photos"
+        CountText.photos(f.photoCount, locale: dateFormatter.locale)
     }
 
     func name(_ f: RecentFolder) -> String {

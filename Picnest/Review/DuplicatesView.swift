@@ -116,7 +116,7 @@ private struct GroupCard: View {
             }
             .scrollIndicators(.automatic)
             HStack {
-                Text("\(group.ids.count) photos")
+                Text(CountText.photos(group.ids.count))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -142,7 +142,7 @@ private struct DuplicateTile: View {
 
     var body: some View {
         let tile = model.tile(id)
-        let shape = RoundedRectangle(cornerRadius: ReviewStyle.tileCorner)
+        let shape = RoundedRectangle(cornerRadius: Theme.Metrics.tileCorner)
         VStack(alignment: .leading, spacing: 4) {
             Color.clear
                 .aspectRatio(4 / 3, contentMode: .fit)
@@ -151,7 +151,7 @@ private struct DuplicateTile: View {
                 .clipShape(shape)
                 .contentShape(shape)
                 .overlay {
-                    shape.strokeBorder(isKeep ? ReviewStyle.green : Color.primary.opacity(0.1),
+                    shape.strokeBorder(isKeep ? Theme.confirmed.color : Color.primary.opacity(0.1),
                                        lineWidth: isKeep ? 2.5 : 0.5)
                 }
                 .opacity(isKeep ? 1 : 0.8)
@@ -168,7 +168,7 @@ private struct DuplicateTile: View {
         .frame(width: DuplicatesViewModel.tileWidth)
         .contentShape(Rectangle())
         .task(id: id) { await load() }
-        .help(isKeep ? "Keep. Click to unmark." : "Click to mark Keep.")
+        .help(isKeep ? LocalizedStringKey("Keep. Click to unmark.") : LocalizedStringKey("Click to mark Keep."))
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isKeep ? [.isImage, .isSelected] : .isImage)
     }
@@ -191,7 +191,7 @@ private struct DuplicateTile: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
-            .background(ReviewStyle.green, in: Capsule())
+            .background(Theme.confirmed.color, in: Capsule())
             .padding(8)
     }
 

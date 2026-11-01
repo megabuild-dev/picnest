@@ -1,6 +1,16 @@
 import Foundation
 import Observation
 
+/// Why a category folder change failed. The app maps each case to text. The `String` of `renameFailed` is the system reason.
+public enum FolderError: Error, Equatable, Sendable {
+    /// The folder `from` could not be renamed to `to`.
+    case renameFailed(from: String, to: String, reason: String)
+    /// A deleted category's folder stays, because it holds files that were not in the category.
+    case folderKept(String, otherFiles: Int)
+    /// A deleted category's folder could not be removed.
+    case folderNotRemoved(String)
+}
+
 /// Owns the open session during review (spec 3.3, 3.4, 4.7).
 /// Each action changes `session` at once, pushes an undo snapshot, then classifies the photos again
 /// on a background task and saves the session. Only the result of the newest change is applied.
@@ -25,7 +35,7 @@ public final class ReviewService {
     public private(set) var mediaByID: [MediaID: MediaFile]
     public private(set) var mediaRevision = 0
     /// Why the last category folder rename failed, or nil. The category keeps its name then.
-    public private(set) var folderError: String?
+    public private(set) var folderError: FolderError?
 
     /// False when only 1 category is left. `delete` ignores the last category.
     public var canDeleteCategory: Bool { session.categories.count > 1 }
@@ -332,7 +342,7 @@ public final class ReviewService {
         }.value
         switch result {
         case .failure(let error):
-            folderError = "The folder \"\(old)\" could not be renamed to \"\(new)\": \(error.localizedDescription)"
+            folderError = .renameFailed(from: old, to: new, reason: error.localizedDescription)
         case .success(let moved):
             guard let i = session.categories.firstIndex(where: { $0.id == c }) else { return }
             session.categories[i].displayName = name
@@ -422,9 +432,7 @@ public final class ReviewService {
         let folders = folders, source = source
         let removal = await Task.detached(priority: .userInitiated) { folders.removeIfEmpty(folder, in: source) }.value
         if case .kept(let others) = removal {
-            folderError = others > 0
-                ? "The folder \"\(folder)\" stays, because it holds \(others) file\(others == 1 ? "" : "s") that were not in this category."
-                : "The folder \"\(folder)\" could not be removed."
+            folderError = others > 0 ? .folderKept(folder, otherFiles: others) : .folderNotRemoved(folder)
         }
         return errors
     }
