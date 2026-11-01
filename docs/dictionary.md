@@ -35,5 +35,9 @@ links:
 | String Catalog | The file `Picnest/Localizable.xcstrings`. It holds all UI text and its translations. |
 | Chosen by you | The filter for photos that the user decided. It replaces "Changed by you". |
 | Needs Review | The app name for photos that the tool could not sort with confidence. The sorted folder for them is "Not sure". |
+| Favorite | A flag on a photo. It does not move a file. |
+| Collection | A named group of photos. It does not move a file. |
+| Recently Deleted | The sidebar list of photos that the user moved to the Trash. It does not move a file. |
+| Put Back | The action that returns a photo from Recently Deleted. It moves the file from the macOS Trash to its original path. |
 
 See [CLI design](https://github.com/megabuild-dev/classifyimages/blob/main/docs/specs/2026-10-14-image-classifier-design.md) for the full design. See [[2026-10-21-macos-app-design]] for the macOS app.

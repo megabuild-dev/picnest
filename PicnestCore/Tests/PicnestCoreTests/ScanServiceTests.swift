@@ -251,6 +251,60 @@ struct ScanServiceTests {
         #expect(after.states["food1.jpg"] == session.states["food1.jpg"])
     }
 
+    /// Rescan keeps favorites and collection members, because the ids are relative paths.
+    @Test func rescanKeepsFavoritesAndMembersAtTheSamePath() async throws {
+        let src = try TempDir(), root = try TempDir()
+        try writePhotos(["food1.jpg", "pet1.jpg"], in: src.url)
+        let embedder = FakeEmbedder(dimension: 4, images: ["food1.jpg": Self.food, "pet1.jpg": Self.pets], texts: Self.texts)
+        let service = service(embedder, sessions: root.url)
+        var (_, session) = try await run(service, source: src.url)
+        session.favoriteIDs = ["food1.jpg"]
+        session.collections = [PhotoCollection(name: "Trip", memberIDs: ["pet1.jpg", "food1.jpg"], order: 0)]
+
+        let (_, after) = try await rescan(service, session, source: src.url)
+
+        #expect(after.favoriteIDs == ["food1.jpg"])
+        #expect(after.collections == session.collections)
+        #expect(try SessionRepository(root: root.url).load(source: src.url) == after)
+    }
+
+    @Test func rescanDropsFavoritesAndMembersOfRemovedFiles() async throws {
+        let src = try TempDir(), root = try TempDir()
+        try writePhotos(["food1.jpg", "pet1.jpg"], in: src.url)
+        let embedder = FakeEmbedder(dimension: 4, images: ["food1.jpg": Self.food, "pet1.jpg": Self.pets], texts: Self.texts)
+        let service = service(embedder, sessions: root.url)
+        var (_, session) = try await run(service, source: src.url)
+        session.favoriteIDs = ["food1.jpg", "pet1.jpg"]
+        session.collections = [PhotoCollection(name: "Trip", memberIDs: ["pet1.jpg", "food1.jpg"], order: 0)]
+        try FileManager.default.removeItem(at: src.url.appending(path: "pet1.jpg"))
+
+        let (_, after) = try await rescan(service, session, source: src.url)
+
+        #expect(after.favoriteIDs == ["food1.jpg"])
+        #expect(after.collections.first?.memberIDs == ["food1.jpg"])
+        #expect(after.collections.first?.name == "Trip")
+    }
+
+    /// A photo put back with Finder keeps its favorite, although the old session lists it as trashed.
+    @Test func rescanKeepsFavoriteOfAFileThatIsBackAtItsPath() async throws {
+        let src = try TempDir(), root = try TempDir()
+        try writePhotos(["food1.jpg", "food2.jpg", "pet1.jpg"], in: src.url)
+        let embedder = FakeEmbedder(
+            dimension: 4, images: ["food1.jpg": Self.food, "food2.jpg": Self.food, "pet1.jpg": Self.pets],
+            texts: Self.texts)
+        let service = service(embedder, sessions: root.url)
+        var (_, session) = try await run(service, source: src.url)
+        session.favoriteIDs = ["food2.jpg"]
+        session.collections = [PhotoCollection(name: "Trip", memberIDs: ["food2.jpg"], order: 0)]
+        markTrashed("food2.jpg", in: &session)
+
+        let (_, after) = try await rescan(service, session, source: src.url)
+
+        #expect(after.trashed.isEmpty)
+        #expect(after.favoriteIDs == ["food2.jpg"])
+        #expect(after.collections.first?.memberIDs == ["food2.jpg"])
+    }
+
     /// Marks a photo as trashed in the session, as `ReviewService.moveToTrash` does.
     private func markTrashed(_ id: MediaID, in s: inout Session) {
         s.states[id] = nil

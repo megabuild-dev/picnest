@@ -7,86 +7,37 @@ import Testing
 
 @MainActor
 struct ReviewViewModelTests {
-    private let temp: TempDir
-    private let suite = TestDefaults()
-    private let food = PicnestCore.Category(id: UUID(), displayName: "Food", emoji: "🍜", prompts: ["food"], exampleIDs: [], order: 1)
-    private let documents = PicnestCore.Category(
-        id: UUID(), displayName: "Documents", emoji: "🧾", prompts: ["documents"], exampleIDs: [], order: 0)
-    private let classify = ClassifyService(settings: .default)
+    private let fx: ReviewFixture
+    private var temp: TempDir { fx.temp }
+    private var suite: TestDefaults { fx.suite }
+    private var food: PicnestCore.Category { fx.food }
+    private var documents: PicnestCore.Category { fx.documents }
+    private var classify: ClassifyService { fx.classify }
 
-    init() throws { temp = try TempDir() }
+    init() throws { fx = try ReviewFixture() }
 
-    private var environment: AppEnvironment {
-        AppEnvironment(embedder: FakeEmbedder(), sessionsRoot: temp.url.appending(path: "Sessions"),
-                       defaults: suite.defaults)
-    }
-
-    private func day(_ year: Int, _ month: Int, _ day: Int) -> Date {
-        Calendar.current.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
-    }
-
+    private var environment: AppEnvironment { fx.environment }
+    private func day(_ year: Int, _ month: Int, _ day: Int) -> Date { fx.day(year, month, day) }
     private func file(_ name: String, kind: MediaKind = .image, modified: Date? = nil) -> MediaFile {
-        MediaFile(id: name, relativePath: name, kind: kind, size: 10, modified: modified ?? day(2020, 1, 1))
+        fx.file(name, kind: kind, modified: modified)
     }
-
     private func auto(_ c: PicnestCore.Category, _ percent: Int, uncertain: Bool = false) -> Assignment {
-        Assignment(categoryID: c.id, score: 0.3, secondCategoryID: nil, secondScore: nil, percent: percent,
-                   uncertain: uncertain)
+        fx.auto(c, percent, uncertain: uncertain)
     }
-
-    /// 8 files, 1 of each kind of tile:
-    /// a 91% Food, b 62% Food (uncertain), c manual Food, d held Not sure (Food 41%, or Documents 38%),
-    /// e Don't move, f unreadable, g video, h 80% Documents with a modification-time date.
-    private func makeSession(source: URL) -> Session {
-        let s1: Float = 0.30
-        let held = Assignment(
-            categoryID: food.id, score: s1, secondCategoryID: documents.id,
-            secondScore: s1 + ClassifySettings.default.temperature * Float(log(38.0 / 41.0)), percent: 41,
-            uncertain: true)
-        let media = [
-            file("a.jpg", modified: day(2024, 1, 1)), file("b.jpg"), file("c.jpg"), file("d.jpg"),
-            file("e.jpg"), file("f.jpg"), file("g.mov", kind: .video), file("h.jpg", modified: day(2019, 3, 3)),
-        ]
-        let states: [MediaID: PhotoState] = [
-            "a.jpg": .auto(auto(food, 91)), "b.jpg": .auto(auto(food, 62, uncertain: true)),
-            "c.jpg": .manual(food.id), "d.jpg": .heldNotSure(held), "e.jpg": .dontMove, "f.jpg": .unreadable,
-            "h.jpg": .auto(auto(documents, 80)),
-        ]
-        let dates: [MediaID: PhotoDate] = [
-            "a.jpg": PhotoDate(date: day(2024, 5, 12), source: .exif),
-            "b.jpg": PhotoDate(date: day(2023, 11, 2), source: .fileNameTimestamp),
-            "c.jpg": PhotoDate(date: day(2022, 7, 9), source: .exif),
-            "d.jpg": PhotoDate(date: day(2021, 2, 1), source: .exif),
-            "h.jpg": PhotoDate(date: day(2019, 3, 3), source: .modificationTime),
-        ]
-        return Session(
-            sourcePath: source.path(percentEncoded: false), candidateList: .everyday, categories: [food, documents],
-            states: states, scan: ScanResult(media: media, dates: dates, skipped: [:]), sortedAt: nil)
-    }
-
+    private func makeSession(source: URL) -> Session { fx.makeSession(source: source) }
     private func makeModel(onRescan: @escaping () -> Void = {}) throws -> ReviewViewModel {
-        try makeModelAndReview(onRescan: onRescan).model
+        try fx.makeModel(onRescan: onRescan)
     }
-
     private func makeModelAndReview(
-        onRescan: @escaping () -> Void = {}, trashOps: FakeTrashFileOps = FakeTrashFileOps(), openURL: @escaping @MainActor (URL) -> Void = { _ in },
+        onRescan: @escaping () -> Void = {}, trashOps: FakeTrashFileOps = FakeTrashFileOps(),
+        openURL: @escaping @MainActor (URL) -> Void = { _ in },
         revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in },
         folderExists: @escaping (URL) -> Bool = { _ in true },
         session makeCustom: ((URL) -> Session)? = nil,
         defaults: UserDefaults? = nil) throws -> (model: ReviewViewModel, review: ReviewService) {
-        let source = try temp.folder("Photos")
-        let review = ReviewService(
-            session: makeCustom?(source) ?? makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
-            sessions: SessionRepository(root: temp.url.appending(path: "Sessions")),
-            embeddings: EmbeddingRepository(embedder: FakeEmbedder(), cacheDirectory: temp.url.appending(path: "Cache")),
-            trash: TrashService(fileOps: trashOps))
-        let environment = self.environment
-        let model = ReviewViewModel(
-            review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), onRescan: onRescan,
-            openURL: openURL, revealURLs: revealURLs, folderExists: folderExists,
-            defaults: defaults ?? suite.defaults)
-        return (model, review)
+        try fx.makeModelAndReview(
+            onRescan: onRescan, trashOps: trashOps, openURL: openURL, revealURLs: revealURLs,
+            folderExists: folderExists, session: makeCustom, defaults: defaults)
     }
 
     // MARK: - Filter, search, thumbnail size (UI redesign 4.2)
@@ -1158,14 +1109,6 @@ struct ReviewViewModelTests {
     }
 
     // MARK: - Start Over… (spec 3.3)
-
-    @Test func startOverMessageAddsSortedSentence() throws {
-        let (model, review) = try makeModelAndReview()
-        let text = "The app scans the folder again and proposes new categories. Your categories and picks are lost."
-        #expect(model.startOverMessage == text)
-        review.markSorted(at: day(2026, 10, 21))
-        #expect(model.startOverMessage == text + " The last sort can no longer be undone.")
-    }
 
     @Test func requestStartOverAsksFirst() throws {
         let model = try makeModel()

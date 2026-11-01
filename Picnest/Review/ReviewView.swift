@@ -37,6 +37,17 @@ struct ReviewView: View {
     }
 
     var body: some View {
+        alerts
+            // The suggest sheet opens by itself once after a scan (spec 3.7).
+            .task { model.suggestAfterScanIfNeeded() }
+            .onChange(of: model.isNamingNewCategory) { if model.isNamingNewCategory { newCategoryName = "" } }
+            // Edit > Undo and Redo act on this review (ReviewCommands).
+            .focusedSceneValue(\.review, model)
+            .overlay { organizingOverlay }
+    }
+
+    /// The screen with its sheets and dialogs. Split from `body` so the compiler type-checks it in time.
+    private var screen: some View {
         NavigationSplitView {
             SidebarView(model: model, preferences: preferences)
                 .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
@@ -65,7 +76,7 @@ struct ReviewView: View {
                 model.openSuggest()
             }
         }) { SortSheet(model: $0) }
-        .sheet(isPresented: editingCategoryBinding) {
+        .sheet(isPresented: editingCategoryBinding, onDismiss: model.openPendingCollection) {
             if let category = model.categories.first(where: { $0.id == model.editingCategory }) {
                 EditCategorySheet(model: model, category: category) { model.editingCategory = nil }
             }
@@ -81,6 +92,24 @@ struct ReviewView: View {
         } message: {
             Text(model.deletingCategory.map(model.deleteMessage(for:)) ?? "")
         }
+        .sheet(item: Bindable(model).editingCollection) { CollectionNameSheet(model: model, editor: $0) }
+        .sheet(item: Bindable(model).addingPhotos) { AddPhotosSheet(model: model, target: $0) }
+        .confirmationDialog(
+            model.deletingCollection.map(model.deleteCollectionTitle(for:)) ?? "", isPresented: deletingCollectionBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Collection", role: .destructive) {
+                if let deleting = model.deletingCollection { model.deleteCollection(deleting) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The photos stay in their folders.")
+        }
+    }
+
+    /// The alerts and the confirmation dialogs.
+    private var alerts: some View {
+        screen
         .sheet(item: Bindable(model).suggest) { SuggestSheet(model: $0) }
         .alert("Undo Last Sort", isPresented: undoMessageBinding) {
             Button("OK", role: .cancel) { model.undoSortMessage = nil }
@@ -105,6 +134,11 @@ struct ReviewView: View {
         } message: {
             Text(model.trashMessage ?? "")
         }
+        .alert("Put Back", isPresented: putBackErrorBinding) {
+            Button("OK", role: .cancel) { model.putBackErrorMessage = nil }
+        } message: {
+            Text(model.putBackErrorMessage ?? "")
+        }
         .alert("Category Folder", isPresented: folderErrorBinding) {
             Button("OK", role: .cancel) { model.dismissFolderError() }
         } message: {
@@ -123,12 +157,6 @@ struct ReviewView: View {
         } message: {
             Text(model.organizeErrorMessage ?? "")
         }
-        // The suggest sheet opens by itself once after a scan (spec 3.7).
-        .task { model.suggestAfterScanIfNeeded() }
-        .onChange(of: model.isNamingNewCategory) { if model.isNamingNewCategory { newCategoryName = "" } }
-        // Edit > Undo and Redo act on this review (ReviewCommands).
-        .focusedSceneValue(\.review, model)
-        .overlay { organizingOverlay }
     }
 
     /// A blocking overlay while **Done** moves the classified photos into category folders (spec 7.2).
@@ -161,10 +189,20 @@ struct ReviewView: View {
             DuplicatesView(model: model.duplicates)
         case .needsReview:
             NotSureView(model: model)
-        case .library:
+        case .library, .recentlyDeleted:
             VStack(spacing: 0) {
                 if let category = model.selectedCategory {
-                    CategoryHeaderView(model: model, category: category, photoCount: model.count)
+                    PhotoSetHeaderView(
+                        model: model, icon: .emoji(category.emoji), name: category.displayName, photoCount: model.count,
+                        addPhotos: { model.addingPhotos = .category(category.id) },
+                        rename: { model.editingCategory = category.id },
+                        moreItems: { CategoryMoreItems(model: model, category: category) })
+                } else if let collection = model.selectedCollection {
+                    PhotoSetHeaderView(
+                        model: model, icon: .symbol("square.stack"), name: collection.name, photoCount: model.count,
+                        addPhotos: { model.addingPhotos = .collection(collection.id) },
+                        rename: { model.requestRenameCollection(collection.id) },
+                        moreItems: { CollectionMoreItems(model: model, collection: collection) })
                 }
                 LibraryBar(model: model, layout: layout)
                 switch layout {
@@ -246,6 +284,14 @@ struct ReviewView: View {
 
     private var trashMessageBinding: Binding<Bool> {
         Binding(get: { model.trashMessage != nil }, set: { if !$0 { model.trashMessage = nil } })
+    }
+
+    private var putBackErrorBinding: Binding<Bool> {
+        Binding(get: { model.putBackErrorMessage != nil }, set: { if !$0 { model.putBackErrorMessage = nil } })
+    }
+
+    private var deletingCollectionBinding: Binding<Bool> {
+        Binding(get: { model.deletingCollection != nil }, set: { if !$0 { model.deletingCollection = nil } })
     }
 
     private var deletingCategoryBinding: Binding<Bool> {

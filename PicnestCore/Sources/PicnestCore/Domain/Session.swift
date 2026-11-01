@@ -13,10 +13,15 @@ public struct Session: Codable, Sendable, Hashable {
     public var trashed: [TrashedPhoto]
     /// The keys (`DuplicateGroup.id`) of the duplicate groups the user marked **Not Duplicates** (spec 3.6).
     public var notDuplicateKeys: Set<String>
+    /// The photos the user marked as favorites. A trashed photo can stay here, so Put Back restores the mark.
+    public var favoriteIDs: Set<MediaID>
+    /// The collections the user made, in `order`.
+    public var collections: [PhotoCollection]
 
     public init(
         sourcePath: String, candidateList: CandidateList, categories: [Category], states: [MediaID: PhotoState],
-        scan: ScanResult, sortedAt: Date?, trashed: [TrashedPhoto] = [], notDuplicateKeys: Set<String> = []
+        scan: ScanResult, sortedAt: Date?, trashed: [TrashedPhoto] = [], notDuplicateKeys: Set<String> = [],
+        favoriteIDs: Set<MediaID> = [], collections: [PhotoCollection] = []
     ) {
         self.sourcePath = sourcePath
         self.candidateList = candidateList
@@ -26,14 +31,17 @@ public struct Session: Codable, Sendable, Hashable {
         self.sortedAt = sortedAt
         self.trashed = trashed
         self.notDuplicateKeys = notDuplicateKeys
+        self.favoriteIDs = favoriteIDs
+        self.collections = collections
     }
 
     private enum CodingKeys: String, CodingKey {
-        case sourcePath, candidateList, categories, states, scan, sortedAt, trashed, notDuplicateKeys
+        case sourcePath, candidateList, categories, states, scan, sortedAt, trashed, notDuplicateKeys, favoriteIDs, collections
     }
 
     /// A `session.json` from before Move to Trash has no `trashed` key. It decodes as no trashed photos.
     /// A `session.json` from before the Duplicates view has no `notDuplicateKeys` key. It decodes as none.
+    /// A `session.json` from before favorites and collections has neither key. It decodes as none.
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         sourcePath = try c.decode(String.self, forKey: .sourcePath)
@@ -44,9 +52,11 @@ public struct Session: Codable, Sendable, Hashable {
         sortedAt = try c.decodeIfPresent(Date.self, forKey: .sortedAt)
         trashed = try c.decodeIfPresent([TrashedPhoto].self, forKey: .trashed) ?? []
         notDuplicateKeys = try c.decodeIfPresent(Set<String>.self, forKey: .notDuplicateKeys) ?? []
+        favoriteIDs = try c.decodeIfPresent(Set<MediaID>.self, forKey: .favoriteIDs) ?? []
+        collections = try c.decodeIfPresent([PhotoCollection].self, forKey: .collections) ?? []
     }
 
-    /// Writes `notDuplicateKeys` sorted, so the same session always gives the same `session.json`.
+    /// Writes `notDuplicateKeys` and `favoriteIDs` sorted, so the same session always gives the same `session.json`.
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(sourcePath, forKey: .sourcePath)
@@ -57,6 +67,8 @@ public struct Session: Codable, Sendable, Hashable {
         try c.encodeIfPresent(sortedAt, forKey: .sortedAt)
         try c.encode(trashed, forKey: .trashed)
         try c.encode(notDuplicateKeys.sorted(), forKey: .notDuplicateKeys)
+        try c.encode(favoriteIDs.sorted(), forKey: .favoriteIDs)
+        try c.encode(collections, forKey: .collections)
     }
 
     /// The ids of the trashed photos. The 1 place that says if a photo is trashed.
@@ -90,11 +102,15 @@ public struct TrashedPhoto: Codable, Sendable, Hashable {
     /// The path of the file in the Trash, from `trashItem(at:resultingItemURL:)`.
     public var trashPath: String
     public var time: Date
+    /// The state of the photo when the user trashed it. Put Back from Recently Deleted restores it.
+    /// Nil for a record from before Put Back, or for a photo that had no state. Decodes from a missing key as nil.
+    public var stateBeforeTrash: PhotoState?
 
-    public init(mediaID: MediaID, trashPath: String, time: Date) {
+    public init(mediaID: MediaID, trashPath: String, time: Date, stateBeforeTrash: PhotoState? = nil) {
         self.mediaID = mediaID
         self.trashPath = trashPath
         self.time = time
+        self.stateBeforeTrash = stateBeforeTrash
     }
 }
 

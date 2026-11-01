@@ -14,6 +14,27 @@ enum ReviewIssue: CaseIterable {
     case lowConfidence, noCategory, similarPhotos
 }
 
+/// Where the Add Photos sheet puts the photos.
+enum AddPhotosTarget: Identifiable, Hashable {
+    case category(CategoryID)
+    case collection(CollectionID)
+
+    var id: Self { self }
+}
+
+/// What the collection sheet does.
+enum CollectionEditor: Identifiable, Equatable {
+    case new(name: String, adding: [MediaID])
+    case rename(CollectionID)
+
+    var id: String {
+        switch self {
+        case .new: "new"
+        case .rename(let c): c.uuidString
+        }
+    }
+}
+
 /// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
 /// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
 @MainActor
@@ -21,6 +42,7 @@ enum ReviewIssue: CaseIterable {
 final class ReviewViewModel {
     enum SidebarItem: Hashable {
         case all, notSure, changedByYou, category(CategoryID), duplicates, dontMove, videos, unreadable
+        case favorites, collection(CollectionID), recentlyDeleted
     }
 
     enum SortOrder: String, CaseIterable, Identifiable {
@@ -254,9 +276,14 @@ final class ReviewViewModel {
             .all: counts.all, .notSure: counts.notSure, .changedByYou: counts.changedByYou,
             .dontMove: counts.dontMove, .videos: counts.videos, .unreadable: counts.unreadable,
             .duplicates: duplicates.cleanUpCount,
+            .favorites: CollectionService.visibleFavorites(in: review.session).count,
+            .recentlyDeleted: review.session.trashed.count,
         ]
         for category in review.session.categories {
             result[.category(category.id)] = counts.perCategory[category.id] ?? 0
+        }
+        for collection in review.session.collections {
+            result[.collection(collection.id)] = CollectionService.visibleMembers(of: collection.id, in: review.session).count
         }
         return result
     }
@@ -277,6 +304,9 @@ final class ReviewViewModel {
         case .dontMove: String(localized: "Don't move")
         case .videos: String(localized: "Videos")
         case .unreadable: String(localized: "Unreadable")
+        case .favorites: String(localized: "Favorites")
+        case .collection(let c): collections.first { $0.id == c }?.name ?? String(localized: "Collection")
+        case .recentlyDeleted: String(localized: "Recently Deleted")
         }
     }
 
@@ -362,8 +392,8 @@ final class ReviewViewModel {
     /// The text of the Start Over confirmation.
     var startOverMessage: String {
         canUndoLastSort
-            ? String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. The last sort can no longer be undone.")
-            : String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost.")
+            ? String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too. The last sort can no longer be undone.")
+            : String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too.")
     }
 
     /// File > **Start Over…**: shows the confirmation.
@@ -396,10 +426,13 @@ final class ReviewViewModel {
         if item == .notSure {
             // The grouped view shows the photos group by group, so grid order is the flattened groups.
             ids = notSureGroups.flatMap(\.ids)
+        } else if item == .recentlyDeleted {
+            ids = recentlyDeletedIDs(session: session, search: filter.search)
         } else {
             let needle = Self.searchNeedle(filter.search)
+            let members = Self.members(of: item, in: session)
             let files = session.visibleMedia.filter { media in
-                Self.includes(media, state: session.states[media.id], in: item)
+                Self.includes(media, state: session.states[media.id], in: item, members: members)
                     && (needle.map { Self.matches(media, needle: $0) } ?? true)
             }
             ids = sorted(files, session: session)
@@ -429,6 +462,12 @@ final class ReviewViewModel {
         case similarSearchFailed(String)
         /// The Chosen by you chip has no photo. No action.
         case noneChosen
+        /// Favorites has no photo. No action.
+        case noFavorites
+        /// The collection has no visible photo. No action here; the header has **Add Photos**.
+        case emptyCollection
+        /// Recently Deleted has no photo. No action.
+        case nothingDeleted
     }
 
     /// The empty state of the flat grid, or nil when it has photos. The Needs Review and Duplicates views
@@ -443,11 +482,14 @@ final class ReviewViewModel {
             return .noResults
         }
         if Self.searchNeedle(searchText) != nil { return .noResults }
-        if count(of: .all) == 0 { return .emptyFolder }
         switch selectedItem {
-        case .changedByYou: return .noneChosen
-        default: return nil
+        case .favorites: return .noFavorites
+        case .collection: return .emptyCollection
+        case .recentlyDeleted: return .nothingDeleted
+        default: break
         }
+        if count(of: .all) == 0 { return .emptyFolder }
+        return selectedItem == .changedByYou ? .noneChosen : nil
     }
 
     /// What the similar-photos filter shows when no photo shows: a wait while the duplicate search has not
@@ -464,13 +506,14 @@ final class ReviewViewModel {
 
     /// Which body the detail column shows.
     enum BodyKind: Equatable {
-        case duplicates, needsReview, library
+        case duplicates, needsReview, library, recentlyDeleted
     }
 
     var bodyKind: BodyKind {
         switch selectedItem {
         case .duplicates: .duplicates
         case .notSure: .needsReview
+        case .recentlyDeleted: .recentlyDeleted
         default: .library
         }
     }
@@ -481,8 +524,8 @@ final class ReviewViewModel {
         return categories.first { $0.id == id }
     }
 
-    /// The category header shows at the top of the library body of a category.
-    var showsCategoryHeader: Bool { selectedCategory != nil }
+    /// The header shows at the top of the library body of a category and of a collection.
+    var showsCategoryHeader: Bool { selectedCategory != nil || selectedCollection != nil }
 
     /// The filter chips show for All Photos and Chosen by you. Needs Review has its own header and filter menus.
     var showsFilterChips: Bool {
@@ -493,17 +536,17 @@ final class ReviewViewModel {
     }
 
     /// The grid or list switch shows for the flat views only.
-    var showsLayoutPicker: Bool { bodyKind == .library }
+    var showsLayoutPicker: Bool { bodyKind == .library || bodyKind == .recentlyDeleted }
 
     /// The "N photos" footer shows under the flat views only.
-    var showsFooter: Bool { bodyKind == .library }
+    var showsFooter: Bool { bodyKind == .library || bodyKind == .recentlyDeleted }
 
     /// The thumbnail size slider. Needs Review is always a grid; the list has no thumbnail size.
     func showsThumbnailSlider(layout: LibraryLayout) -> Bool {
         switch bodyKind {
         case .duplicates: false
         case .needsReview: true
-        case .library: layout == .grid
+        case .library, .recentlyDeleted: layout == .grid
         }
     }
 
@@ -722,6 +765,7 @@ final class ReviewViewModel {
             if let a = Self.assignment(state) { parts.append("\(a.percent)%") }
         }
         if state?.isManual == true { parts.append(String(localized: "Chosen by you")) }
+        if isFavorite(id) { parts.append(String(localized: "Favorite")) }
         if selection.contains(id) { parts.append(String(localized: "selected")) }
         return parts.joined(separator: ", ")
     }
@@ -785,6 +829,10 @@ final class ReviewViewModel {
     }
 
     func thumbnail(_ id: MediaID, maxPixel: Int) async -> CGImage? {
+        // A trashed photo is no longer under the source folder: read it from the Trash.
+        if let record = review.session.trashed.first(where: { $0.mediaID == id }) {
+            return await thumbnails.thumbnail(at: URL(filePath: record.trashPath), maxPixel: maxPixel)
+        }
         guard let media = mediaByID[id] else { return nil }
         return await thumbnails.thumbnail(for: media, source: source, maxPixel: maxPixel)
     }
@@ -887,7 +935,7 @@ final class ReviewViewModel {
             if !selection.contains(id) { selection = [id] }
             anchor = id
         }
-        guard let anchor, let media = mediaByID[anchor] else { return }
+        guard bodyKind != .recentlyDeleted, let anchor, let media = mediaByID[anchor] else { return }
         previewURL = url(of: media)
     }
 
@@ -912,7 +960,8 @@ final class ReviewViewModel {
     @discardableResult
     func moveSelection(toKey n: Int) -> Bool {
         let categories = categories
-        guard !selection.isEmpty, (1...9).contains(n), n <= categories.count else { return false }
+        guard bodyKind != .recentlyDeleted, !selection.isEmpty, (1...9).contains(n), n <= categories.count
+        else { return false }
         moveSelection(to: categories[n - 1].id)
         return true
     }
@@ -930,7 +979,7 @@ final class ReviewViewModel {
     /// Photos dropped on a sidebar category. Returns false for an empty drop.
     @discardableResult
     func drop(_ ids: [MediaID], on c: CategoryID) -> Bool {
-        guard !ids.isEmpty else { return false }
+        guard bodyKind != .recentlyDeleted, !ids.isEmpty else { return false }
         review.move(ids, to: c)
         clearSelection()
         return true
@@ -955,7 +1004,7 @@ final class ReviewViewModel {
     /// puts them back. A photo that cannot move stays, and `trashMessage` tells why.
     func trashSelection() async {
         let ids = selectedInGridOrder
-        guard !ids.isEmpty else { return }
+        guard bodyKind != .recentlyDeleted, !ids.isEmpty else { return }
         let errors = await review.moveToTrash(ids)
         clearSelection()
         showTrashErrors(errors)
@@ -976,11 +1025,17 @@ final class ReviewViewModel {
     /// The Trash alert: the first message, and "and <n> more" for the other errors. Also for the
     /// clean-ups of the Duplicates view.
     func showTrashErrors(_ errors: [TrashError], title: String = String(localized: "Move to Trash")) {
-        guard let first = errors.first else { return }
+        guard let message = Self.summary(of: errors) else { return }
         trashAlertTitle = title
+        trashMessage = message
+    }
+
+    /// The text of the first error, and "and <n> more" for the others. Nil for no error.
+    private static func summary(of errors: [TrashError]) -> String? {
+        guard let first = errors.first else { return nil }
         let more = errors.count - 1
         let message = CoreErrorMessages.text(for: first)
-        trashMessage = more > 0 ? String(localized: "\(message) (and \(more) more)") : message
+        return more > 0 ? String(localized: "\(message) (and \(more) more)") : message
     }
 
     // MARK: - Category edits
@@ -1160,6 +1215,229 @@ final class ReviewViewModel {
         isNamingNewCategory = false
     }
 
+    // MARK: - Favorites and collections
+
+    /// The collections in sidebar order.
+    var collections: [PhotoCollection] {
+        review.session.collections.sorted { $0.order < $1.order }
+    }
+
+    func isFavorite(_ id: MediaID) -> Bool { review.session.favoriteIDs.contains(id) }
+
+    /// True when `ids` has photos and all of them are favorites: the toggle then removes them.
+    func allFavorites(_ ids: [MediaID]) -> Bool { !ids.isEmpty && ids.allSatisfy(isFavorite) }
+
+    /// The heart of 1 photo. It does not change the selection.
+    func toggleFavorite(_ id: MediaID) { review.toggleFavorite([id]) }
+
+    /// The key `.` and the favorite items work on the selection, but not in Recently Deleted.
+    var canFavoriteSelection: Bool { bodyKind != .recentlyDeleted && !selection.isEmpty }
+
+    /// True in a collection: the photos can leave it.
+    var canRemoveFromCollection: Bool {
+        if case .collection = selectedItem { true } else { false }
+    }
+
+    /// Opens the new collection sheet with the selection in it.
+    func requestNewCollectionFromSelection() {
+        let ids = selectedInGridOrder
+        guard !ids.isEmpty else { return }
+        requestNewCollection(adding: ids)
+    }
+
+    /// Adds the selection to the favorites, or removes it when every selected photo is a favorite.
+    func toggleFavoriteSelection() {
+        let ids = selectedInGridOrder
+        guard bodyKind != .recentlyDeleted, !ids.isEmpty else { return }
+        review.toggleFavorite(ids)
+    }
+
+    func addSelection(to c: CollectionID) {
+        let ids = selectedInGridOrder
+        guard !ids.isEmpty else { return }
+        review.addToCollection(ids, c)
+    }
+
+    /// Only in a collection. The photos stay in their folders and in every other list.
+    func removeSelectionFromCollection() {
+        guard case .collection(let c) = selectedItem else { return }
+        let ids = selectedInGridOrder
+        guard !ids.isEmpty else { return }
+        review.removeFromCollection(ids, c)
+        clearSelection()
+    }
+
+    /// Photos dropped on a sidebar collection. Returns false for an empty drop or an unknown collection.
+    @discardableResult
+    func dropOnCollection(_ ids: [MediaID], _ c: CollectionID) -> Bool {
+        guard bodyKind != .recentlyDeleted, !ids.isEmpty,
+              review.session.collections.contains(where: { $0.id == c }) else { return false }
+        review.addToCollection(ids, c)
+        return true
+    }
+
+    // MARK: - Add Photos
+
+    /// The open Add Photos sheet, or nil.
+    var addingPhotos: AddPhotosTarget?
+
+    /// The visible photos that are not in `target` yet, by file name, that match `search`.
+    func addPhotosCandidates(for target: AddPhotosTarget, matching search: String = "") -> [MediaID] {
+        let session = review.session
+        let needle = Self.searchNeedle(search)
+        let item: SidebarItem = switch target {
+        case .category(let c): .category(c)
+        case .collection(let c): .collection(c)
+        }
+        let members = Self.members(of: item, in: session)
+        return session.visibleMedia
+            .filter { media in
+                !Self.includes(media, state: session.states[media.id], in: item, members: members)
+                    && (needle.map { Self.matches(media, needle: $0) } ?? true)
+            }
+            .sorted {
+                let (a, b) = (Self.fileName($0), Self.fileName($1))
+                return a != b ? a.localizedStandardCompare(b) == .orderedAscending : $0.id < $1.id
+            }
+            .map(\.id)
+    }
+
+    /// Adds `picks` to `target`, in the order of `addPhotosCandidates`. A category target makes manual picks (the files move at **Done**). A collection target adds members.
+    func addPhotos(_ picks: some Collection<MediaID>, to target: AddPhotosTarget) {
+        // The grid order, so the members and the picks do not depend on the order of the taps.
+        let picked = Set(picks)
+        let ids = addPhotosCandidates(for: target).filter(picked.contains)
+        switch target {
+        case .category(let c): review.move(ids, to: c)
+        case .collection(let c): review.addToCollection(ids, c)
+        }
+        addingPhotos = nil
+    }
+
+    /// The collection that `selectedItem` shows, or nil for any other item.
+    var selectedCollection: PhotoCollection? {
+        guard case .collection(let c) = selectedItem else { return nil }
+        return collections.first { $0.id == c }
+    }
+
+    /// The name for the collection sheet that opens when the Edit Category sheet is gone, or nil.
+    private var pendingCollectionName: String?
+
+    /// **Create a collection instead** in the Edit Category sheet. The category stays as it is. The sheet closes
+    /// first, then `openPendingCollection` opens the collection sheet, so the 2 sheets do not overlap.
+    func createCollectionInstead(of c: CategoryID) {
+        guard let category = categories.first(where: { $0.id == c }) else { return }
+        pendingCollectionName = category.displayName
+        editingCategory = nil
+    }
+
+    /// Runs when the Edit Category sheet is gone. Opens the collection sheet of `createCollectionInstead`, once.
+    func openPendingCollection() {
+        guard let name = pendingCollectionName else { return }
+        pendingCollectionName = nil
+        requestNewCollection(name: name, adding: [])
+    }
+
+    /// The open collection sheet, or nil.
+    var editingCollection: CollectionEditor?
+    /// The collection that waits for the answer of the delete confirmation, or nil.
+    var deletingCollection: CollectionID?
+
+    /// Opens the sheet for a new collection. `adding` are the photos that it starts with.
+    func requestNewCollection(name: String = "", adding: [MediaID]) {
+        editingCollection = .new(name: name, adding: adding)
+    }
+
+    func requestRenameCollection(_ c: CollectionID) {
+        guard review.session.collections.contains(where: { $0.id == c }) else { return }
+        editingCollection = .rename(c)
+    }
+
+    /// The name that the open sheet starts with.
+    var collectionSheetName: String {
+        switch editingCollection {
+        case .new(let name, _): name
+        case .rename(let c): collections.first { $0.id == c }?.name ?? ""
+        case nil: ""
+        }
+    }
+
+    /// The collection that the open sheet renames. Its own name is not a duplicate. Nil for a new collection.
+    var collectionSheetExcluding: CollectionID? {
+        if case .rename(let c) = editingCollection { c } else { nil }
+    }
+
+    /// The title of the confirmation dialog before a collection is deleted.
+    func deleteCollectionTitle(for c: CollectionID) -> String {
+        let name = collections.first { $0.id == c }?.name ?? ""
+        return String(localized: "Delete the collection “\(name)”?")
+    }
+
+    func validateCollectionName(_ name: String, excluding: CollectionID?) -> CollectionNameIssue? {
+        CollectionService.validateName(name, excluding: excluding, among: review.session.collections)
+    }
+
+    /// The Create or Save button. Returns false, and keeps the sheet, when the name has an issue.
+    @discardableResult
+    func saveCollection(name: String) -> Bool {
+        switch editingCollection {
+        case .new(_, let adding):
+            guard review.createCollection(name: name, adding: adding) != nil else { return false }
+        case .rename(let c):
+            guard validateCollectionName(name, excluding: c) == nil else { return false }
+            review.renameCollection(c, to: name)
+        case nil:
+            return false
+        }
+        editingCollection = nil
+        return true
+    }
+
+    /// Deletes `c`. The photos stay in their folders. If `c` shows, All Photos shows.
+    func deleteCollection(_ c: CollectionID) {
+        if selectedItem == .collection(c) { selectedItem = .all }
+        review.deleteCollection(c)
+        deletingCollection = nil
+        closeCollectionSheetIfGone()
+    }
+
+    private func closeCollectionSheetIfGone() {
+        if case .rename(let c) = editingCollection, !review.session.collections.contains(where: { $0.id == c }) {
+            editingCollection = nil
+        }
+    }
+
+    // MARK: - Recently Deleted
+
+    /// The text of the Put Back alert, or nil. It names the first error and counts the others.
+    var putBackErrorMessage: String?
+
+    /// Puts the selected photos back to their places. A photo that cannot come back stays in the list.
+    func putBackSelection() {
+        let ids = selectedInGridOrder
+        guard !ids.isEmpty else { return }
+        review.putBack(ids)
+        clearSelection()
+        let review = review
+        undoWatch = Task { [weak self] in
+            await review.settled()
+            self?.putBackErrorMessage = Self.summary(of: review.lastPutBackErrors)
+        }
+    }
+
+    /// The trashed photos, newest first, then by id, that match `search`.
+    private func recentlyDeletedIDs(session: Session, search: String) -> [MediaID] {
+        let needle = Self.searchNeedle(search)
+        let names = mediaByID
+        return session.trashed
+            .filter { record in
+                guard let needle else { return true }
+                return names[record.mediaID].map { Self.matches($0, needle: needle) } ?? false
+            }
+            .sorted { $0.time != $1.time ? $0.time > $1.time : $0.mediaID < $1.mediaID }
+            .map(\.mediaID)
+    }
+
     // MARK: - Private
 
     /// Drops both caches once after `review.session` changed, and watches the session again.
@@ -1167,6 +1445,7 @@ final class ReviewViewModel {
         guard sessionChanged else { return }
         sessionChanged = false
         closeEditIfCategoryIsGone()
+        closeCollectionSheetIfGone()
         watchSession()
         cache = nil
         groupsCache = nil
@@ -1240,8 +1519,22 @@ final class ReviewViewModel {
         fold(fileName(media)).contains(needle)
     }
 
-    private static func includes(_ media: MediaFile, state: PhotoState?, in item: SidebarItem) -> Bool {
+    /// The photos that `item` lists by membership: the visible favorites or the visible members of a collection.
+    /// Nil for any other item.
+    private static func members(of item: SidebarItem, in session: Session) -> Set<MediaID>? {
         switch item {
+        case .favorites: CollectionService.visibleFavorites(in: session)
+        case .collection(let c): Set(CollectionService.visibleMembers(of: c, in: session))
+        default: nil
+        }
+    }
+
+    private static func includes(
+        _ media: MediaFile, state: PhotoState?, in item: SidebarItem, members: Set<MediaID>? = nil
+    ) -> Bool {
+        switch item {
+        case .favorites, .collection: return members?.contains(media.id) == true
+        case .recentlyDeleted: return false  // The trashed photos are not in `visibleMedia`.
         case .all: return true
         case .notSure: return state?.isNotSure == true
         case .changedByYou: return state?.isManual == true

@@ -16,6 +16,7 @@ struct PhotoListView: View {
                     ForEach(ids, id: \.self) { id in
                         PhotoListRow(model: model, id: id, isSelected: selection.contains(id))
                             .photoInteractions(model: model, id: id, onTap: onTap)
+                            .rowFavorite(model: model, id: id)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -60,6 +61,8 @@ private struct PhotoListRow: View {
             .frame(width: 110, alignment: .leading)
             Text(row.fileSize, format: .byteCount(style: .file))
                 .frame(width: 80, alignment: .trailing)
+            // The room of the heart, which sits over it.
+            if model.bodyKind != .recentlyDeleted { Color.clear.frame(width: 28, height: 1) }
         }
         .font(.system(size: 12.5))
         .foregroundStyle(Theme.textSecondary.color)
@@ -74,5 +77,6 @@ private struct PhotoListRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(row.accessibilityLabel)
         .accessibilityAddTraits(isSelected ? [.isImage, .isSelected] : .isImage)
+        .favoriteAccessibilityAction(model: model, id: id)
     }
 }

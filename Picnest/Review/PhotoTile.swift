@@ -41,6 +41,7 @@ struct PhotoTile: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(tile.accessibilityLabel)
         .accessibilityAddTraits(isSelected ? [.isImage, .isSelected] : .isImage)
+        .favoriteAccessibilityAction(model: model, id: id)
     }
 
     private func caption(_ tile: ReviewViewModel.TileModel) -> some View {
@@ -81,15 +82,21 @@ struct PhotoTile: View {
     /// The check circle of a selected photo: the second signal besides the ring. A thin outer ring and a shadow
     /// keep it visible on a white photo.
     @ViewBuilder private var checkCircle: some View {
-        if isSelected {
-            Image(systemName: "checkmark")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Theme.onAccent.color)
-                .frame(width: 22, height: 22)
-                .background(Theme.accent.color, in: Circle())
-                .overlay { Circle().strokeBorder(Theme.onAccent.color, lineWidth: 1.5) }
-                .shadow(color: Theme.badgeBackground.color.opacity(0.5), radius: 2)
-                .padding(8)
-        }
+        if isSelected { SelectionCheck().padding(8) }
+    }
+}
+
+/// The check circle of a selected photo, on the tiles of the grid and of the Add Photos sheet.
+struct SelectionCheck: View {
+    var diameter: Double = 22
+
+    var body: some View {
+        Image(systemName: "checkmark")
+            .font(.system(size: diameter / 2, weight: .bold))
+            .foregroundStyle(Theme.onAccent.color)
+            .frame(width: diameter, height: diameter)
+            .background(Theme.accent.color, in: Circle())
+            .overlay { Circle().strokeBorder(Theme.onAccent.color, lineWidth: 1.5) }
+            .shadow(color: Theme.badgeBackground.color.opacity(0.5), radius: 2)
     }
 }

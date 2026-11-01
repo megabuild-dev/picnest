@@ -17,6 +17,16 @@ struct ThumbnailServiceTests {
         #expect(again === thumb)  // The shared cache holds it.
     }
 
+    @Test func thumbnailAtURLReadsAnyFile() async throws {
+        let dir = try TempDir()
+        let url = dir.url.appending(path: "in-trash.jpg")
+        try TestImages.writeJPEG(to: url, color: (5, 60, 120), size: 900)
+        let service = ThumbnailService(images: ImageRepository())
+        let thumb = try #require(await service.thumbnail(at: url, maxPixel: 200))
+        #expect(max(thumb.width, thumb.height) <= 200)
+        #expect(await service.thumbnail(at: dir.url.appending(path: "none.jpg"), maxPixel: 200) == nil)
+    }
+
     @Test func missingFileGivesNil() async {
         let media = MediaFile(id: "none.jpg", relativePath: "none.jpg", kind: .image, size: 1,
                               modified: Date(timeIntervalSince1970: 0))
