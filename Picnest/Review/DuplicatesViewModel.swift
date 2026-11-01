@@ -100,6 +100,8 @@ final class DuplicatesViewModel {
             let groups = try await review.findDuplicates { [weak self] done, total in
                 Task { @MainActor in self?.progress(done, total) }
             }
+            // The user left the view while the search ended: do not keep a result that nobody waits for.
+            try Task.checkCancellation()
             setFound(groups)
             hasFound = true
             phase = .ready
@@ -183,8 +185,13 @@ final class DuplicatesViewModel {
 
     var cleanUpTitle: String { String(localized: "Clean Up All (\(cleanUpCount))") }
 
+    /// The text of the confirmation. It says "in both tabs" when the Exact copies and the Similar photos
+    /// tabs both have groups, because **Clean Up All** covers both.
     var cleanUpConfirmation: String {
-        String(localized: "Move \(cleanUpCount) photos to the Trash? You can put them back with Undo or from the Trash in Finder.")
+        if exactCount > 0 && similarCount > 0 {
+            return String(localized: "Move \(cleanUpCount) photos in both tabs to the Trash? You can put them back with Undo or from the Trash in Finder.")
+        }
+        return String(localized: "Move \(cleanUpCount) photos to the Trash? You can put them back with Undo or from the Trash in Finder.")
     }
 
     // MARK: - Actions
