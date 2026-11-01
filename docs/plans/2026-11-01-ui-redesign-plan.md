@@ -26,7 +26,7 @@ links:
 
 ## Status (update after each task)
 
-- [ ] Phase 0: Foundation (tasks 0.1 to 0.7)
+- [x] Phase 0: Foundation (tasks 0.1 to 0.7). Merged into `ui-redesign`. Manual checks A and B wait for the owner.
 - [ ] Phase 1: App shell (tasks 1.1 to 1.4)
 - [ ] Phase 2: Screens (tasks 2.1 to 2.8)
 - [ ] Phase 3: Favorites, Collections, Recently Deleted. Write a detailed plan after phase 2 (section "Later phases").
@@ -339,6 +339,7 @@ For each task: restyle on `Theme`, add new strings with `vi`, keep ViewModel rul
 - [ ] **Step 3: Manual checklist, in `en` and `vi`, in Light, Dark, and System:** Welcome, Scan, Library grid, Library list, Needs Review, Category, Edit Category, Duplicates, Sort sheet, Settings. At 1000 × 680, no text is cut.
 - [ ] **Step 4: Accessibility.** Every icon-only button has a label. Keyboard focus shows on each control. With **Reduce Motion** on, no motion plays.
 - [ ] **Step 5: Compare with the mockups.** Put each screen next to its PNG. Write the differences in a list. Ask the owner to accept them.
+- [ ] **Step 5b: Make `CatalogTests` cover every language** in the catalog, not only `vi` (follow-up from task 0.7). Update the guide in `CONTRIBUTING.md` to match.
 - [ ] **Step 6: Ask a native speaker** to review the Vietnamese text. Do not release before this.
 - [ ] **Step 7: Merge phase 2** into `ui-redesign`. Tick the Status line. Ask the owner before any merge into `main`.
 
