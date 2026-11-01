@@ -144,4 +144,54 @@ import Testing
         while h.canUndo { h.undo(); steps += 1 }
         #expect(steps == 100)
     }
+
+    @Test func rotateAfterOneFlipTurnsTheOtherWay() {
+        var e = PhotoEdit.original
+        e.crop = NormalizedRect(x: 0, y: 0, width: 0.5, height: 0.25)
+        e.flip(horizontal: true)
+        #expect(e.crop == NormalizedRect(x: 0.5, y: 0, width: 0.5, height: 0.25))
+        e.rotate(clockwise: true)
+        #expect(e.quarterTurns == 3)
+        #expect(e.crop == NormalizedRect(x: 0.75, y: 0.5, width: 0.25, height: 0.5))
+        e.rotate(clockwise: false)
+        #expect(e.quarterTurns == 0)
+        #expect(e.crop == NormalizedRect(x: 0.5, y: 0, width: 0.5, height: 0.25))
+    }
+
+    @Test func rotateAfterTwoFlipsTurnsTheSameWay() {
+        var e = PhotoEdit.original
+        e.flip(horizontal: true)
+        e.flip(horizontal: false)
+        e.rotate(clockwise: true)
+        #expect(e.quarterTurns == 1)
+    }
+
+    @Test func fourRotationsGiveTheOriginalInEveryFlipState() {
+        for (h, v) in [(false, false), (true, false), (false, true), (true, true)] {
+            for cw in [true, false] {
+                var e = PhotoEdit.original
+                e.crop = NormalizedRect(x: 0.125, y: 0.25, width: 0.5, height: 0.25)
+                if h { e.flip(horizontal: true) }
+                if v { e.flip(horizontal: false) }
+                let start = e
+                for _ in 0..<4 { e.rotate(clockwise: cw) }
+                #expect(e == start)
+            }
+        }
+    }
+
+    @Test func undoRevertsAPendingShowFirst() {
+        var h = EditHistory()
+        h.show(edit(5))
+        h.undo()
+        #expect(h.current == .original)
+        #expect(!h.canUndo)
+        h.set(edit(1))
+        h.show(edit(2))
+        h.undo()
+        #expect(h.current == edit(1))
+        #expect(h.canUndo)
+        h.undo()
+        #expect(h.current == .original)
+    }
 }

@@ -73,4 +73,50 @@ import Testing
         let r = NormalizedRect(x: 0.1, y: 0.2, width: 0.3, height: 0.4)
         #expect(CropGeometry.fit(r, ratio: nil, frameAspect: fa) == r)
     }
+
+    @Test func scaleIsTight() {
+        // 400 x 300 at 10 deg: the tight value touches an edge.
+        let t = 10.0 * .pi / 180
+        let s = CropGeometry.straightenScale(degrees: 10, width: 400, height: 300)
+        let needX = (200 * cos(t) + 150 * sin(t)) / 200
+        let needY = (200 * sin(t) + 150 * cos(t)) / 150
+        #expect(abs(s - max(needX, needY)) < 1e-12)
+        #expect(abs(s - 1.21634) < 1e-4)
+    }
+
+    @Test func scaleOnAPortraitFrame() {
+        let landscape = CropGeometry.straightenScale(degrees: 10, width: 400, height: 300)
+        let portrait = CropGeometry.straightenScale(degrees: 10, width: 300, height: 400)
+        #expect(abs(landscape - portrait) < 1e-12)
+        let t = 10.0 * .pi / 180
+        let s = portrait
+        for (cx, cy) in [(-150.0, -200.0), (150, -200), (150, 200), (-150, 200)] {
+            let rx = (cx * cos(-t) - cy * sin(-t)) / s
+            let ry = (cx * sin(-t) + cy * cos(-t)) / s
+            #expect(abs(rx) <= 150 + 1e-9 && abs(ry) <= 200 + 1e-9)
+        }
+    }
+
+    @Test func scaleAt45DegreesOnASquare() {
+        let s = CropGeometry.straightenScale(degrees: 45, width: 100, height: 100)
+        #expect(abs(s - 2.0.squareRoot()) < 1e-12)
+    }
+
+    @Test func dragKeepsAThreeTwoRatio() {
+        let r = NormalizedRect(x: 0.1, y: 0.1, width: 0.3, height: 0.3)
+        let ratio = 1.5
+        for handle in CropHandle.allCases where handle != .move {
+            for (dx, dy) in [(0.1, 0.05), (-0.2, 0.3), (0.5, -0.5), (-3.0, -3.0), (3.0, 3.0)] {
+                let o = CropGeometry.drag(r, handle: handle, dx: dx, dy: dy, ratio: ratio, frameAspect: fa)
+                #expect(abs(o.width * fa / o.height - ratio) < 1e-9, "\(handle) \(dx) \(dy)")
+                #expect(o.x >= -1e-12 && o.y >= -1e-12 && o.x + o.width <= 1 + 1e-9 && o.y + o.height <= 1 + 1e-9)
+            }
+        }
+    }
+
+    @Test func tinyRectNearTheBorderStaysInside() {
+        let r = NormalizedRect(x: 0.99, y: 0.5, width: 0.01, height: 0.01)
+        let o = CropGeometry.drag(r, handle: .top, dx: 0, dy: -0.1, ratio: 1, frameAspect: fa)
+        #expect(o.x >= 0 && o.x + o.width <= 1 + 1e-12 && o.y >= 0 && o.y + o.height <= 1 + 1e-12)
+    }
 }

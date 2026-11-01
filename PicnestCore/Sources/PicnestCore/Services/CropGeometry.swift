@@ -90,6 +90,6 @@ public enum CropGeometry {
     }
 
     private static func clamp(_ v: Double, _ lo: Double, _ hi: Double) -> Double {
-        min(max(v, lo), max(lo, hi))
+        min(max(v, lo), hi)
     }
 }

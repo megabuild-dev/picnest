@@ -76,12 +76,14 @@ public struct PhotoEdit: Sendable, Hashable {
 
     public mutating func rotate(clockwise: Bool) {
         let c = crop
+        // The model is flip(turn(image)). One flip reverses the turn, so the stored count goes the other way.
+        let mirrored = flipHorizontal != flipVertical
         if clockwise {
             crop = NormalizedRect(x: 1 - c.y - c.height, y: c.x, width: c.height, height: c.width)
-            quarterTurns += 1
+            quarterTurns += mirrored ? 3 : 1
         } else {
             crop = NormalizedRect(x: c.y, y: 1 - c.x - c.width, width: c.height, height: c.width)
-            quarterTurns += 3
+            quarterTurns += mirrored ? 1 : 3
         }
     }
 
@@ -159,6 +161,10 @@ public struct EditHistory: Sendable {
     public mutating func reset() { set(.original) }
 
     public mutating func undo() {
+        if current != committed {  // drop a value that was shown but not committed
+            current = committed
+            return
+        }
         guard let previous = past.popLast() else { return }
         future.append(committed)
         committed = previous
