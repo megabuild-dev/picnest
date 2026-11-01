@@ -939,6 +939,16 @@
         }
       }
     },
+    "Language" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngôn ngữ"
+          }
+        }
+      }
+    },
     "Leave in the source folder" : {
       "localizations" : {
         "vi" : {
@@ -1576,6 +1586,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quét lại"
+          }
+        }
+      }
+    },
+    "Restart" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khởi động lại"
+          }
+        }
+      }
+    },
+    "Restart Picnest to change the language." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khởi động lại Picnest để đổi ngôn ngữ."
           }
         }
       }

@@ -31,6 +31,7 @@
 		66083AC05E13E723E2A46072 /* WelcomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845387F7A11FB74846F778E8 /* WelcomeViewModel.swift */; };
 		689A81B87787FDF696696773 /* SortViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A59DEB649794DC24646B1F0 /* SortViewModel.swift */; };
 		6F90566DA29FC4725D1FDB85 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65043FDF2E3D7F22128AA68E /* WelcomeView.swift */; };
+		70AEC711BE310E3279C3D9F9 /* LanguageStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5060CB5489B7E0B2EDC4F9 /* LanguageStoreTests.swift */; };
 		70F1E214CEAC18D05A77D56B /* PicnestApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE5C538024D2F93601A43E4D /* PicnestApp.swift */; };
 		73B91E90E6553F5DEAB35D9A /* SuggestSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */; };
 		78EC7D52544D30719D020C2A /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08D2B7C9420C231204BC494F /* AppEnvironment.swift */; };
@@ -51,6 +52,7 @@
 		D107C155337D4DE5FBBF567E /* SortViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0977699F69AB7452B6F56650 /* SortViewModelTests.swift */; };
 		D54CFD0B3713BDC63BE47DEE /* SortSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A0384D25A40836DB152C65 /* SortSheet.swift */; };
 		D5E02ACC4D238BF7ACF5EEBE /* SortMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70654CE25C0D4A3AEB26F66C /* SortMessages.swift */; };
+		D7D1CF7EE65EA3EDABBF7499 /* LanguageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F2D9F900CB1D1EE3B6762AD /* LanguageStore.swift */; };
 		E3CBD322C27A8077774D9E12 /* PhotoTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35166FEF0689ABA60577363E /* PhotoTile.swift */; };
 		EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */; };
 		F23B8FDED3D74BE03246FEE3 /* WelcomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */; };
@@ -79,6 +81,7 @@
 		0977699F69AB7452B6F56650 /* SortViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortViewModelTests.swift; sourceTree = "<group>"; };
 		0DAF2183D3E900579E277CDD /* PicnestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PicnestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1900A1C0BD2CD847B38FB9F9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		1A5060CB5489B7E0B2EDC4F9 /* LanguageStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageStoreTests.swift; sourceTree = "<group>"; };
 		1A5B92C09D222C1D48568576 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1EBC5504915550647169DBD7 /* SelectionBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionBar.swift; sourceTree = "<group>"; };
 		25180EB57733ADEE527C9178 /* ScanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModel.swift; sourceTree = "<group>"; };
@@ -94,6 +97,7 @@
 		5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
 		6454171A84EC6C4B6543899A /* CountText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountText.swift; sourceTree = "<group>"; };
 		65043FDF2E3D7F22128AA68E /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		6F2D9F900CB1D1EE3B6762AD /* LanguageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageStore.swift; sourceTree = "<group>"; };
 		70654CE25C0D4A3AEB26F66C /* SortMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMessages.swift; sourceTree = "<group>"; };
 		7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeViewModelTests.swift; sourceTree = "<group>"; };
 		7A59DEB649794DC24646B1F0 /* SortViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortViewModel.swift; sourceTree = "<group>"; };
@@ -176,6 +180,7 @@
 				47958C12A51561B635AA7868 /* CatalogTests.swift */,
 				7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */,
 				8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */,
+				1A5060CB5489B7E0B2EDC4F9 /* LanguageStoreTests.swift */,
 				7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */,
 				D61409C47FE261863147401E /* ScanViewModelTests.swift */,
 				9E6DD9B8F4192F4739C37783 /* SortMessagesTests.swift */,
@@ -256,6 +261,7 @@
 			isa = PBXGroup;
 			children = (
 				E6FF717F28C895BC0150D447 /* AppearanceStore.swift */,
+				6F2D9F900CB1D1EE3B6762AD /* LanguageStore.swift */,
 				1900A1C0BD2CD847B38FB9F9 /* SettingsView.swift */,
 			);
 			path = Settings;
@@ -439,6 +445,7 @@
 				17B6C890FD0E7560878A2EC6 /* CatalogTests.swift in Sources */,
 				2AA7F661CDC1E5AF2268CA06 /* DuplicatesViewModelTests.swift in Sources */,
 				EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */,
+				70AEC711BE310E3279C3D9F9 /* LanguageStoreTests.swift in Sources */,
 				5E5EBEB4613086D0FD6C9433 /* ReviewViewModelTests.swift in Sources */,
 				5EC0A2D59907C15FB0D2604A /* ScanViewModelTests.swift in Sources */,
 				8E076CDAFBC919D5236CF251 /* SortMessagesTests.swift in Sources */,
@@ -463,6 +470,7 @@
 				264EBA9BD31D7B33B1891056 /* CountText.swift in Sources */,
 				8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */,
 				219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */,
+				D7D1CF7EE65EA3EDABBF7499 /* LanguageStore.swift in Sources */,
 				F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */,
 				0D135A442D6E88198A5A795D /* PhotoGridView.swift in Sources */,
 				E3CBD322C27A8077774D9E12 /* PhotoTile.swift in Sources */,
