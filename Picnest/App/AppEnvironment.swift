@@ -20,6 +20,8 @@ final class AppEnvironment {
     let trashService: TrashService
     let library: LibraryService
     let thumbnails: ThumbnailService
+    /// The photo editor pipeline. It shares the image cache and the thumbnail service.
+    let photoEdits: PhotoEditService
     /// The System, Light, and Dark setting. The Settings scene reads it.
     let appearance: AppearanceStore
     /// The System, English, and Tiếng Việt setting. The Settings scene reads it.
@@ -62,6 +64,7 @@ final class AppEnvironment {
             sessions: sessions, bookmarks: bookmarks, scanService: scanService, classify: classifyService,
             sortService: sortService, trashService: trashService, images: images)
         thumbnails = ThumbnailService(images: images)
+        photoEdits = PhotoEditService(thumbnails: thumbnails, images: images)
         appearance = AppearanceStore(defaults: defaults)
         language = LanguageStore(defaults: defaults)
     }

@@ -31,6 +31,16 @@
         }
       }
     },
+    "%@ edited" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ đã chỉnh sửa"
+          }
+        }
+      }
+    },
     "%@ in this category move to the Trash, and the folder \"%@\" is deleted. Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder." : {
       "localizations" : {
         "vi" : {
@@ -115,6 +125,16 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld"
           }
         }
       }
@@ -893,6 +913,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hãy chọn một thư mục nằm ngoài thư mục nguồn."
+          }
+        }
+      }
+    },
+    "Choose another name. Picnest never replaces a photo of this folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy chọn tên khác. Picnest không bao giờ ghi đè ảnh trong thư mục này."
           }
         }
       }
@@ -2276,6 +2306,16 @@
         }
       }
     },
+    "Picnest could not read the photo." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest không đọc được ảnh."
+          }
+        }
+      }
+    },
     "Picnest could not read “%@”." : {
       "localizations" : {
         "vi" : {
@@ -2292,6 +2332,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Picnest không thể lưu"
+          }
+        }
+      }
+    },
+    "Picnest could not save the edited copy: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest không lưu được bản sao đã chỉnh sửa: %@"
           }
         }
       }
@@ -2532,6 +2582,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lưu"
+          }
+        }
+      }
+    },
+    "Saved “%@”." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã lưu “%@”."
           }
         }
       }
@@ -2982,6 +3042,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thiếu mô hình của Picnest. Hãy cài đặt lại Picnest."
+          }
+        }
+      }
+    },
+    "The original photo is not in its folder now." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh gốc không còn trong thư mục."
           }
         }
       }

@@ -114,15 +114,16 @@ final class FakeTrashFileOps: FileOps, @unchecked Sendable {
     }
 }
 
-/// Writes a square JPEG of 1 color to `url`, for tests that read real image files (hashes, pixel sizes).
-func writeTestJPEG(to url: URL, red: CGFloat, green: CGFloat, blue: CGFloat, size: Int) throws {
+/// Writes a JPEG of 1 color to `url`, for tests that read real image files (hashes, pixel sizes).
+/// It is square (`size` × `size`) unless `height` is given.
+func writeTestJPEG(to url: URL, red: CGFloat, green: CGFloat, blue: CGFloat, size: Int, height: Int? = nil) throws {
     enum Failure: Error { case encode }
     guard let context = CGContext(
-        data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
+        data: nil, width: size, height: height ?? size, bitsPerComponent: 8, bytesPerRow: 0,
         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
     else { throw Failure.encode }
     context.setFillColor(red: red, green: green, blue: blue, alpha: 1)
-    context.fill(CGRect(x: 0, y: 0, width: size, height: size))
+    context.fill(CGRect(x: 0, y: 0, width: size, height: height ?? size))
     guard let image = context.makeImage(),
           let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
     else { throw Failure.encode }

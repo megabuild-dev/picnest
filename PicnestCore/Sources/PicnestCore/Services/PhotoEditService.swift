@@ -51,7 +51,7 @@ public final class PhotoEditService: Sendable {
     private static let warmthDirection = -1.0
 
     /// The size of the frame after the quarter turns. Straighten keeps the size.
-    static func frameSize(of e: PhotoEdit, source: PixelSize) -> PixelSize {
+    public static func frameSize(of e: PhotoEdit, source: PixelSize) -> PixelSize {
         e.quarterTurns % 2 == 1 ? PixelSize(width: source.height, height: source.width) : source
     }
 
