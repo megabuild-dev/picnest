@@ -144,11 +144,18 @@ Rules for this phase:
 
 ### 4.5 Phase 4: Photo Editor
 
-- Opens from the preview or the inspector. Has tools Crop, Straighten, Rotate, Adjust (exposure, contrast, warmth, saturation).
+- Opens from 3 places: the **Edit** button in the inspector, **Edit Photo…** in the context menu, and the shortcut ⌘E. Quick Look has no edit button.
+- Has tools Crop, Straighten, Rotate, Adjust (exposure, contrast, warmth, saturation).
 - The edit never changes the original file. The only output is **Export edited copy**.
 - Use Core Image. Keep the edit as a value type with a **Reset** and an **Undo**.
 - The app does not save the edit recipe in this release. Reason: the design text says to export a copy when a safe recipe store does not exist.
 - The editor shows the text "Original stays unchanged".
+- Export formats are JPEG, HEIC, and PNG, with quality 0.9. The default format follows the original: HEIC for HEIC, PNG for PNG, TIFF, and GIF, and JPEG for all others. An animated GIF uses its first frame.
+- The copy keeps the EXIF data, the date, and the GPS location of the original.
+- The save panel opens in the folder of the original. A copy there shows as a new photo after the next rescan.
+- **Protected files:** an export never replaces a photo of the session or a file in the Trash. If the user picks such a name, the app shows a message and writes nothing. This includes a symlink or hard link to such a file.
+- While the editor is open, Sort, Rescan, and Start Over are off.
+- Details are in [[2026-11-01-ui-redesign-plan#Phase 4: Photo Editor]].
 
 ### 4.6 Phase 5: Layout Editor
 
