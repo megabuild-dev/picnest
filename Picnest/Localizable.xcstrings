@@ -31,16 +31,6 @@
         }
       }
     },
-    "%@ are not sure." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ chưa chắc."
-          }
-        }
-      }
-    },
     "%@ in this category move to the Trash, and the folder \"%@\" is deleted. Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder." : {
       "localizations" : {
         "vi" : {
@@ -51,12 +41,12 @@
         }
       }
     },
-    "%@ still \"Not sure\":" : {
+    "%@ of %@" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ vẫn \"Chưa chắc\":"
+            "value" : "%1$@ trên %2$@"
           }
         }
       }
@@ -265,6 +255,40 @@
         }
       }
     },
+    "%lld photos need review." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo needs review."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos need review."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh cần xem lại."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld photos selected" : {
       "localizations" : {
         "vi" : {
@@ -302,6 +326,40 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld ảnh vẫn ở trong thư mục nguồn."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld photos still need review:" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo still needs review:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos still need review:"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh vẫn cần xem lại:"
                 }
               }
             }
@@ -1942,6 +2000,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đang chuẩn bị mô hình…"
+          }
+        }
+      }
+    },
+    "Preview" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem trước"
+          }
+        }
+      }
+    },
+    "Progress" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiến độ"
           }
         }
       }
