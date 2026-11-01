@@ -9,6 +9,7 @@ links:
   - "[[2026-10-21-macos-app-plan]]"
   - "[[BUILD]]"
   - "[[2026-10-23-picnest-split-plan]]"
+  - "[[2026-11-01-ui-redesign-design]]"
 ---
 
 # Picnest macOS App Design
