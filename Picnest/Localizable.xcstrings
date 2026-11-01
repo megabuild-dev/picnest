@@ -649,6 +649,16 @@
         }
       }
     },
+    "Clear Search" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa tìm kiếm"
+          }
+        }
+      }
+    },
     "Click to mark Keep." : {
       "localizations" : {
         "vi" : {
@@ -939,22 +949,22 @@
         }
       }
     },
-    "Find groups in the Not sure photos and make categories" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tìm các nhóm trong những ảnh Chưa chắc và tạo danh mục"
-          }
-        }
-      }
-    },
     "Folder not found" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không tìm thấy thư mục"
+          }
+        }
+      }
+    },
+    "Hide Inspector" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ẩn bảng thông tin"
           }
         }
       }
@@ -1237,16 +1247,6 @@
         }
       }
     },
-    "Move every Not sure photo to its best guess" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chuyển mọi ảnh Chưa chắc về danh mục dự đoán tốt nhất của nó"
-          }
-        }
-      }
-    },
     "Move the photos that are not marked Keep to the Trash" : {
       "localizations" : {
         "vi" : {
@@ -1413,6 +1413,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không tìm thấy ảnh trong thư mục này."
+          }
+        }
+      }
+    },
+    "No photos in this folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có ảnh trong thư mục này."
           }
         }
       }
@@ -1710,12 +1720,12 @@
         }
       }
     },
-    "Scan the folder again and keep your changes" : {
+    "Search" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quét lại thư mục và giữ các thay đổi của bạn"
+            "value" : "Tìm kiếm"
           }
         }
       }
@@ -1756,6 +1766,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chia sẻ…"
+          }
+        }
+      }
+    },
+    "Show Inspector" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện bảng thông tin"
           }
         }
       }

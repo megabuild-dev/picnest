@@ -56,13 +56,17 @@ final class ReviewViewModel {
         let badge: Badge?
     }
 
-    static let columnRange = 2...8
     static let noDate = String(localized: "no date")
     /// The emoji of a category that the user makes with **New Category…**.
     static let newCategoryEmoji = "📁"
 
     var selectedItem: SidebarItem = .all {
-        didSet { if selectedItem != oldValue { clearSelection() } }
+        didSet {
+            guard selectedItem != oldValue else { return }
+            // Needs Review does not honor the search text, so entering it clears the text.
+            if selectedItem == .notSure { searchText = "" }
+            clearSelection()
+        }
     }
     var sortOrder: SortOrder = .lowestConfidence
 
@@ -87,7 +91,11 @@ final class ReviewViewModel {
     /// Shows only the photos whose file name contains this text, ignoring case and diacritics.
     /// Empty or blank text shows all. Sidebar counts do not change.
     var searchText = "" {
-        didSet { if searchText != oldValue { cache = nil } }
+        didSet {
+            // Needs Review does not honor the search text yet, so it keeps no text.
+            if !isSearchEnabled, !searchText.isEmpty { searchText = ""; return }
+            if searchText != oldValue { cache = nil }
+        }
     }
 
     static let thumbnailSizeRange: ClosedRange<Double> = 80...240
@@ -106,13 +114,6 @@ final class ReviewViewModel {
 
     private static func clampedThumbnailSize(_ value: Double) -> Double {
         min(max(value, thumbnailSizeRange.lowerBound), thumbnailSizeRange.upperBound)
-    }
-    /// Grid columns, 2...8. The toolbar slider sets it.
-    var columns = 3 {
-        didSet {
-            let clamped = min(max(columns, Self.columnRange.lowerBound), Self.columnRange.upperBound)
-            if clamped != columns { columns = clamped }
-        }
     }
     /// The selected photos. Only visible photos stay selected.
     private(set) var selection: Set<MediaID> = []
@@ -379,10 +380,31 @@ final class ReviewViewModel {
         return ids
     }
 
-    /// The grid columns for `columns`.
+    /// The grid columns: as many as fit, each at least `thumbnailSize` wide.
     var gridColumns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: Theme.Metrics.gridSpacing), count: columns)
+        [GridItem(.adaptive(minimum: thumbnailSize), spacing: Theme.Metrics.gridSpacing)]
     }
+
+    /// What the grid shows instead of tiles when it has none.
+    enum EmptyState: Equatable {
+        /// The search text matches no photo. The action is **Clear Search**.
+        case noResults
+        /// The folder has no photos. The action is **Rescan**.
+        case emptyFolder
+    }
+
+    /// The empty state of the flat grid, or nil when it has photos. The Not sure and Duplicates views
+    /// have their own empty views, and a list with no search text keeps the plain "No Photos" message
+    /// unless the whole folder is empty.
+    var emptyState: EmptyState? {
+        guard selectedItem != .notSure, selectedItem != .duplicates, visibleIDs.isEmpty else { return nil }
+        if Self.searchNeedle(searchText) != nil { return .noResults }
+        return count(of: .all) == 0 ? .emptyFolder : nil
+    }
+
+    /// The Needs Review item ignores the search text (it does not filter its groups yet), so the search
+    /// field is off there.
+    var isSearchEnabled: Bool { selectedItem != .notSure }
 
     // MARK: - Not sure
 

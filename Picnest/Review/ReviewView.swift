@@ -10,6 +10,8 @@ struct ReviewView: View {
     @State private var isOpeningSort = false
     /// Set by the hint of the Sort sheet; the suggest sheet opens when the Sort sheet is gone.
     @State private var suggestAfterSort = false
+    /// Whether the inspector at the right shows. Kept per window.
+    @SceneStorage("inspectorShown") private var inspectorShown = true
 
     private let review: ReviewService
     private let sortService: SortService
@@ -37,8 +39,17 @@ struct ReviewView: View {
         } detail: {
             detail
                 .background(.background)
-                .toolbar(removing: .title)
+                .navigationTitle(model.title)
+                .navigationSubtitle(countText)
+                // The content stays enabled; only the search field is off in Needs Review.
+                .environment(\.isEnabled, true)
+                .searchable(text: Bindable(model).searchText, placement: .toolbar, prompt: "Search")
+                .environment(\.isEnabled, model.isSearchEnabled)
                 .toolbar { toolbar }
+                .inspector(isPresented: $inspectorShown) {
+                    InspectorView(model: model)
+                        .inspectorColumnWidth(min: 280, ideal: 300, max: 360)
+                }
         }
         .alert("New Category", isPresented: Bindable(model).isNamingNewCategory) {
             TextField("Name", text: $newCategoryName)
@@ -137,20 +148,10 @@ struct ReviewView: View {
         }
     }
 
+    /// The photo count under the title, for example "2,413 photos".
+    private var countText: LocalizedStringKey { "\(model.count) photos" }
+
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            HStack(spacing: 10) {
-                Text(model.title).font(.system(size: 15, weight: .bold)).lineLimit(1)
-                CountChip(count: model.count, tint: chipTint)
-                Text(model.sourcePathText)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .help(model.sourcePathText)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-        }
         ToolbarItemGroup(placement: .primaryAction) {
             if model.selectedItem == .duplicates {
                 CleanUpAllButton(model: model.duplicates)
@@ -163,29 +164,10 @@ struct ReviewView: View {
                 .fixedSize()
                 .help("Sort order")
             }
-            if model.canUndoLastSort {
-                Button("Undo Last Sort", systemImage: "arrow.uturn.backward") {
-                    Task { await model.undoLastSort() }
-                }
-                .labelStyle(.titleAndIcon)
-                .disabled(!model.canSortOrRescan)
-                .help("Put the photos of the last sort back")
+            Button(inspectorShown ? "Hide Inspector" : "Show Inspector", systemImage: "sidebar.trailing") {
+                inspectorShown.toggle()
             }
-            Button("Rescan", systemImage: "arrow.clockwise", action: model.rescan)
-                .labelStyle(.titleAndIcon)
-                .disabled(!model.canSortOrRescan)
-                .help("Scan the folder again and keep your changes")
-            if model.selectedItem == .notSure && model.canSuggest {
-                Button("Suggest Categories…", systemImage: "sparkles", action: model.openSuggest)
-                    .labelStyle(.titleAndIcon)
-                    .help("Find groups in the Not sure photos and make categories")
-            }
-            if model.selectedItem == .notSure && !model.notSureGroups.isEmpty {
-                Button("Accept All Best Guesses", systemImage: "checkmark", action: model.acceptAll)
-                    .labelStyle(.titleAndIcon)
-                    .foregroundStyle(.tint)
-                    .help("Move every Not sure photo to its best guess")
-            }
+            .help(inspectorShown ? "Hide Inspector" : "Show Inspector")
             Button("Sort Photos…", action: openSort)
                 .buttonStyle(.bordered)
                 .disabled(isOpeningSort || !model.canSortOrRescan)
@@ -193,7 +175,30 @@ struct ReviewView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(!model.canDone)
                 .help("Create a folder for each category, move the photos into it, and rename them")
+            moreMenu
         }
+    }
+
+    /// The actions that the mockup has no button for.
+    private var moreMenu: some View {
+        Menu("More", systemImage: "ellipsis.circle") {
+            if model.canUndoLastSort {
+                Button("Undo Last Sort", systemImage: "arrow.uturn.backward") {
+                    Task { await model.undoLastSort() }
+                }
+                .disabled(!model.canSortOrRescan)
+            }
+            Button("Rescan", systemImage: "arrow.clockwise", action: model.rescan)
+                .disabled(!model.canSortOrRescan)
+            if model.selectedItem == .notSure && model.canSuggest {
+                Button("Suggest Categories…", systemImage: "sparkles", action: model.openSuggest)
+            }
+            if model.selectedItem == .notSure && !model.notSureGroups.isEmpty {
+                Button("Accept All Best Guesses", systemImage: "checkmark", action: model.acceptAll)
+            }
+        }
+        .menuIndicator(.hidden)
+        .help("More")
     }
 
     /// Makes the first plan from the latest review states, then shows the Sort sheet.
@@ -232,45 +237,16 @@ struct ReviewView: View {
     private var organizeErrorBinding: Binding<Bool> {
         Binding(get: { model.organizeErrorMessage != nil }, set: { if !$0 { model.dismissOrganizeError() } })
     }
-
-    private var chipTint: Color {
-        switch model.selectedItem {
-        case .notSure: Theme.needsReview.color
-        case .changedByYou: Theme.confirmed.color
-        case .category: .accentColor
-        default: .secondary
-        }
-    }
 }
 
-/// The count next to the title, in a soft capsule.
-private struct CountChip: View {
-    let count: Int
-    let tint: Color
-
-    var body: some View {
-        Text(count.formatted())
-            .font(.system(size: 12, weight: .semibold))
-            .monospacedDigit()
-            .foregroundStyle(tint)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 3)
-            .background(tint.opacity(0.14), in: Capsule())
-    }
-}
-
-/// Thumbnail size: left is small (8 columns), right is large (2 columns).
+/// Thumbnail size: left is small (80 pt), right is large (240 pt).
 private struct SizeSlider: View {
     let model: ReviewViewModel
 
     var body: some View {
-        let range = ReviewViewModel.columnRange
-        let size = Binding<Double>(
-            get: { Double(range.upperBound + range.lowerBound - model.columns) },
-            set: { model.columns = range.upperBound + range.lowerBound - Int($0.rounded()) })
         HStack(spacing: 6) {
             Image(systemName: "square.grid.3x3").font(.system(size: 10)).foregroundStyle(.secondary)
-            Slider(value: size, in: Double(range.lowerBound)...Double(range.upperBound), step: 1)
+            Slider(value: Bindable(model).thumbnailSize, in: ReviewViewModel.thumbnailSizeRange)
                 .frame(width: 90)
                 .controlSize(.small)
             Image(systemName: "square.grid.2x2").font(.system(size: 12)).foregroundStyle(.secondary)

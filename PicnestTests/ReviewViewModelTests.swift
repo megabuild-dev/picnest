@@ -161,9 +161,43 @@ struct ReviewViewModelTests {
         #expect(model.visibleIDs.isEmpty)
         model.selectedItem = .notSure
         model.searchText = "d"
-        #expect(model.visibleIDs == ["d.jpg"])
-        model.searchText = "a"
-        #expect(model.visibleIDs.isEmpty)
+        #expect(model.searchText.isEmpty)
+    }
+
+    @Test func testEnteringNeedsReviewClearsSearchAndDisablesIt() throws {
+        let model = try makeModel()
+        #expect(model.isSearchEnabled)
+        model.searchText = "jpg"
+        model.selectedItem = .notSure
+        #expect(model.searchText.isEmpty)
+        #expect(!model.isSearchEnabled)
+        model.searchText = "x"
+        #expect(model.searchText.isEmpty)
+        model.selectedItem = .all
+        #expect(model.isSearchEnabled)
+    }
+
+    @Test func testEmptyStateNoResultsWhenSearchMatchesNothing() throws {
+        let model = try makeModel()
+        #expect(model.emptyState == nil)
+        model.searchText = "no-such-file"
+        #expect(model.emptyState == .noResults)
+        model.searchText = "   "
+        #expect(model.emptyState == nil)
+    }
+
+    @Test func testEmptyStateEmptyFolderWhenNoPhotos() throws {
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.scan = ScanResult(media: [], dates: [:], skipped: [:])
+            session.states = [:]
+            return session
+        })
+        #expect(model.emptyState == .emptyFolder)
+        model.searchText = "x"
+        #expect(model.emptyState == .noResults)
+        model.selectedItem = .notSure
+        #expect(model.emptyState == nil)
     }
 
     @Test func testSearchDoesNotChangeSidebarCounts() throws {
@@ -501,15 +535,6 @@ struct ReviewViewModelTests {
         #expect(model.title == "🍜 Food")
         model.selectedItem = .notSure
         #expect(model.title == "Needs Review")
-    }
-
-    @Test func columnsDefaultToThreeAndStayInRange() throws {
-        let model = try makeModel()
-        #expect(model.columns == 3)
-        model.columns = 12
-        #expect(model.columns == 8)
-        model.columns = 0
-        #expect(model.columns == 2)
     }
 
     @Test func pathAbbreviatesHome() {
