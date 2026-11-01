@@ -161,20 +161,17 @@ struct ReviewViewModelTests {
         #expect(model.visibleIDs.isEmpty)
         model.selectedItem = .notSure
         model.searchText = "d"
-        #expect(model.searchText.isEmpty)
+        #expect(model.visibleIDs == ["d.jpg"])
     }
 
-    @Test func testEnteringNeedsReviewClearsSearchAndDisablesIt() throws {
+    @Test func testSearchKeepsItsTextInNeedsReview() throws {
         let model = try makeModel()
-        #expect(model.isSearchEnabled)
-        model.searchText = "jpg"
+        model.searchText = "d"
         model.selectedItem = .notSure
-        #expect(model.searchText.isEmpty)
-        #expect(!model.isSearchEnabled)
-        model.searchText = "x"
-        #expect(model.searchText.isEmpty)
+        #expect(model.searchText == "d")
+        #expect(model.visibleIDs == ["d.jpg"])
         model.selectedItem = .all
-        #expect(model.isSearchEnabled)
+        #expect(model.searchText == "d")
     }
 
     @Test func testEmptyStateNoResultsWhenSearchMatchesNothing() throws {

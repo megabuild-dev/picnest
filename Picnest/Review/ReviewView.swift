@@ -43,10 +43,7 @@ struct ReviewView: View {
                 .background(.background)
                 .navigationTitle(model.title)
                 .navigationSubtitle(countText)
-                // The content stays enabled; only the search field is off in Needs Review.
-                .environment(\.isEnabled, true)
                 .searchable(text: Bindable(model).searchText, placement: .toolbar, prompt: "Search")
-                .environment(\.isEnabled, model.isSearchEnabled)
                 .toolbar { toolbar }
                 .inspector(isPresented: $inspectorShown) {
                     InspectorView(model: model)

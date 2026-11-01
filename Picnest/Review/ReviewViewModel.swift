@@ -11,6 +11,11 @@ enum PhotoFilter: CaseIterable {
     case all, needsReview, chosenByYou
 }
 
+/// What makes a Needs Review photo hard to categorize. The 3 filter menus of the Needs Review view.
+enum ReviewIssue: CaseIterable {
+    case lowConfidence, noCategory, similarPhotos
+}
+
 @MainActor
 @Observable
 final class ReviewViewModel {
@@ -65,12 +70,26 @@ final class ReviewViewModel {
     var selectedItem: SidebarItem = .all {
         didSet {
             guard selectedItem != oldValue else { return }
-            // Needs Review does not honor the search text, so entering it clears the text.
-            if selectedItem == .notSure { searchText = "" }
+            // The issue filter belongs to the Needs Review view only.
+            reviewIssue = nil
             clearSelection()
         }
     }
     var sortOrder: SortOrder = .lowestConfidence
+    /// The issue filter of Needs Review, or nil for all Needs Review photos. It combines with the search text.
+    /// Choosing similar photos starts the duplicate search if it has not run yet.
+    var reviewIssue: ReviewIssue? {
+        didSet {
+            guard reviewIssue != oldValue else { return }
+            if reviewIssue == .similarPhotos { Task { await duplicates.find() } }
+            dropSelectionHiddenByFilter()
+        }
+    }
+    /// True after the user closes the amber notice of Needs Review. A rescan makes a new view model, so it shows again.
+    var isNoticeDismissed = false
+
+    /// A Needs Review photo with a best guess below this percent has low confidence.
+    static let lowConfidencePercent = 50
 
     /// The toolbar filter. It reads and writes `selectedItem`; a category reads as `.all`.
     var filter: PhotoFilter {
@@ -94,9 +113,9 @@ final class ReviewViewModel {
     /// Empty or blank text shows all. Sidebar counts do not change.
     var searchText = "" {
         didSet {
-            // Needs Review does not honor the search text yet, so it keeps no text.
-            if !isSearchEnabled, !searchText.isEmpty { searchText = ""; return }
-            if searchText != oldValue { cache = nil }
+            guard searchText != oldValue else { return }
+            cache = nil
+            dropSelectionHiddenByFilter()
         }
     }
 
@@ -159,11 +178,11 @@ final class ReviewViewModel {
 
     /// The cached `visibleIDs`, for the item and order they were made for. Selection changes re-render the
     /// grid, so the list must not be filtered and sorted again then (spec 12, risk 3).
-    @ObservationIgnored private var cache: (item: SidebarItem, order: SortOrder, search: String, ids: [MediaID])?
+    @ObservationIgnored private var cache: (item: SidebarItem, order: SortOrder, filter: GroupFilter, ids: [MediaID])?
     /// Set when `review.session` changes; the next read of `visibleIDs` makes the list again.
     @ObservationIgnored private var sessionChanged = false
     /// The cached `notSureGroups`, for the order they were made for. Dropped with `cache` when the session changes.
-    @ObservationIgnored private var groupsCache: (order: SortOrder, groups: [NotSureGroup])?
+    @ObservationIgnored private var groupsCache: (order: SortOrder, filter: GroupFilter, groups: [NotSureGroup])?
     /// How many times the Not sure groups were made. For tests.
     @ObservationIgnored private(set) var groupComputations = 0
     /// How many times the list was filtered and sorted. For tests.
@@ -357,26 +376,24 @@ final class ReviewViewModel {
     /// The photos of `selectedItem` in `sortOrder`. Made again only when the item, the order, or the
     /// session changes.
     var visibleIDs: [MediaID] {
-        let item = selectedItem, order = sortOrder, search = searchText
+        let item = selectedItem, order = sortOrder
         let session = review.session  // Also makes the reading view depend on the session.
         refreshIfSessionChanged()
-        if let cache, cache.item == item, cache.order == order, cache.search == search { return cache.ids }
+        let filter = groupFilter
+        if let cache, cache.item == item, cache.order == order, cache.filter == filter { return cache.ids }
         var ids: [MediaID]
         if item == .notSure {
             // The grouped view shows the photos group by group, so grid order is the flattened groups.
             ids = notSureGroups.flatMap(\.ids)
-            if let needle = Self.searchNeedle(search) {
-                ids = ids.filter { mediaByID[$0].map { Self.matches($0, needle: needle) } ?? false }
-            }
         } else {
-            let needle = Self.searchNeedle(search)
+            let needle = Self.searchNeedle(filter.search)
             let files = session.visibleMedia.filter { media in
                 Self.includes(media, state: session.states[media.id], in: item)
                     && (needle.map { Self.matches(media, needle: $0) } ?? true)
             }
             ids = sorted(files, session: session)
         }
-        cache = (item, order, search, ids)
+        cache = (item, order, filter, ids)
         listComputations += 1
         dropHiddenSelection(visible: ids)
         return ids
@@ -404,10 +421,14 @@ final class ReviewViewModel {
     /// unless the whole folder is empty.
     var emptyState: EmptyState? {
         guard selectedItem != .duplicates, visibleIDs.isEmpty else { return nil }
-        if selectedItem != .notSure, Self.searchNeedle(searchText) != nil { return .noResults }
-        if count(of: .all) == 0 { return selectedItem == .notSure ? nil : .emptyFolder }
+        if selectedItem == .notSure {
+            // Nothing left to check, or a search or issue filter that hides the photos that are left.
+            if count(of: .all) == 0 { return nil }
+            return count(of: .notSure) == 0 ? .nothingToReview : .noResults
+        }
+        if Self.searchNeedle(searchText) != nil { return .noResults }
+        if count(of: .all) == 0 { return .emptyFolder }
         switch selectedItem {
-        case .notSure: return .nothingToReview
         case .changedByYou: return .noneChosen
         default: return nil
         }
@@ -451,10 +472,6 @@ final class ReviewViewModel {
         }
     }
 
-    /// The Needs Review item ignores the search text (it does not filter its groups yet), so the search
-    /// field is off there.
-    var isSearchEnabled: Bool { selectedItem != .notSure }
-
     // MARK: - Not sure
 
     /// The open Suggest Categories sheet, or nil.
@@ -486,35 +503,82 @@ final class ReviewViewModel {
         if review.hasManyNotSure { openSuggest() }
     }
 
-    /// The Not sure photos by best guess, largest group first. Photos follow `sortOrder`. Made again
-    /// only when the order or the session changes.
+    /// What narrows the Needs Review photos: the search text and the issue filter. For the similar issue it
+    /// holds the photos of the found similar groups, so the caches see a finished duplicate search.
+    private struct GroupFilter: Equatable {
+        var search: String
+        var issue: ReviewIssue?
+        var similar: Set<MediaID>
+    }
+
+    private var groupFilter: GroupFilter {
+        GroupFilter(search: searchText, issue: reviewIssue,
+                    similar: reviewIssue == .similarPhotos ? similarPhotoIDs : [])
+    }
+
+    /// The photos of the found similar-photo groups. Empty until the duplicate search has run.
+    private var similarPhotoIDs: Set<MediaID> {
+        Set(duplicates.allGroups.filter { $0.kind == .similar }.flatMap(\.ids))
+    }
+
+    /// True if the Needs Review photo `id` has the `issue`. Pure over the state and the found similar photos.
+    private func hasIssue(_ issue: ReviewIssue, id: MediaID, state: PhotoState?, filter: GroupFilter,
+                          categories: Set<CategoryID>) -> Bool {
+        let assignment = Self.assignment(state)
+        switch issue {
+        case .lowConfidence: return (assignment?.percent ?? 0) < Self.lowConfidencePercent
+        case .noCategory: return assignment.map { !categories.contains($0.categoryID) } ?? true
+        case .similarPhotos: return filter.similar.contains(id)
+        }
+    }
+
+    /// The Needs Review photos by best guess, largest group first, narrowed by the search text and the issue
+    /// filter. Photos follow `sortOrder`. Groups with no matching photo are left out. Made again only when
+    /// the order, the filter, or the session changes.
     var notSureGroups: [NotSureGroup] {
         let order = sortOrder
         let session = review.session
         refreshIfSessionChanged()
-        if let groupsCache, groupsCache.order == order { return groupsCache.groups }
-        let files = session.visibleMedia.filter { Self.includes($0, state: session.states[$0.id], in: .notSure) }
+        let filter = groupFilter
+        if let groupsCache, groupsCache.order == order, groupsCache.filter == filter { return groupsCache.groups }
+        let needle = Self.searchNeedle(filter.search)
+        let categoryIDs = Set(session.categories.map(\.id))
+        let files = session.visibleMedia.filter { media in
+            let state = session.states[media.id]
+            guard Self.includes(media, state: state, in: .notSure) else { return false }
+            if let needle, !Self.matches(media, needle: needle) { return false }
+            if let issue = filter.issue,
+               !hasIssue(issue, id: media.id, state: state, filter: filter, categories: categoryIDs) { return false }
+            return true
+        }
         let position = Dictionary(
             sorted(files, session: session).enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
         let names = Dictionary(session.categories.map { ($0.id, $0.displayName) }, uniquingKeysWith: { first, _ in first })
-        let groups = review.notSureGroups.map { group in
-            NotSureGroup(category: group.category, categoryName: names[group.category] ?? String(localized: "Unknown"),
-                         ids: group.ids.sorted { (position[$0] ?? .max) < (position[$1] ?? .max) })
+        let groups = review.notSureGroups.enumerated().compactMap { index, group -> (Int, NotSureGroup)? in
+            let ids = group.ids.filter { position[$0] != nil }.sorted { (position[$0] ?? .max) < (position[$1] ?? .max) }
+            guard !ids.isEmpty else { return nil }
+            return (index, NotSureGroup(category: group.category,
+                                        categoryName: names[group.category] ?? String(localized: "Unknown"), ids: ids))
         }
-        groupsCache = (order, groups)
+        // Largest group first, by the photos that show; ties keep the order of the review service.
+        let sortedGroups = groups.sorted { l, r in
+            l.1.ids.count != r.1.ids.count ? l.1.ids.count > r.1.ids.count : l.0 < r.0
+        }.map(\.1)
+        groupsCache = (order, filter, sortedGroups)
         groupComputations += 1
-        return groups
+        return sortedGroups
     }
 
-    /// **Accept N** of the group at `index`: its photos go to the best guess and become "Changed by you".
+    /// **Accept N** of the group at `index`: the shown photos of the group go to the best guess and become
+    /// "Changed by you". Hidden photos (search, issue filter) stay in Needs Review.
     func acceptGroup(at index: Int) {
         let groups = notSureGroups
         guard groups.indices.contains(index) else { return }
-        review.acceptGroup(bestCategory: groups[index].category)
+        review.acceptBestGuess(groups[index].ids)
         dropHiddenSelection(visible: visibleIDs)
     }
 
-    /// **Select All** of the group at `index`: replaces the selection with the group.
+    /// **Select All** of the group at `index`: replaces the selection with the shown photos of the group.
     func selectGroup(at index: Int) {
         let groups = notSureGroups
         guard groups.indices.contains(index), let first = groups[index].ids.first else { return }
@@ -522,10 +586,16 @@ final class ReviewViewModel {
         anchor = first
     }
 
-    /// **Accept All Best Guesses**.
+    /// **Accept All Best Guesses**: the shown photos only.
     func acceptAll() {
-        review.acceptAllNotSure()
+        review.acceptBestGuess(notSureGroups.flatMap(\.ids))
         clearSelection()
+    }
+
+    /// Clears the search text and the issue filter.
+    func clearReviewFilters() {
+        searchText = ""
+        reviewIssue = nil
     }
 
     func tile(_ id: MediaID) -> TileModel {
@@ -577,7 +647,10 @@ final class ReviewViewModel {
         if let categoryID, let category = session.categories.first(where: { $0.id == categoryID }) {
             parts.append(category.displayName)
         }
-        if state?.isNotSure == true { parts.append(String(localized: "Needs Review")) }
+        if state?.isNotSure == true {
+            parts.append(String(localized: "Needs Review"))
+            if let a = Self.assignment(state) { parts.append("\(a.percent)%") }
+        }
         if state?.isManual == true { parts.append(String(localized: "Chosen by you")) }
         if selection.contains(id) { parts.append(String(localized: "selected")) }
         return parts.joined(separator: ", ")
@@ -971,6 +1044,12 @@ final class ReviewViewModel {
         let ids = visibleIDs
         guard let i = ids.firstIndex(of: a), let j = ids.firstIndex(of: b) else { return nil }
         return ids[min(i, j)...max(i, j)]
+    }
+
+    /// A new search text or issue filter hides photos: they leave the selection now, so no action reaches them.
+    private func dropSelectionHiddenByFilter() {
+        guard !selection.isEmpty else { return }
+        dropHiddenSelection(visible: visibleIDs)
     }
 
     /// Unselects photos that left the list. Writes only on a change, so a read does not re-render.
