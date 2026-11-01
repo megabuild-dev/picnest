@@ -63,7 +63,7 @@ private struct FilterChip: View {
 }
 
 /// Thumbnail size: left is small (80 pt), right is large (240 pt).
-private struct SizeSlider: View {
+struct SizeSlider: View {
     let model: ReviewViewModel
 
     var body: some View {

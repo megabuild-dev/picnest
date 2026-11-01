@@ -449,10 +449,10 @@ final class ReviewViewModel {
         }
     }
 
-    /// The filter chips show for All Photos, Needs Review and Chosen by you.
+    /// The filter chips show for All Photos and Chosen by you. Needs Review has its own header and filter menus.
     var showsFilterChips: Bool {
         switch selectedItem {
-        case .all, .notSure, .changedByYou: true
+        case .all, .changedByYou: true
         default: false
         }
     }
@@ -782,6 +782,11 @@ final class ReviewViewModel {
     }
 
     func selectAll() { selection = Set(visibleIDs) }
+
+    /// The first 3 selected photos in grid order: the thumbnails of the selection bar.
+    var selectionPreviewIDs: [MediaID] {
+        Array(visibleIDs.lazy.filter { self.selection.contains($0) }.prefix(3))
+    }
 
     func clearSelection() {
         selection = []

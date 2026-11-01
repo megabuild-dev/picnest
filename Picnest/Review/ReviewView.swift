@@ -141,10 +141,7 @@ struct ReviewView: View {
         case .duplicates:
             DuplicatesView(model: model.duplicates)
         case .needsReview:
-            VStack(spacing: 0) {
-                LibraryBar(model: model, layout: layout)
-                NotSureView(model: model)
-            }
+            NotSureView(model: model)
         case .library:
             VStack(spacing: 0) {
                 LibraryBar(model: model, layout: layout)

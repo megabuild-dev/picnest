@@ -3,11 +3,29 @@ import PicnestCore
 import SwiftUI
 
 /// The bar at the bottom of the grid while photos are selected (spec 3.3, mockup `notsure-v3.html`):
-/// the count, **Accept Best Guess**, **Move to…**, **Don't Move**, and the hints.
+/// the count, **Accept Best Guess**, **Move to…**, **Don't Move**, and the hints. The Needs Review variant
+/// (spec 4.3) shows thumbnails of the selection, **Move to…**, **Ignore**, and a more menu.
 struct SelectionBar: View {
+    enum Variant { case library, needsReview }
+
     let model: ReviewViewModel
+    var variant: Variant = .library
 
     var body: some View {
+        Group {
+            switch variant {
+            case .library: libraryContent
+            case .needsReview: NeedsReviewSelectionContent(model: model)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.primary.opacity(0.1), lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.14), radius: 11, y: 6)
+    }
+
+    private var libraryContent: some View {
         HStack(spacing: 10) {
             Text("\(model.selection.count) selected").fontWeight(.bold).monospacedDigit()
             SelectionActions(model: model)
@@ -29,11 +47,6 @@ struct SelectionBar: View {
         .buttonBorderShape(.capsule)
         .font(.system(size: 13))
         .lineLimit(1)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.primary.opacity(0.1), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.14), radius: 11, y: 6)
     }
 
     private var shortcuts: some View {
@@ -68,7 +81,7 @@ struct SelectionActions: View {
         if model.canAcceptSelection {
             Button("Accept Best Guess", systemImage: "checkmark", action: model.acceptSelection)
                 .tint(.accentColor)
-                .help("Move the selected Not sure photos to their best guess")
+                .help("Move the selected Needs Review photos to their best guess")
         }
         Menu("Move to…") { MoveToMenuItems(model: model) }
             .menuStyle(.button)

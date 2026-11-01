@@ -197,6 +197,40 @@
         }
       }
     },
+    "%lld photos need a quick check" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo needs a quick check"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos need a quick check"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh cần xem nhanh"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld photos selected" : {
       "localizations" : {
         "vi" : {
@@ -243,10 +277,34 @@
     },
     "%lld selected" : {
       "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld selected"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld selected"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã chọn %lld"
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh đã chọn"
+                }
+              }
+            }
           }
         }
       }
@@ -619,6 +677,16 @@
         }
       }
     },
+    "Choose a category, move, or ignore." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn danh mục, di chuyển hoặc bỏ qua."
+          }
+        }
+      }
+    },
     "Choose a folder outside the source folder." : {
       "localizations" : {
         "vi" : {
@@ -659,6 +727,16 @@
         }
       }
     },
+    "Clear Filters" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa bộ lọc"
+          }
+        }
+      }
+    },
     "Clear Recent Folders" : {
       "localizations" : {
         "vi" : {
@@ -685,6 +763,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nhấp để đánh dấu Giữ lại."
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóng"
           }
         }
       }
@@ -1049,6 +1137,16 @@
         }
       }
     },
+    "Ignore" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ qua"
+          }
+        }
+      }
+    },
     "Keep" : {
       "localizations" : {
         "vi" : {
@@ -1185,6 +1283,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đang tìm các nhóm…"
+          }
+        }
+      }
+    },
+    "Low confidence" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ tin cậy thấp"
           }
         }
       }
@@ -1337,12 +1445,12 @@
         }
       }
     },
-    "Move the selected Not sure photos to their best guess" : {
+    "Move the selected Needs Review photos to their best guess" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chuyển các ảnh Chưa chắc đã chọn về danh mục dự đoán tốt nhất"
+            "value" : "Chuyển các ảnh Cần xem lại đã chọn về danh mục dự đoán tốt nhất"
           }
         }
       }
@@ -1467,6 +1575,16 @@
         }
       }
     },
+    "No category" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa có danh mục"
+          }
+        }
+      }
+    },
     "No duplicates found." : {
       "localizations" : {
         "vi" : {
@@ -1513,6 +1631,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không có ảnh trong thư mục này."
+          }
+        }
+      }
+    },
+    "No photos match this filter." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có ảnh nào khớp bộ lọc này."
           }
         }
       }
@@ -1880,6 +2008,16 @@
         }
       }
     },
+    "Show All" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện tất cả"
+          }
+        }
+      }
+    },
     "Show Inspector" : {
       "localizations" : {
         "vi" : {
@@ -1896,6 +2034,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "Similar photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh tương tự"
           }
         }
       }
@@ -2020,6 +2168,16 @@
         }
       }
     },
+    "Sort: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sắp xếp: %@"
+          }
+        }
+      }
+    },
     "Sorted %@" : {
       "localizations" : {
         "vi" : {
@@ -2140,6 +2298,16 @@
         }
       }
     },
+    "Suggested" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đề xuất"
+          }
+        }
+      }
+    },
     "Suggested category" : {
       "localizations" : {
         "vi" : {
@@ -2156,16 +2324,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hệ thống"
-          }
-        }
-      }
-    },
-    "The app is not confident about these photos. They are grouped by best guess. Accept a group, or select photos and move them." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ứng dụng chưa chắc về các ảnh này. Chúng được nhóm theo dự đoán tốt nhất. Hãy chấp nhận một nhóm, hoặc chọn ảnh rồi di chuyển."
           }
         }
       }
@@ -2326,6 +2484,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không có lần sắp xếp nào để hoàn tác."
+          }
+        }
+      }
+    },
+    "These photos are harder to categorize. Take a quick look and confirm or choose a better category." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Những ảnh này khó phân loại hơn. Hãy xem nhanh và xác nhận hoặc chọn danh mục phù hợp hơn."
           }
         }
       }

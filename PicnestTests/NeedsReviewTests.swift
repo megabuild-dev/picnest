@@ -208,6 +208,15 @@ struct NeedsReviewTests {
         #expect(model.emptyState == .noResults)
     }
 
+    @Test func testSelectionPreviewHoldsUpToThreePhotosInGridOrder() throws {
+        let model = try makeModel()
+        #expect(model.selectionPreviewIDs.isEmpty)
+        model.selectAll()
+        #expect(model.selectionPreviewIDs == Array(model.visibleIDs.prefix(3)))
+        model.click("n6.jpg", modifiers: [])
+        #expect(model.selectionPreviewIDs == ["n6.jpg"])
+    }
+
     // MARK: - VoiceOver
 
     @Test func testUncertainTileLabelHasNeedsReviewAndPercent() throws {

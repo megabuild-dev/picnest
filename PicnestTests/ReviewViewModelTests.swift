@@ -248,7 +248,7 @@ struct ReviewViewModelTests {
 
     @Test func testShowsFilterChips() throws {
         let model = try makeModel()
-        #expect(chrome(model) { $0.showsFilterChips } == [true, true, true, false, false, false, false, false])
+        #expect(chrome(model) { $0.showsFilterChips } == [true, false, true, false, false, false, false, false])
     }
 
     @Test func testShowsLayoutPicker() throws {

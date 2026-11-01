@@ -103,6 +103,8 @@ private final class ClickThroughView: NSView {
 /// ⌘A and Quick Look. `content` gets the function that tiles call after a click.
 struct PhotoGridInteractions<Content: View>: View {
     let model: ReviewViewModel
+    /// The look of the selection bar at the bottom.
+    var selectionBar: SelectionBar.Variant = .library
     @ViewBuilder let content: (_ onTap: @escaping () -> Void) -> Content
     @FocusState private var isFocused: Bool
 
@@ -110,7 +112,7 @@ struct PhotoGridInteractions<Content: View>: View {
         content { isFocused = true }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !model.selection.isEmpty {
-                    SelectionBar(model: model)
+                    SelectionBar(model: model, variant: selectionBar)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 16)
                 }
