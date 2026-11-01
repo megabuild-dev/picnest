@@ -347,6 +347,25 @@ final class LibraryServiceTests {
         #expect(!library.canUndoLastSort(try entry(source)))
     }
 
+    @Test func moveSortThenUndoKeepsFavorites() async throws {
+        let (source, _) = try sortedFolder()
+        var session = try #require(try sessions.load(source: source))
+        session.favoriteIDs = ["p.jpg"]
+        session.collections = [PhotoCollection(name: "Trip", memberIDs: ["p.jpg"], order: 0)]
+        try sessions.save(session)
+
+        try await library.undoLastSort(try entry(source))
+        let embedder = FakeEmbedder(dimension: 2, images: ["p.jpg": [1, 0]], texts: ["food": [1, 0]])
+        let scan = ScanService(makeEmbedder: { embedder }, sessions: sessions)
+        var rescanned: Session?
+        for try await event in scan.rescan(try #require(try sessions.load(source: source)), source: source) {
+            if case .finished(let s) = event { rescanned = s }
+        }
+
+        #expect(try #require(rescanned).favoriteIDs == ["p.jpg"])
+        #expect(try #require(rescanned).collections.first?.memberIDs == ["p.jpg"])
+    }
+
     @Test func undoLastSortWithoutJournalClearsSortedAtSilently() async throws {
         let (source, _) = try sortedFolder()
         try FileManager.default.removeItem(at: sessions.directory(for: source).appending(path: "journal.jsonl"))
