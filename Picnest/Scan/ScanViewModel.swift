@@ -80,6 +80,15 @@ final class ScanViewModel {
 
     var folderName: String { source.lastPathComponent }
 
+    /// The folder path, with `~` for the home folder.
+    var folderPath: String { (source.path(percentEncoded: false) as NSString).abbreviatingWithTildeInPath }
+
+    /// "N photos" found, from the embedding total. Nil outside the embedding phase.
+    var foundText: String? {
+        guard case .embedding(_, let total) = phase else { return nil }
+        return CountText.photos(total, locale: locale)
+    }
+
     /// Text above the bar for the running phases, or the message of an end state.
     var message: String {
         switch phase {

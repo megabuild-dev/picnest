@@ -221,6 +221,16 @@ struct ScanViewModelTests {
         #expect(ScanViewModel.countText(done: 1240, total: 2413, locale: en) == "1,240 / 2,413")
     }
 
+    @Test func folderPathAndFoundTextBeforeEmbedding() throws {
+        let environment = makeEnvironment(FakeEmbedder())
+        let app = AppModel(environment: environment)
+        let folder = try photos(2)
+        let scan = model(environment, app, folder)
+        #expect(scan.folderPath.hasSuffix(folder.lastPathComponent))
+        #expect(!scan.folderPath.hasPrefix(NSHomeDirectory()))
+        #expect(scan.foundText == nil)
+    }
+
     @Test func etaIsNilUntilTwoEventsThenUsesRollingMean() {
         var estimator = ETAEstimator()
         let start = Date(timeIntervalSince1970: 0)

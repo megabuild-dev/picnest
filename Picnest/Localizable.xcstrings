@@ -509,6 +509,16 @@
         }
       }
     },
+    "Cancel keeps your photos and the cache. Nothing is deleted." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hủy không xóa ảnh hay bộ nhớ đệm của bạn. Không có gì bị xóa."
+          }
+        }
+      }
+    },
     "Categories" : {
       "localizations" : {
         "vi" : {
@@ -879,6 +889,26 @@
         }
       }
     },
+    "Drop a folder of photos here to open it." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thả thư mục ảnh vào đây để mở."
+          }
+        }
+      }
+    },
+    "Drop zone" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vùng thả thư mục"
+          }
+        }
+      }
+    },
     "Duplicates" : {
       "localizations" : {
         "vi" : {
@@ -905,16 +935,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hãy nhập tên."
-          }
-        }
-      }
-    },
-    "Everything runs on this Mac. No photos leave your computer." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mọi thứ chạy trên máy Mac này. Không có ảnh nào rời khỏi máy tính của bạn."
           }
         }
       }
@@ -1477,6 +1497,16 @@
         }
       }
     },
+    "Open %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở %@"
+          }
+        }
+      }
+    },
     "Open System Settings" : {
       "localizations" : {
         "vi" : {
@@ -1610,12 +1640,12 @@
         }
       }
     },
-    "RECENT" : {
+    "Recent Folders" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "GẦN ĐÂY"
+            "value" : "Thư mục gần đây"
           }
         }
       }
@@ -2326,6 +2356,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Video"
+          }
+        }
+      }
+    },
+    "Your photos stay on this Mac." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh của bạn chỉ nằm trên máy Mac này."
           }
         }
       }
