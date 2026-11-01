@@ -52,6 +52,9 @@ Give every new key a `vi` value with the state `translated`.
 Run `python3 -I scripts/sync-string-catalog.py --check` to see the differences without a change.
 The `--check` option changes no file. It shows the keys that the catalog lacks and the keys that the code no longer uses. It exits with code 1 when it finds a difference.
 
+The catalog tests check only the keys that are already in the catalog. They cannot find a text in the code that the catalog lacks.
+Run `python3 -I scripts/sync-string-catalog.py --check` before each commit. It finds the code texts that the catalog lacks.
+
 ### Check the catalog
 
 Run the catalog tests:

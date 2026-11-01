@@ -211,3 +211,9 @@ The owner did not decide these. Change any of them before the plan starts.
 - The name and API of the new Phase 3 types.
 - The way to test a SwiftUI view (snapshot test, preview, or manual list).
 - How the pseudo-language and CI checks run.
+
+## 10. Known limits
+
+- The catalog tests check only the keys that are already in the catalog. They cannot find a text in the code that the catalog lacks.
+- Run `python3 -I scripts/sync-string-catalog.py --check` before each commit. It finds the code texts that the catalog lacks.
+- The build has no phase that fails on a missing string.

@@ -6,6 +6,7 @@ status: active
 tags: [picnest, terms]
 links:
   - "[[2026-10-21-macos-app-design]]"
+  - "[[2026-11-01-ui-redesign-design]]"
 ---
 
 # Picnest Project Terms
@@ -23,9 +24,9 @@ links:
 | Journal | The file `journal.jsonl`. It records each file operation that `apply` does, so that `undo` can reverse it. |
 | Uncertain | The status of an image whose best score is below the threshold or whose top 2 scores are too close. |
 | Work folder | The folder `.classify/` inside the output folder. It holds the cache, plan, journal, and review page. |
-| Manual pick | A photo that the user put in a category by hand in the app, or accepted from "Not sure". The app never changes it. |
+| Manual pick | A photo that the user put in a category by hand in the app, or accepted from Needs Review. The app never changes it. |
 | Example | The embedding of a manual pick. The app uses it to score other photos for the same category. |
-| Not sure | The app name for an uncertain photo. |
+| Not sure | The name of the sorted folder on disk that holds uncertain photos. The app shows "Needs Review" for them. |
 | Session | The saved state of the app for 1 source folder. |
 | Sort | The app name for CLI `apply`. |
 | Review undo | ⌘Z in the app Review screen. It reverses 1 review change. It does not change files. |
@@ -33,6 +34,6 @@ links:
 | Language setting | The Settings choice of System, English, or Tiếng Việt. The app uses it on the next launch. |
 | String Catalog | The file `Picnest/Localizable.xcstrings`. It holds all UI text and its translations. |
 | Chosen by you | The filter for photos that the user decided. It replaces "Changed by you". |
-| Needs Review | The design name for "Not sure": photos that the tool could not sort with confidence. |
+| Needs Review | The app name for photos that the tool could not sort with confidence. The sorted folder for them is "Not sure". |
 
 See [CLI design](https://github.com/megabuild-dev/classifyimages/blob/main/docs/specs/2026-10-14-image-classifier-design.md) for the full design. See [[2026-10-21-macos-app-design]] for the macOS app.
