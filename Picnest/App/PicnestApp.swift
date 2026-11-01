@@ -36,7 +36,7 @@ struct PicnestApp: App {
         Settings {
             if let environment = delegate.environment {
                 SettingsView(appearance: environment.appearance, language: environment.language,
-                             relauncher: delegate.relauncher)
+                             relauncher: delegate.relauncher, updater: delegate.updater)
             } else {
                 Color.clear
             }
