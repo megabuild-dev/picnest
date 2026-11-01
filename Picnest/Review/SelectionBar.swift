@@ -3,11 +3,29 @@ import PicnestCore
 import SwiftUI
 
 /// The bar at the bottom of the grid while photos are selected (spec 3.3, mockup `notsure-v3.html`):
-/// the count, **Accept Best Guess**, **Move to…**, **Don't Move**, and the hints.
+/// the count, **Accept Best Guess**, **Move to…**, **Don't Move**, and the hints. The Needs Review variant
+/// (spec 4.3) shows thumbnails of the selection, **Move to…**, **Ignore**, and a more menu.
 struct SelectionBar: View {
+    enum Variant { case library, needsReview }
+
     let model: ReviewViewModel
+    var variant: Variant = .library
 
     var body: some View {
+        Group {
+            switch variant {
+            case .library: libraryContent
+            case .needsReview: NeedsReviewSelectionContent(model: model)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.textPrimary.color.opacity(0.1), lineWidth: 0.5))
+        .shadow(color: Theme.shadow.color.opacity(0.14), radius: 11, y: 6)
+    }
+
+    private var libraryContent: some View {
         HStack(spacing: 10) {
             Text("\(model.selection.count) selected").fontWeight(.bold).monospacedDigit()
             SelectionActions(model: model)
@@ -29,11 +47,6 @@ struct SelectionBar: View {
         .buttonBorderShape(.capsule)
         .font(.system(size: 13))
         .lineLimit(1)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.primary.opacity(0.1), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.14), radius: 11, y: 6)
     }
 
     private var shortcuts: some View {
@@ -43,7 +56,7 @@ struct SelectionBar: View {
             KeyCap("⌘Z")
             Text("undo")
         }
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Theme.textSecondary.color)
         .fixedSize()
     }
 
@@ -54,7 +67,7 @@ struct SelectionBar: View {
             Text(verbatim: "–")
             KeyCap("9")
         }
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Theme.textSecondary.color)
         .fixedSize()
     }
 }
@@ -67,8 +80,8 @@ struct SelectionActions: View {
     var body: some View {
         if model.canAcceptSelection {
             Button("Accept Best Guess", systemImage: "checkmark", action: model.acceptSelection)
-                .tint(.accentColor)
-                .help("Move the selected Not sure photos to their best guess")
+                .tint(Theme.accent.color)
+                .help("Move the selected Needs Review photos to their best guess")
         }
         Menu("Move to…") { MoveToMenuItems(model: model) }
             .menuStyle(.button)
@@ -143,6 +156,6 @@ private struct KeyCap: View {
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
             .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 4))
-            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(.primary.opacity(0.15), lineWidth: 0.5))
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.textPrimary.color.opacity(0.15), lineWidth: 0.5))
     }
 }

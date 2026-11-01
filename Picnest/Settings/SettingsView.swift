@@ -1,16 +1,20 @@
 import AppKit
 import SwiftUI
 
-/// The Settings window (⌘,): appearance and language.
+/// The Settings window (⌘,): appearance, language, and updates.
 struct SettingsView: View {
     @Bindable var appearance: AppearanceStore
     @Bindable var language: LanguageStore
     let relauncher: AppRelauncher
+    /// Nil in the test host; the Updates section then shows the note only.
+    let updater: (any AppUpdater)?
 
-    init(appearance: AppearanceStore, language: LanguageStore, relauncher: AppRelauncher) {
+    init(appearance: AppearanceStore, language: LanguageStore, relauncher: AppRelauncher,
+         updater: (any AppUpdater)? = nil) {
         self.appearance = appearance
         self.language = language
         self.relauncher = relauncher
+        self.updater = updater
     }
 
     var body: some View {
@@ -37,6 +41,14 @@ struct SettingsView: View {
                         }
                     }
                 }
+            }
+            Section("Updates") {
+                if let updater {
+                    CheckForUpdatesView(updater: updater)
+                }
+                Text("Picnest checks for a new version once a day. It sends no photos and no personal data.")
+                    .font(.callout)
+                    .foregroundStyle(Theme.textSecondary.color)
             }
         }
         .formStyle(.grouped)

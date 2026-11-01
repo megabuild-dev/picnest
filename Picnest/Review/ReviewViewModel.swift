@@ -11,6 +11,11 @@ enum PhotoFilter: CaseIterable {
     case all, needsReview, chosenByYou
 }
 
+/// What makes a Needs Review photo hard to categorize. The 3 filter menus of the Needs Review view.
+enum ReviewIssue: CaseIterable {
+    case lowConfidence, noCategory, similarPhotos
+}
+
 @MainActor
 @Observable
 final class ReviewViewModel {
@@ -32,15 +37,15 @@ final class ReviewViewModel {
         }
     }
 
-    /// The badge at the top left of a tile. Tiles without a score (Don't move, videos, unreadable) have none.
+    /// The badge of a tile. Tiles without a score (Don't move, videos, unreadable) have none.
+    /// The tile shows an uncertain score on the photo and "Chosen by you" below the photo.
     enum Badge: Hashable {
-        /// Green if not uncertain, amber if uncertain.
         case percent(Int, isUncertain: Bool)
-        /// A manual pick: "✓ You".
+        /// A manual pick.
         case you
     }
 
-    /// The Not sure photos with the same best guess (spec 3.4).
+    /// The Needs Review photos with the same best guess (spec 3.4).
     struct NotSureGroup: Hashable, Identifiable {
         let category: CategoryID
         let categoryName: String
@@ -54,6 +59,8 @@ final class ReviewViewModel {
         let name: String
         let secondLine: String
         let badge: Badge?
+        /// The VoiceOver label: file name, category, and state.
+        let accessibilityLabel: String
     }
 
     static let noDate = String(localized: "no date")
@@ -63,12 +70,24 @@ final class ReviewViewModel {
     var selectedItem: SidebarItem = .all {
         didSet {
             guard selectedItem != oldValue else { return }
-            // Needs Review does not honor the search text, so entering it clears the text.
-            if selectedItem == .notSure { searchText = "" }
+            // The issue filter belongs to the Needs Review view only.
+            reviewIssue = nil
             clearSelection()
         }
     }
     var sortOrder: SortOrder = .lowestConfidence
+    /// The issue filter of Needs Review, or nil for all Needs Review photos. It combines with the search text.
+    /// Choosing similar photos starts the duplicate search if it has not run yet.
+    var reviewIssue: ReviewIssue? {
+        didSet {
+            guard reviewIssue != oldValue else { return }
+            if reviewIssue == .similarPhotos { Task { await duplicates.find() } }
+            dropSelectionHiddenByFilter()
+        }
+    }
+    /// True after the user closes the amber notice of Needs Review. A rescan makes a new view model, so it shows again.
+    var isNoticeDismissed = false
+
 
     /// The toolbar filter. It reads and writes `selectedItem`; a category reads as `.all`.
     var filter: PhotoFilter {
@@ -92,9 +111,9 @@ final class ReviewViewModel {
     /// Empty or blank text shows all. Sidebar counts do not change.
     var searchText = "" {
         didSet {
-            // Needs Review does not honor the search text yet, so it keeps no text.
-            if !isSearchEnabled, !searchText.isEmpty { searchText = ""; return }
-            if searchText != oldValue { cache = nil }
+            guard searchText != oldValue else { return }
+            cache = nil
+            dropSelectionHiddenByFilter()
         }
     }
 
@@ -157,12 +176,12 @@ final class ReviewViewModel {
 
     /// The cached `visibleIDs`, for the item and order they were made for. Selection changes re-render the
     /// grid, so the list must not be filtered and sorted again then (spec 12, risk 3).
-    @ObservationIgnored private var cache: (item: SidebarItem, order: SortOrder, search: String, ids: [MediaID])?
+    @ObservationIgnored private var cache: (item: SidebarItem, order: SortOrder, filter: GroupFilter, ids: [MediaID])?
     /// Set when `review.session` changes; the next read of `visibleIDs` makes the list again.
     @ObservationIgnored private var sessionChanged = false
     /// The cached `notSureGroups`, for the order they were made for. Dropped with `cache` when the session changes.
-    @ObservationIgnored private var groupsCache: (order: SortOrder, groups: [NotSureGroup])?
-    /// How many times the Not sure groups were made. For tests.
+    @ObservationIgnored private var groupsCache: (order: SortOrder, filter: GroupFilter, groups: [NotSureGroup])?
+    /// How many times the Needs Review groups were made. For tests.
     @ObservationIgnored private(set) var groupComputations = 0
     /// How many times the list was filtered and sorted. For tests.
     @ObservationIgnored private(set) var listComputations = 0
@@ -355,26 +374,24 @@ final class ReviewViewModel {
     /// The photos of `selectedItem` in `sortOrder`. Made again only when the item, the order, or the
     /// session changes.
     var visibleIDs: [MediaID] {
-        let item = selectedItem, order = sortOrder, search = searchText
+        let item = selectedItem, order = sortOrder
         let session = review.session  // Also makes the reading view depend on the session.
         refreshIfSessionChanged()
-        if let cache, cache.item == item, cache.order == order, cache.search == search { return cache.ids }
+        let filter = groupFilter
+        if let cache, cache.item == item, cache.order == order, cache.filter == filter { return cache.ids }
         var ids: [MediaID]
         if item == .notSure {
             // The grouped view shows the photos group by group, so grid order is the flattened groups.
             ids = notSureGroups.flatMap(\.ids)
-            if let needle = Self.searchNeedle(search) {
-                ids = ids.filter { mediaByID[$0].map { Self.matches($0, needle: needle) } ?? false }
-            }
         } else {
-            let needle = Self.searchNeedle(search)
+            let needle = Self.searchNeedle(filter.search)
             let files = session.visibleMedia.filter { media in
                 Self.includes(media, state: session.states[media.id], in: item)
                     && (needle.map { Self.matches(media, needle: $0) } ?? true)
             }
             ids = sorted(files, session: session)
         }
-        cache = (item, order, search, ids)
+        cache = (item, order, filter, ids)
         listComputations += 1
         dropHiddenSelection(visible: ids)
         return ids
@@ -391,30 +408,101 @@ final class ReviewViewModel {
         case noResults
         /// The folder has no photos. The action is **Rescan**.
         case emptyFolder
+        /// The Needs Review chip has no photo. No action.
+        case nothingToReview
+        /// The similar-photos filter waits for the duplicate search.
+        case findingSimilar
+        /// The duplicate search failed. The text is the error of the Duplicates view.
+        case similarSearchFailed(String)
+        /// The Chosen by you chip has no photo. No action.
+        case noneChosen
     }
 
-    /// The empty state of the flat grid, or nil when it has photos. The Not sure and Duplicates views
+    /// The empty state of the flat grid, or nil when it has photos. The Needs Review and Duplicates views
     /// have their own empty views, and a list with no search text keeps the plain "No Photos" message
     /// unless the whole folder is empty.
     var emptyState: EmptyState? {
-        guard selectedItem != .notSure, selectedItem != .duplicates, visibleIDs.isEmpty else { return nil }
+        guard selectedItem != .duplicates, visibleIDs.isEmpty else { return nil }
+        if selectedItem == .notSure {
+            // Nothing left to check, or a search or issue filter that hides the photos that are left.
+            if count(of: .notSure) == 0 { return .nothingToReview }
+            if reviewIssue == .similarPhotos { return Self.similarEmptyState(for: duplicates.state) }
+            return .noResults
+        }
         if Self.searchNeedle(searchText) != nil { return .noResults }
-        return count(of: .all) == 0 ? .emptyFolder : nil
+        if count(of: .all) == 0 { return .emptyFolder }
+        switch selectedItem {
+        case .changedByYou: return .noneChosen
+        default: return nil
+        }
     }
 
-    /// The Needs Review item ignores the search text (it does not filter its groups yet), so the search
-    /// field is off there.
-    var isSearchEnabled: Bool { selectedItem != .notSure }
+    /// What the similar-photos filter shows when no photo shows: a wait while the duplicate search has not
+    /// finished, its error if it failed, else "no results".
+    static func similarEmptyState(for phase: DuplicatesViewModel.State) -> EmptyState {
+        switch phase {
+        case .idle, .finding: .findingSimilar
+        case .failed(let message): .similarSearchFailed(message)
+        case .ready, .empty: .noResults
+        }
+    }
 
-    // MARK: - Not sure
+    // MARK: - Library chrome
+
+    /// Which body the detail column shows.
+    enum BodyKind: Equatable {
+        case duplicates, needsReview, library
+    }
+
+    var bodyKind: BodyKind {
+        switch selectedItem {
+        case .duplicates: .duplicates
+        case .notSure: .needsReview
+        default: .library
+        }
+    }
+
+    /// The category that `selectedItem` shows, or nil for any other item.
+    var selectedCategory: PicnestCore.Category? {
+        guard case .category(let id) = selectedItem else { return nil }
+        return categories.first { $0.id == id }
+    }
+
+    /// The category header shows at the top of the library body of a category.
+    var showsCategoryHeader: Bool { selectedCategory != nil }
+
+    /// The filter chips show for All Photos and Chosen by you. Needs Review has its own header and filter menus.
+    var showsFilterChips: Bool {
+        switch selectedItem {
+        case .all, .changedByYou: true
+        default: false
+        }
+    }
+
+    /// The grid or list switch shows for the flat views only.
+    var showsLayoutPicker: Bool { bodyKind == .library }
+
+    /// The "N photos" footer shows under the flat views only.
+    var showsFooter: Bool { bodyKind == .library }
+
+    /// The thumbnail size slider. Needs Review is always a grid; the list has no thumbnail size.
+    func showsThumbnailSlider(layout: LibraryLayout) -> Bool {
+        switch bodyKind {
+        case .duplicates: false
+        case .needsReview: true
+        case .library: layout == .grid
+        }
+    }
+
+    // MARK: - Needs Review
 
     /// The open Suggest Categories sheet, or nil.
     var suggest: SuggestViewModel?
 
-    /// **Suggest Categories…** shows in the Not sure view when it has at least 7 photos (spec 3.4).
+    /// **Suggest Categories…** shows in the Needs Review view when it has at least 7 photos (spec 3.4).
     var canSuggest: Bool { count(of: .notSure) >= SuggestionService.minimumPhotos }
 
-    /// Shows the Not sure view and opens the suggest sheet.
+    /// Shows the Needs Review view and opens the suggest sheet.
     func openSuggest() {
         selectedItem = .notSure
         let thumbnails = thumbnails, review = review, source = source
@@ -429,7 +517,7 @@ final class ReviewViewModel {
 
     func closeSuggest() { suggest = nil }
 
-    /// Opens the suggest sheet when a scan opened this review and many images are Not sure (spec 3.7).
+    /// Opens the suggest sheet when a scan opened this review and many images are Needs Review (spec 3.7).
     /// Runs once per review: a closed sheet does not open again until the next scan.
     func suggestAfterScanIfNeeded() {
         guard suggestAfterScanPending else { return }
@@ -437,35 +525,82 @@ final class ReviewViewModel {
         if review.hasManyNotSure { openSuggest() }
     }
 
-    /// The Not sure photos by best guess, largest group first. Photos follow `sortOrder`. Made again
-    /// only when the order or the session changes.
+    /// What narrows the Needs Review photos: the search text and the issue filter. For the similar issue it
+    /// holds the photos of the found similar groups, so the caches see a finished duplicate search.
+    private struct GroupFilter: Equatable {
+        var search: String
+        var issue: ReviewIssue?
+        var similar: Set<MediaID>
+    }
+
+    private var groupFilter: GroupFilter {
+        GroupFilter(search: searchText, issue: reviewIssue,
+                    similar: reviewIssue == .similarPhotos ? similarPhotoIDs : [])
+    }
+
+    /// The photos of the found similar-photo groups. Empty until the duplicate search has run.
+    private var similarPhotoIDs: Set<MediaID> {
+        Set(duplicates.allGroups.filter { $0.kind == .similar }.flatMap(\.ids))
+    }
+
+    /// True if the Needs Review photo `id` has the `issue`. Pure over the state and the found similar photos.
+    private func hasIssue(_ issue: ReviewIssue, id: MediaID, state: PhotoState?, filter: GroupFilter) -> Bool {
+        let assignment = Self.assignment(state)
+        switch issue {
+        // The weak-score branch of the uncertain rule, with the settings of the classifier.
+        case .lowConfidence: return assignment?.isWeakMatch(settings: classify.settings) ?? false
+        // No score at all: the placeholder guess of a photo without an image vector.
+        case .noCategory: return assignment?.isPlaceholder ?? true
+        case .similarPhotos: return filter.similar.contains(id)
+        }
+    }
+
+    /// The Needs Review photos by best guess, largest group first, narrowed by the search text and the issue
+    /// filter. Photos follow `sortOrder`. Groups with no matching photo are left out. Made again only when
+    /// the order, the filter, or the session changes.
     var notSureGroups: [NotSureGroup] {
         let order = sortOrder
         let session = review.session
         refreshIfSessionChanged()
-        if let groupsCache, groupsCache.order == order { return groupsCache.groups }
-        let files = session.visibleMedia.filter { Self.includes($0, state: session.states[$0.id], in: .notSure) }
+        let filter = groupFilter
+        if let groupsCache, groupsCache.order == order, groupsCache.filter == filter { return groupsCache.groups }
+        let needle = Self.searchNeedle(filter.search)
+        let files = session.visibleMedia.filter { media in
+            let state = session.states[media.id]
+            guard Self.includes(media, state: state, in: .notSure) else { return false }
+            if let needle, !Self.matches(media, needle: needle) { return false }
+            if let issue = filter.issue,
+               !hasIssue(issue, id: media.id, state: state, filter: filter) { return false }
+            return true
+        }
         let position = Dictionary(
             sorted(files, session: session).enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
         let names = Dictionary(session.categories.map { ($0.id, $0.displayName) }, uniquingKeysWith: { first, _ in first })
-        let groups = review.notSureGroups.map { group in
-            NotSureGroup(category: group.category, categoryName: names[group.category] ?? String(localized: "Unknown"),
-                         ids: group.ids.sorted { (position[$0] ?? .max) < (position[$1] ?? .max) })
+        let groups = review.notSureGroups.enumerated().compactMap { index, group -> (Int, NotSureGroup)? in
+            let ids = group.ids.filter { position[$0] != nil }.sorted { (position[$0] ?? .max) < (position[$1] ?? .max) }
+            guard !ids.isEmpty else { return nil }
+            return (index, NotSureGroup(category: group.category,
+                                        categoryName: names[group.category] ?? String(localized: "Unknown"), ids: ids))
         }
-        groupsCache = (order, groups)
+        // Largest group first, by the photos that show; ties keep the order of the review service.
+        let sortedGroups = groups.sorted { l, r in
+            l.1.ids.count != r.1.ids.count ? l.1.ids.count > r.1.ids.count : l.0 < r.0
+        }.map(\.1)
+        groupsCache = (order, filter, sortedGroups)
         groupComputations += 1
-        return groups
+        return sortedGroups
     }
 
-    /// **Accept N** of the group at `index`: its photos go to the best guess and become "Changed by you".
+    /// **Accept N** of the group at `index`: the shown photos of the group go to the best guess and become
+    /// "Changed by you". Hidden photos (search, issue filter) stay in Needs Review.
     func acceptGroup(at index: Int) {
         let groups = notSureGroups
         guard groups.indices.contains(index) else { return }
-        review.acceptGroup(bestCategory: groups[index].category)
+        review.acceptBestGuess(groups[index].ids)
         dropHiddenSelection(visible: visibleIDs)
     }
 
-    /// **Select All** of the group at `index`: replaces the selection with the group.
+    /// **Select All** of the group at `index`: replaces the selection with the shown photos of the group.
     func selectGroup(at index: Int) {
         let groups = notSureGroups
         guard groups.indices.contains(index), let first = groups[index].ids.first else { return }
@@ -473,10 +608,42 @@ final class ReviewViewModel {
         anchor = first
     }
 
-    /// **Accept All Best Guesses**.
+    /// **Accept All Best Guesses**: the shown photos only.
     func acceptAll() {
-        review.acceptAllNotSure()
+        review.acceptBestGuess(notSureGroups.flatMap(\.ids))
         clearSelection()
+    }
+
+    /// How many Needs Review photos have `issue`, ignoring the search text. For similar photos it counts the
+    /// found similar groups, so it is 0 until the duplicate search has run.
+    func reviewIssueCount(_ issue: ReviewIssue) -> Int {
+        let session = review.session
+        refreshIfSessionChanged()
+        let filter = GroupFilter(search: "", issue: issue, similar: issue == .similarPhotos ? similarPhotoIDs : [])
+        return session.visibleMedia.count { media in
+            let state = session.states[media.id]
+            return Self.includes(media, state: state, in: .notSure)
+                && hasIssue(issue, id: media.id, state: state, filter: filter)
+        }
+    }
+
+    /// Whether the menu of `issue` shows. A menu with no match is hidden, except the chosen one. The similar
+    /// menu shows until the duplicate search has run, because choosing it starts the search.
+    func isReviewIssueAvailable(_ issue: ReviewIssue) -> Bool {
+        if reviewIssue == issue { return true }
+        if issue == .similarPhotos {
+            switch duplicates.state {
+            case .ready, .empty: break
+            default: return true
+            }
+        }
+        return reviewIssueCount(issue) > 0
+    }
+
+    /// Clears the search text and the issue filter.
+    func clearReviewFilters() {
+        searchText = ""
+        reviewIssue = nil
     }
 
     func tile(_ id: MediaID) -> TileModel {
@@ -489,7 +656,52 @@ final class ReviewViewModel {
         case .heldNotSure(let a): .percent(a.percent, isUncertain: true)
         case .dontMove, .unreadable, nil: nil
         }
-        return TileModel(name: name, secondLine: secondLine(id, state: state, session: session), badge: badge)
+        return TileModel(
+            name: name, secondLine: secondLine(id, state: state, session: session), badge: badge,
+            accessibilityLabel: accessibilityLabel(id, name: name, state: state, session: session))
+    }
+
+    /// What a row of the list layout shows for `id`. The category text is the emoji and name, "Needs Review", or "—".
+    struct ListRowModel: Equatable {
+        let name: String
+        let categoryText: String
+        /// Nil when only the modification time is known.
+        let date: Date?
+        let fileSize: Int64
+        let accessibilityLabel: String
+    }
+
+    func listRow(_ id: MediaID) -> ListRowModel {
+        let tile = tile(id)
+        let facts = inspectorFacts(for: id)
+        let categoryText: String = switch facts?.status ?? InspectorFacts.Status.none {
+        case .category(let emoji, let name): "\(emoji) \(name)"
+        case .notSure: String(localized: "Needs Review")
+        case .staysHere: String(localized: "Don't move")
+        case .none: "—"
+        }
+        return ListRowModel(
+            name: tile.name, categoryText: categoryText, date: facts?.date, fileSize: facts?.fileSize ?? 0,
+            accessibilityLabel: tile.accessibilityLabel)
+    }
+
+    private func accessibilityLabel(_ id: MediaID, name: String, state: PhotoState?, session: Session) -> String {
+        var parts = [name]
+        let categoryID: CategoryID? = switch state {
+        case .manual(let c): c
+        case .auto(let a) where !a.uncertain: a.categoryID
+        default: nil
+        }
+        if let categoryID, let category = session.categories.first(where: { $0.id == categoryID }) {
+            parts.append(category.displayName)
+        }
+        if state?.isNotSure == true {
+            parts.append(String(localized: "Needs Review"))
+            if let a = Self.assignment(state) { parts.append("\(a.percent)%") }
+        }
+        if state?.isManual == true { parts.append(String(localized: "Chosen by you")) }
+        if selection.contains(id) { parts.append(String(localized: "selected")) }
+        return parts.joined(separator: ", ")
     }
 
     /// The facts of the inspector for `id`, or nil if the photo is unknown.
@@ -573,7 +785,7 @@ final class ReviewViewModel {
     /// else `id`. Pure: it does not change the selection.
     func contextTargets(for id: MediaID) -> [MediaID] { dragIDs(for: id) }
 
-    /// True if at least 1 of `ids` is in "Not sure". Pure.
+    /// True if at least 1 of `ids` is in "Needs Review". Pure.
     func canAccept(_ ids: [MediaID]) -> Bool {
         let states = review.session.states
         return ids.contains { states[$0]?.isNotSure == true }
@@ -619,6 +831,11 @@ final class ReviewViewModel {
 
     func selectAll() { selection = Set(visibleIDs) }
 
+    /// The first 3 selected photos in grid order: the thumbnails of the selection bar.
+    var selectionPreviewIDs: [MediaID] {
+        Array(visibleIDs.lazy.filter { self.selection.contains($0) }.prefix(3))
+    }
+
     func clearSelection() {
         selection = []
         anchor = nil
@@ -644,7 +861,7 @@ final class ReviewViewModel {
 
     // MARK: - Photo actions
 
-    /// True if at least 1 selected photo is in "Not sure", so **Accept Best Guess** has work to do.
+    /// True if at least 1 selected photo is in "Needs Review", so **Accept Best Guess** has work to do.
     var canAcceptSelection: Bool {
         let states = review.session.states
         return selection.contains { states[$0]?.isNotSure == true }
@@ -756,12 +973,13 @@ final class ReviewViewModel {
         review.session.categories.first { $0.id == c }?.displayName ?? ""
     }
 
-    /// Deletes `c`: its photos go to the Trash, and its folder goes. The Not sure list shows if `c` was showing.
+    /// Deletes `c`: its photos go to the Trash, and its folder goes. The Needs Review list shows if `c` was showing.
     func deleteCategory(_ c: CategoryID) async {
         guard canDeleteCategory else { return }
         if selectedItem == .category(c) { selectedItem = .notSure }
         clearSelection()
         showTrashErrors(await review.deleteCategoryAndPhotos(c))
+        closeEditIfCategoryIsGone()
     }
 
     /// The categories that `c` can merge into, in sidebar order.
@@ -772,6 +990,12 @@ final class ReviewViewModel {
     func merge(_ c: CategoryID, into target: CategoryID) {
         review.merge(c, into: target)
         if selectedItem == .category(c) { selectedItem = .category(target) }
+        closeEditIfCategoryIsGone()
+    }
+
+    /// Closes the Edit Category sheet when its category no longer exists (merged, deleted, or undone).
+    func closeEditIfCategoryIsGone() {
+        if let editing = editingCategory, !categories.contains(where: { $0.id == editing }) { editingCategory = nil }
     }
 
     /// Renames `c`. A name that is empty after trimming is ignored.
@@ -779,6 +1003,67 @@ final class ReviewViewModel {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         review.rename(c, to: name)
+    }
+
+    /// The category that the Edit Category sheet shows, or nil while the sheet is closed.
+    var editingCategory: CategoryID?
+
+    /// The category that waits for the answer of the delete confirmation, or nil.
+    var deletingCategory: CategoryID?
+
+    /// Why a category name cannot be used. `message` is the text under the name field.
+    enum CategoryNameIssue: Equatable {
+        case empty, duplicate
+
+        var message: LocalizedStringKey {
+            switch self {
+            case .empty: "Enter a name."
+            case .duplicate: "A category with this name already exists."
+            }
+        }
+    }
+
+    /// Checks a category name. `excluding` is the category that gets the name, so it does not clash with itself.
+    /// The folder rules of `SortPlanner` replace "/", ":" and a leading ".", so every non-empty name makes a folder.
+    func validateCategoryName(_ name: String, excluding: CategoryID?) -> CategoryNameIssue? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .empty }
+        let wanted = Self.normalizedName(trimmed)
+        let others = review.session.categories.filter { $0.id != excluding }
+        if others.contains(where: { Self.normalizedName($0.displayName) == wanted }) { return .duplicate }
+        return nil
+    }
+
+    /// Trimmed, NFC, and without case and diacritics, for the comparison of names.
+    private static func normalizedName(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+            .precomposedStringWithCanonicalMapping
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+    }
+
+    /// The folder of `c` relative to the source folder, for example "Travel".
+    func categoryFolderName(_ c: CategoryID) -> String {
+        SortPlanner.folderNames(for: review.session.categories)[c] ?? categoryName(c)
+    }
+
+    /// Save is on when the name is valid and the name or the icon changed.
+    func canSaveCategoryEdit(_ c: CategoryID, name: String, emoji: String) -> Bool {
+        guard let category = review.session.categories.first(where: { $0.id == c }),
+              validateCategoryName(name, excluding: c) == nil else { return false }
+        let emoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard emoji == category.emoji || Self.isSingleEmoji(emoji) else { return false }
+        return name.trimmingCharacters(in: .whitespacesAndNewlines) != category.displayName || emoji != category.emoji
+    }
+
+    /// The Save button of the Edit Category sheet. Returns false, and does nothing, if `canSaveCategoryEdit` is false.
+    @discardableResult
+    func saveCategoryEdit(_ c: CategoryID, name: String, emoji: String) -> Bool {
+        guard canSaveCategoryEdit(c, name: name, emoji: emoji),
+              let category = review.session.categories.first(where: { $0.id == c }) else { return false }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed != category.displayName { renameCategory(c, to: trimmed) }
+        if emoji.trimmingCharacters(in: .whitespacesAndNewlines) != category.emoji { setEmoji(c, emoji) }
+        return true
     }
 
     /// Sets the icon of `c`. Returns false, and does nothing, unless `emoji` is exactly 1 emoji.
@@ -846,6 +1131,7 @@ final class ReviewViewModel {
     private func refreshIfSessionChanged() {
         guard sessionChanged else { return }
         sessionChanged = false
+        closeEditIfCategoryIsGone()
         watchSession()
         cache = nil
         groupsCache = nil
@@ -880,6 +1166,12 @@ final class ReviewViewModel {
         let ids = visibleIDs
         guard let i = ids.firstIndex(of: a), let j = ids.firstIndex(of: b) else { return nil }
         return ids[min(i, j)...max(i, j)]
+    }
+
+    /// A new search text or issue filter hides photos: they leave the selection now, so no action reaches them.
+    private func dropSelectionHiddenByFilter() {
+        guard !selection.isEmpty else { return }
+        dropHiddenSelection(visible: visibleIDs)
     }
 
     /// Unselects photos that left the list. Writes only on a change, so a read does not re-render.
@@ -968,7 +1260,7 @@ final class ReviewViewModel {
         return keys.sorted(by: order).map(\.id)
     }
 
-    /// "or <name> <n>%" in Not sure if there is a second guess; else the date, or "no date" when only
+    /// "or <name> <n>%" in Needs Review if there is a second guess; else the date, or "no date" when only
     /// the modification time is known (spec 3.3).
     private func secondLine(_ id: MediaID, state: PhotoState?, session: Session) -> String {
         if selectedItem == .notSure, let a = Self.assignment(state), let second = a.secondCategoryID,

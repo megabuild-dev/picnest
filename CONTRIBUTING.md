@@ -42,7 +42,7 @@ All UI text is in `Picnest/Localizable.xcstrings`. English is the source languag
 3. Fill in every key for the new language. Set each value to the state `Translated`.
 4. Run `xcodegen generate`. It reads the languages from the catalog and updates `knownRegions` in the project file.
 5. Add the language to the Settings picker. See "Show the language in Settings".
-6. Run `PicnestTests/CatalogTests` (see "Check the catalog").
+6. Run `PicnestTests/CatalogTests` (see "Check the catalog"). It reports each key that your language lacks.
 
 ### Keep the catalog in step with the code
 
@@ -60,9 +60,9 @@ Run the catalog tests:
 xcodebuild test -project Picnest.xcodeproj -scheme Picnest -destination 'platform=macOS' -only-testing:PicnestTests/CatalogTests
 ```
 
-The tests fail when a key has no `translated` value for `vi`. They also fail when the catalog has a `stale` key.
-The tests check `vi` only. They do not check a new language.
-To check a new language, search the catalog for keys that lack it. Xcode shows these keys as empty in the language column.
+The tests check every language in the catalog, not only `vi`. English is the source, so the tests skip it.
+A test fails when a key has no `translated` value in any one language. The failure message names the language and the keys.
+A key with `shouldTranslate` set to `false` is skipped. The tests also fail when the catalog has a `stale` key.
 
 ### Show the language in Settings
 

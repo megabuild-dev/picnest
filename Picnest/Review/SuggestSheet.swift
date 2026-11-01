@@ -33,12 +33,12 @@ struct SuggestSheet: View {
         case .loading:
             VStack(spacing: 10) {
                 ProgressView()
-                Text("Looking for groups…").foregroundStyle(.secondary)
+                Text("Looking for groups…").foregroundStyle(Theme.textSecondary.color)
             }
             .frame(maxWidth: .infinity, minHeight: 120)
         case .empty:
             Text(SuggestViewModel.emptyText)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary.color)
                 .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
                 .multilineTextAlignment(.center)
         case .failed(let message):
@@ -78,10 +78,10 @@ private struct SuggestRowView: View {
                         .onChange(of: emojiFocused) { if !emojiFocused { model.commitEmoji(of: row.id) } }
                     TextField("Name", text: $row.name)
                     Text(CountText.photos(row.ids.count))
-                        .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
+                        .font(.system(size: 12)).foregroundStyle(Theme.textSecondary.color).monospacedDigit()
                 }
                 if let hint {
-                    Text(hint).font(.system(size: 11)).foregroundStyle(.red)
+                    Text(hint).font(.system(size: 11)).foregroundStyle(Theme.destructive.color)
                 }
                 HStack(spacing: 6) {
                     ForEach(row.ids.prefix(SuggestViewModel.thumbnailsPerRow), id: \.self) { id in

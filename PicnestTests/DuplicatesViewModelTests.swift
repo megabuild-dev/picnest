@@ -125,7 +125,8 @@ struct DuplicatesViewModelTests {
         d.toggleKeep("r.jpg", in: similar)
         similar = try group(d, .similar)
         #expect(d.trashCount(of: similar) == 1)
-        #expect(d.trashTitle(of: similar) == "Move 1 to Trash")
+        #expect(d.trashTitle(of: similar) == "Clean Up (1)")
+        #expect(d.trashSummary(of: similar) == "1 photo goes to the Trash")
 
         await d.trash(similar)
         await f.review.settled()

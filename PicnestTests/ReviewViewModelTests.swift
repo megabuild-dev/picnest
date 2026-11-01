@@ -161,20 +161,17 @@ struct ReviewViewModelTests {
         #expect(model.visibleIDs.isEmpty)
         model.selectedItem = .notSure
         model.searchText = "d"
-        #expect(model.searchText.isEmpty)
+        #expect(model.visibleIDs == ["d.jpg"])
     }
 
-    @Test func testEnteringNeedsReviewClearsSearchAndDisablesIt() throws {
+    @Test func testSearchKeepsItsTextInNeedsReview() throws {
         let model = try makeModel()
-        #expect(model.isSearchEnabled)
-        model.searchText = "jpg"
+        model.searchText = "d"
         model.selectedItem = .notSure
-        #expect(model.searchText.isEmpty)
-        #expect(!model.isSearchEnabled)
-        model.searchText = "x"
-        #expect(model.searchText.isEmpty)
+        #expect(model.searchText == "d")
+        #expect(model.visibleIDs == ["d.jpg"])
         model.selectedItem = .all
-        #expect(model.isSearchEnabled)
+        #expect(model.searchText == "d")
     }
 
     @Test func testEmptyStateNoResultsWhenSearchMatchesNothing() throws {
@@ -197,7 +194,153 @@ struct ReviewViewModelTests {
         model.searchText = "x"
         #expect(model.emptyState == .noResults)
         model.selectedItem = .notSure
+        #expect(model.emptyState == .nothingToReview)
+    }
+
+    @Test func testEmptyStatePerChip() throws {
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.states = session.states.filter { !$0.value.isManual && !$0.value.isNotSure }
+            return session
+        })
+        model.filter = .chosenByYou
+        #expect(model.emptyState == .noneChosen)
+        model.filter = .needsReview
+        #expect(model.emptyState == .nothingToReview)
+        model.filter = .all
         #expect(model.emptyState == nil)
+        let full = try makeModel()
+        full.filter = .chosenByYou
+        #expect(full.emptyState == nil)
+        full.filter = .needsReview
+        #expect(full.emptyState == nil)
+    }
+
+    @Test func testListRowShowsNameCategoryDateAndSize() throws {
+        let model = try makeModel()
+        let a = model.listRow("a.jpg")
+        #expect(a.name == "a.jpg")
+        #expect(a.categoryText == "🍜 Food")
+        #expect(a.date == day(2024, 5, 12))
+        #expect(a.fileSize == 10)
+        #expect(model.listRow("c.jpg").categoryText == "🍜 Food")
+        #expect(model.listRow("d.jpg").categoryText == String(localized: "Needs Review"))
+        #expect(model.listRow("e.jpg").categoryText == String(localized: "Don't move"))
+        #expect(model.listRow("f.jpg").categoryText == "—")
+        #expect(model.listRow("h.jpg").date == nil)
+    }
+
+    // MARK: - Library chrome
+
+    private func chromeItems(_ model: ReviewViewModel) -> [ReviewViewModel.SidebarItem] {
+        [.all, .notSure, .changedByYou, .category(food.id), .duplicates, .dontMove, .videos, .unreadable]
+    }
+
+    private func chrome(_ model: ReviewViewModel, _ read: (ReviewViewModel) -> Bool) -> [Bool] {
+        chromeItems(model).map { model.selectedItem = $0; return read(model) }
+    }
+
+    @Test func testBodyKind() throws {
+        let model = try makeModel()
+        let kinds: [ReviewViewModel.BodyKind] = chromeItems(model).map { model.selectedItem = $0; return model.bodyKind }
+        #expect(kinds == [.library, .needsReview, .library, .library, .duplicates, .library, .library, .library])
+    }
+
+    @Test func testShowsFilterChips() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsFilterChips } == [true, false, true, false, false, false, false, false])
+    }
+
+    @Test func testShowsLayoutPicker() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsLayoutPicker } == [true, false, true, true, false, true, true, true])
+    }
+
+    @Test func testShowsFooter() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsFooter } == [true, false, true, true, false, true, true, true])
+    }
+
+    @Test func testShowsThumbnailSlider() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsThumbnailSlider(layout: .grid) } == [true, true, true, true, false, true, true, true])
+        #expect(chrome(model) { $0.showsThumbnailSlider(layout: .list) } == [false, true, false, false, false, false, false, false])
+    }
+
+    // MARK: - Category screen and Edit Category (UI redesign 4.3)
+
+    @Test func testCategoryHeaderShowsForCategoriesOnly() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsCategoryHeader } == [false, false, false, true, false, false, false, false])
+        model.selectedItem = .category(food.id)
+        #expect(model.selectedCategory?.id == food.id)
+        #expect(model.bodyKind == .library)
+    }
+
+    @Test func testEmptyNameIsInvalid() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName("", excluding: nil) == .empty)
+        #expect(model.validateCategoryName("  \n ", excluding: nil) == .empty)
+        #expect(model.validateCategoryName("Pets", excluding: nil) == nil)
+    }
+
+    @Test func testDuplicateNameIsInvalid() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName(" food ", excluding: nil) == .duplicate)
+        #expect(model.validateCategoryName("Food", excluding: documents.id) == .duplicate)
+        // A category does not clash with itself.
+        #expect(model.validateCategoryName("Food", excluding: food.id) == nil)
+    }
+
+    /// The folder rules replace "/" and ":" with "-", so the name is not rejected: it makes a valid, unique folder.
+    @Test func testNameWithSlashMakesValidFolder() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName("Trips/2024", excluding: nil) == nil)
+        let folder = SortPlanner.folderName(for: "Trips/2024")
+        #expect(folder == "Trips-2024")
+        #expect(!folder.contains("/"))
+        let unique = SortPlanner.uniqueFolderName(for: "Trips/2024", among: model.categories)
+        #expect(unique == folder)
+        #expect(model.validateCategoryName("/", excluding: nil) == nil)
+        #expect(SortPlanner.folderName(for: "/") == "-")
+    }
+
+    @Test func testVietnameseNameInNFCAndNFDIsTheSameFolder() throws {
+        let composed = "\u{1EA8}m th\u{1EF1}c".precomposedStringWithCanonicalMapping
+        let decomposed = composed.decomposedStringWithCanonicalMapping
+        let food2 = PicnestCore.Category(id: UUID(), displayName: composed, emoji: "🍜", prompts: [], exampleIDs: [], order: 5)
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.categories.append(food2)
+            return session
+        })
+        #expect(SortPlanner.folderName(for: decomposed).unicodeScalars.elementsEqual(SortPlanner.folderName(for: composed).unicodeScalars))
+        #expect(model.validateCategoryName(decomposed, excluding: nil) == .duplicate)
+        #expect(model.validateCategoryName("am thuc", excluding: nil) == .duplicate)
+    }
+
+    @Test func testSaveCategoryEditRenamesAndSetsIcon() throws {
+        let model = try makeModel()
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Food", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: " ", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Documents", emoji: "🍜"))
+        #expect(model.canSaveCategoryEdit(food.id, name: "Food", emoji: "🍕"))
+        #expect(model.canSaveCategoryEdit(food.id, name: "Meals", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Food", emoji: "ab"))
+        #expect(model.saveCategoryEdit(food.id, name: "Meals", emoji: "🍕"))
+        let saved = model.categories.first { $0.id == food.id }
+        #expect(saved?.emoji == "🍕")
+        #expect(saved?.displayName == "Meals")
+    }
+
+    @Test func testEditSheetClosesWhenItsCategoryIsMerged() throws {
+        let model = try makeModel()
+        model.editingCategory = food.id
+        model.merge(food.id, into: documents.id)
+        #expect(model.editingCategory == nil)
+        model.editingCategory = documents.id
+        model.closeEditIfCategoryIsGone()
+        #expect(model.editingCategory == documents.id)
     }
 
     @Test func testSearchDoesNotChangeSidebarCounts() throws {
@@ -508,6 +651,17 @@ struct ReviewViewModelTests {
         #expect(model.tile("e.jpg").badge == nil)
         #expect(model.tile("f.jpg").badge == nil)
         #expect(model.tile("g.mov").badge == nil)
+    }
+
+    @Test func tileAccessibilityLabel() throws {
+        let model = try makeModel()
+        #expect(model.tile("c.jpg").accessibilityLabel.contains("Chosen by you"))
+        #expect(model.tile("c.jpg").accessibilityLabel.hasPrefix("c.jpg"))
+        #expect(model.tile("d.jpg").accessibilityLabel.contains("Needs Review"))
+        #expect(!model.tile("a.jpg").accessibilityLabel.contains("Needs Review"))
+        #expect(!model.tile("a.jpg").accessibilityLabel.contains("selected"))
+        model.click("a.jpg", modifiers: [])
+        #expect(model.tile("a.jpg").accessibilityLabel.hasSuffix("selected"))
     }
 
     @Test func secondLineIsDateOrNoDateInCategoryViews() throws {

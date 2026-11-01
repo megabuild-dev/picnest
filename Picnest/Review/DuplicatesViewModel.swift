@@ -49,7 +49,7 @@ final class DuplicatesViewModel {
     /// The last clicked tile. Space and Return open it in Quick Look.
     private(set) var anchor: MediaID?
 
-    /// True while a clean-up runs. **Move <N> to Trash** and **Clean Up All** are off then.
+    /// True while a clean-up runs. **Clean Up (<N>)** and **Clean Up All** are off then.
     private(set) var isCleaning = false
 
     private var phase: State = .idle
@@ -164,10 +164,15 @@ final class DuplicatesViewModel {
 
     func isKeep(_ id: MediaID, in g: DuplicateGroup) -> Bool { g.keepIDs.contains(id) }
 
-    /// The count of **Move <N> to Trash**: the photos of the group that are not Keep (spec 3.6).
+    /// The count of **Clean Up (<N>)**: the photos of the group that are not Keep (spec 3.6).
     func trashCount(of g: DuplicateGroup) -> Int { g.ids.count { !g.keepIDs.contains($0) } }
 
-    func trashTitle(of g: DuplicateGroup) -> String { String(localized: "Move \(trashCount(of: g)) to Trash") }
+    func trashTitle(of g: DuplicateGroup) -> String { String(localized: "Clean Up (\(trashCount(of: g)))") }
+
+    /// The line next to **Clean Up**: how many photos of the group go to the Trash.
+    func trashSummary(of g: DuplicateGroup) -> String {
+        String(localized: "\(trashCount(of: g)) photos go to the Trash")
+    }
 
     /// The photos that **Clean Up All** moves to the Trash: the photos of the shown groups that are not
     /// Keep, each 1 time. It is also the count of the **Duplicates** sidebar item (0 until found).
@@ -211,7 +216,7 @@ final class DuplicatesViewModel {
         version += 1
     }
 
-    /// **Move <N> to Trash**: moves the photos of the group that are not Keep to the Trash, as 1 undo step.
+    /// **Clean Up (<N>)**: moves the photos of the group that are not Keep to the Trash, as 1 undo step.
     func trash(_ g: DuplicateGroup) async {
         let s = shown
         guard let current = s.groups.first(where: { matches($0, g) }) else { return }
@@ -247,7 +252,7 @@ final class DuplicatesViewModel {
         let media = mediaByID[id]
         let name = media.map { ($0.relativePath as NSString).lastPathComponent } ?? id
         let pixels = review.pixelSize(of: id).map { "\($0.width) × \($0.height)" } ?? ""
-        let bytes = media.map { ByteCountFormatter.string(fromByteCount: $0.size, countStyle: .file) } ?? ""
+        let bytes = media.map { $0.size.formatted(.byteCount(style: .file)) } ?? ""
         return TileModel(name: name, pixelSize: pixels, fileSize: bytes)
     }
 

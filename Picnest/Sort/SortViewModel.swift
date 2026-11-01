@@ -37,9 +37,9 @@ final class SortViewModel: Identifiable {
     private(set) var canUndoLastSort = false
     /// A short notice above the buttons, for example when the plan changed before **Sort** ran.
     private(set) var notice: String?
-    /// The photos of the session that are still Not sure, at the last plan.
+    /// The photos of the session that are still in Needs Review, at the last plan.
     private(set) var notSureCount = 0
-    /// The non-trashed images (no videos), and how many of them are Not sure, at the last plan.
+    /// The non-trashed images (no videos), and how many of them are in Needs Review, at the last plan.
     /// The hint uses both, so numerator and denominator come from the same set.
     private(set) var imageCount = 0
     private(set) var notSureImageCount = 0
@@ -100,7 +100,7 @@ final class SortViewModel: Identifiable {
         return String(localized: "Sort \(photos) into \(folders)")
     }
 
-    /// The photos that stay in the source folder (Don't move, or Not sure with Leave in the source folder).
+    /// The photos that stay in the source folder (Don't move, or Needs Review with Leave in the source folder).
     var subtitle: String? {
         guard let left = plan?.leftInSource, left > 0 else { return nil }
         return String(localized: "\(left) photos stay in the source folder.", locale: locale)
@@ -129,18 +129,18 @@ final class SortViewModel: Identifiable {
 
     var showNotSureChoice: Bool { notSureCount > 0 }
 
-    /// The hint to suggest categories when many images are Not sure (`SuggestionService.manyNotSure`, spec 3.5).
+    /// The hint to suggest categories when many images are in Needs Review (`SuggestionService.manyNotSure`, spec 3.5).
     var showSuggestHint: Bool { SuggestionService.manyNotSure(notSure: notSureImageCount, images: imageCount) }
 
     var suggestHintText: String {
-        String(localized: "\(CountText.photos(notSureImageCount, locale: locale)) are not sure.")
+        String(localized: "\(notSureImageCount) photos need review.", locale: locale)
     }
 
-    /// **Suggest Categories…**: the screen closes this sheet, shows the Not sure view and opens the suggest sheet.
+    /// **Suggest Categories…**: the screen closes this sheet, shows the Needs Review view and opens the suggest sheet.
     func suggestFromSort() { onSuggest() }
 
     var notSureHeader: String {
-        String(localized: "\(CountText.photos(notSureCount, locale: locale)) still \"Not sure\":")
+        String(localized: "\(notSureCount) photos still need review:", locale: locale)
     }
 
     /// The folder tree: the destination, the first 3 folders with counts, the first file of the first
@@ -215,6 +215,12 @@ final class SortViewModel: Identifiable {
         return options.mode == .move
             ? String(localized: "Moving \(doneText) of \(totalText)…")
             : String(localized: "Copying \(doneText) of \(totalText)…")
+    }
+
+    /// The progress value for VoiceOver: "<done> of <total>". Empty when the sort does not run.
+    var progressAccessibilityValue: String {
+        guard case .running(let done, let total) = state else { return "" }
+        return String(localized: "\(number(done)) of \(number(total))")
     }
 
     var summaryText: String {

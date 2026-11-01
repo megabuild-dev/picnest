@@ -8,10 +8,6 @@ struct SidebarView: View {
     let model: ReviewViewModel
 
     @State private var dropTarget: CategoryID?
-    @State private var renaming: CategoryID?
-    @State private var nameDraft = ""
-    @State private var editingIcon: CategoryID?
-    @State private var deleting: CategoryID?
 
     private var selection: Binding<ReviewViewModel.SidebarItem?> {
         Binding(get: { model.selectedItem }, set: { if let item = $0 { model.selectedItem = item } })
@@ -23,8 +19,6 @@ struct SidebarView: View {
             Section {
                 row(counts, .all, "All Photos", icon: .symbol("photo.on.rectangle", Theme.textSecondary.color))
                 row(counts, .notSure, "Needs Review", icon: .symbol("exclamationmark.triangle.fill", Theme.needsReview.color))
-                // Task 2.3 replaces this row with a filter chip and removes it from the sidebar.
-                row(counts, .changedByYou, "Chosen by you", icon: .symbol("checkmark", Theme.confirmed.color))
             } header: { sectionHeader("Library") }
             Section {
                 ForEach(model.categories) { category in
@@ -49,17 +43,6 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .tint(Theme.accent.color)
-        .alert("Rename Category", isPresented: isPresented($renaming)) {
-            TextField("Name", text: $nameDraft)
-            Button("Rename") { if let renaming { model.renameCategory(renaming, to: nameDraft) } }
-            Button("Cancel", role: .cancel) {}
-        }
-        .confirmationDialog(deletingTitle, isPresented: isPresented($deleting), titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { if let deleting { Task { await model.deleteCategory(deleting) } } }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(deleting.map(model.deleteMessage(for:)) ?? "")
-        }
     }
 
     /// A section title as in the mockups: regular weight, secondary color, no capitals.
@@ -67,14 +50,12 @@ struct SidebarView: View {
         Text(title).font(.system(size: 13)).foregroundStyle(Theme.textSecondary.color)
     }
 
-    private var deletingTitle: String { deleting.map(model.deleteConfirmation(for:)) ?? "" }
-
     private func categoryRow(_ counts: [ReviewViewModel.SidebarItem: Int], _ category: PicnestCore.Category) -> some View {
         let id = category.id
         return row(counts, .category(id), Text(verbatim: category.displayName), icon: .emoji(category.emoji))
             .background {
                 if dropTarget == id {
-                    RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.22))
+                    RoundedRectangle(cornerRadius: 6).fill(Theme.accent.color.opacity(0.22))
                         .padding(-4)
                 }
             }
@@ -84,11 +65,8 @@ struct SidebarView: View {
                 if targeted { dropTarget = id } else if dropTarget == id { dropTarget = nil }
             }
             .contextMenu {
-                Button("Rename…") {
-                    nameDraft = category.displayName
-                    renaming = id
-                }
-                Button("Change Icon…") { editingIcon = id }
+                Button("Rename…") { model.editingCategory = id }
+                Button("Change Icon…") { model.editingCategory = id }
                 Menu("Merge Into…") {
                     ForEach(model.mergeTargets(for: id)) { target in
                         Button { model.merge(id, into: target.id) } label: {
@@ -101,15 +79,8 @@ struct SidebarView: View {
                 Button("Reveal in Finder") { model.showCategoryInFinder(id) }
                     .disabled(model.categoryFolder(id) == nil)
                 Divider()
-                Button("Delete…", role: .destructive) { deleting = id }
+                Button("Delete…", role: .destructive) { model.deletingCategory = id }
                     .disabled(!model.canDeleteCategory)
-            }
-            .popover(isPresented: Binding(
-                get: { editingIcon == id }, set: { if !$0, editingIcon == id { editingIcon = nil } }
-            ), arrowEdge: .trailing) {
-                EmojiField(current: category.emoji) { emoji in
-                    if model.setEmoji(id, emoji) { editingIcon = nil }
-                }
             }
     }
 
@@ -126,39 +97,6 @@ struct SidebarView: View {
         }
         .badge(Text((counts[item] ?? 0).formatted()))
         .tag(item)
-    }
-
-    /// A Bool binding that is true while `value` is set. Setting it to false clears `value`.
-    private func isPresented<T>(_ value: Binding<T?>) -> Binding<Bool> {
-        Binding(get: { value.wrappedValue != nil }, set: { if !$0 { value.wrappedValue = nil } })
-    }
-}
-
-/// The Change Icon popover: a field for 1 emoji. Input that is not exactly 1 emoji is ignored.
-private struct EmojiField: View {
-    let current: String
-    let onSubmit: (String) -> Void
-
-    @State private var text = ""
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Type or paste 1 emoji").font(.system(size: 12)).foregroundStyle(.secondary)
-            HStack {
-                TextField(current, text: $text)
-                    .font(.system(size: 22))
-                    .multilineTextAlignment(.center)
-                    .frame(width: 56)
-                    .focused($isFocused)
-                    .onSubmit { onSubmit(text) }
-                Button("Set") { onSubmit(text) }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!ReviewViewModel.isSingleEmoji(text.trimmingCharacters(in: .whitespaces)))
-            }
-        }
-        .padding(12)
-        .onAppear { isFocused = true }
     }
 }
 
@@ -185,6 +123,6 @@ private struct SidebarIcon: View {
         }
         .frame(width: 22, height: 22)
         .background(.background, in: RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(0.08), lineWidth: 0.5))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.textPrimary.color.opacity(0.08), lineWidth: 0.5))
     }
 }

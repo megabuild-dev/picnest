@@ -63,11 +63,22 @@ enum Theme {
     static let onAccent = ThemeColor(light: 0xFFFFFF, dark: 0xFFFFFF)
     /// Confirmed or kept: score badges, "Changed by you".
     static let confirmed = ThemeColor(light: 0x2A7048, dark: 0x4FB87C)
-    /// Needs review: "Not sure", uncertain scores.
+    /// Text and glyphs on a filled `confirmed` badge (the Keep badge). 5.98:1 in light, 6.58:1 in dark.
+    static let onConfirmed = ThemeColor(light: 0xFFFFFF, dark: 0x10241A)
+    /// Needs review: "Needs Review", uncertain scores.
     static let needsReview = ThemeColor(light: 0x855000, dark: 0xE0A030)
     static let destructive = ThemeColor(light: 0xB3261E, dark: 0xFF6B63)
     /// Selected sidebar row (mockup #F3E3E4).
     static let selection = ThemeColor(light: 0xF3E3E4, dark: 0x3A2A30)
+
+    /// Dark pill on a photo (used at alpha 0.8) and its text. Same in light and dark, because the photo decides the ground.
+    static let badgeBackground = ThemeColor(light: 0x1A1618, dark: 0x1A1618)
+    static let onBadge = ThemeColor(light: 0xFFFFFF, dark: 0xFFFFFF)
+    /// Alpha of `badgeBackground`. At least 0.7 keeps the text readable on a white photo.
+    static let badgeAlpha = 0.8
+
+    /// Shadows and the dim layer behind a blocking overlay. Used at an alpha of 0.12 to 0.2.
+    static let shadow = ThemeColor(light: 0x000000, dark: 0x000000)
 
     enum Metrics {
         static let tileCorner: CGFloat = 10
