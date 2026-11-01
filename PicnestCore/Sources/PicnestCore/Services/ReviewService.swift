@@ -1042,15 +1042,16 @@ public final class ReviewService {
     /// and blocks Sort and Rescan meanwhile (`isMovingFiles`); wait with `settled()`. A photo that comes
     /// back gets its `stateBeforeTrash` when that state still refers to existing categories, else no state
     /// (it is classified again). Example places do not come back. A photo that cannot come back stays
-    /// trashed and is in `lastPutBackErrors`. This is not an undo step and it clears the redo stack, so an
+    /// trashed and is in `lastPutBackErrors`, which a call clears only when no file task runs. This is not an undo step and it clears the redo stack, so an
     /// older undo step for the same photo does nothing for it.
     public func putBack(_ ids: [MediaID]) {
-        lastPutBackErrors = []
+        // Errors of a batch that still runs are kept: a second call adds its errors to them.
+        if fileOperations == 0 { lastPutBackErrors = [] }
         runFileTask { service in
             let records = ids.uniqued().compactMap { id in service.session.trashed.first { $0.mediaID == id } }
             guard !records.isEmpty else { return }
             let (back, errors) = await service.putBackFiles(records)
-            service.lastPutBackErrors = errors
+            service.lastPutBackErrors += errors
             guard !back.isEmpty else { return }
 
             let categoryIDs = Set(service.session.categories.map(\.id))

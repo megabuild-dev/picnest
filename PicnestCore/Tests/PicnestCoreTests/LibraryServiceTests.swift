@@ -347,23 +347,46 @@ final class LibraryServiceTests {
         #expect(!library.canUndoLastSort(try entry(source)))
     }
 
+    /// A real Move sort: the file left the source folder, and the journal says `.move`. A rescan then
+    /// drops the favorite (the file is not found). Undo Last Sort brings the file back, and the next rescan keeps it.
     @Test func moveSortThenUndoKeepsFavorites() async throws {
-        let (source, _) = try sortedFolder()
+        let (source, copy) = try sortedFolder()
+        let original = source.appending(path: "p.jpg")
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        try FileManager.default.removeItem(at: original)  // The sort moved it.
+        let journalFile = sessions.directory(for: source).appending(path: "journal.jsonl")
+        try FileManager.default.removeItem(at: journalFile)
+        let journal = library.journal(for: source)
+        try journal.append(JournalEntry(op: .mkdir, source: nil, destination: copy.deletingLastPathComponent().path, time: date))
+        try journal.append(JournalEntry(op: .move, source: original.path, destination: copy.path, time: date))
+        try journal.append(JournalEntry(op: .done, source: nil, destination: nil, time: date))
         var session = try #require(try sessions.load(source: source))
         session.favoriteIDs = ["p.jpg"]
         session.collections = [PhotoCollection(name: "Trip", memberIDs: ["p.jpg"], order: 0)]
         try sessions.save(session)
 
-        try await library.undoLastSort(try entry(source))
         let embedder = FakeEmbedder(dimension: 2, images: ["p.jpg": [1, 0]], texts: ["food": [1, 0]])
         let scan = ScanService(makeEmbedder: { embedder }, sessions: sessions)
-        var rescanned: Session?
-        for try await event in scan.rescan(try #require(try sessions.load(source: source)), source: source) {
-            if case .finished(let s) = event { rescanned = s }
+        func rescan() async throws -> Session {
+            var found: Session?
+            for try await event in scan.rescan(try #require(try sessions.load(source: source)), source: source) {
+                if case .finished(let s) = event { found = s }
+            }
+            return try #require(found)
         }
 
-        #expect(try #require(rescanned).favoriteIDs == ["p.jpg"])
-        #expect(try #require(rescanned).collections.first?.memberIDs == ["p.jpg"])
+        // Before Undo the file is gone, so the rescan drops the marks. (This pins the prune side.)
+        let before = try await rescan()
+        #expect(before.favoriteIDs.isEmpty && before.collections.first?.memberIDs == [])
+        try sessions.save(session)  // The rescan saved the pruned session; go back to the sorted one.
+
+        try await library.undoLastSort(try entry(source))
+        #expect(FileManager.default.fileExists(atPath: original.path))
+        #expect(!FileManager.default.fileExists(atPath: copy.path))
+
+        let after = try await rescan()
+        #expect(after.favoriteIDs == ["p.jpg"])
+        #expect(after.collections.first?.memberIDs == ["p.jpg"])
     }
 
     @Test func undoLastSortWithoutJournalClearsSortedAtSilently() async throws {

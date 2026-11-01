@@ -645,14 +645,20 @@ struct ReviewServiceTests {
     }
 
     @Test func folderRenameReKeysFavoritesAndMembers() async throws {
-        let (s, root, _, a) = try folderFixture()
+        let ops = FakeTrashOps()  // The Trash is fake, so the test leaves nothing in the real Trash.
+        let (s, root, source, a) = try folderFixture(trash: TrashService(fileOps: ops))
         defer { withExtendedLifetime(root) {} }
-        s.toggleFavorite(["A/p1.jpg"])
+        ops.add(source.appending(path: "A/p2.jpg"))
+        s.toggleFavorite(["A/p1.jpg", "A/p2.jpg"])
         let id = try #require(s.createCollection(name: "Trip", adding: ["A/p2.jpg", "A/p1.jpg"]))
+        _ = await s.moveToTrash(["A/p2.jpg"])  // A trashed favorite and member in the folder.
         s.rename(a.id, to: "Holiday")
         await s.settled()
-        #expect(s.session.favoriteIDs == ["Holiday/p1.jpg"])
+        #expect(s.session.favoriteIDs == ["Holiday/p1.jpg", "Holiday/p2.jpg"])
         #expect(s.session.collections.first { $0.id == id }?.memberIDs == ["Holiday/p2.jpg", "Holiday/p1.jpg"])
+        #expect(s.session.trashedIDs == ["Holiday/p2.jpg"])
+        let sessions = SessionRepository(root: root.url.appending(path: "Sessions", directoryHint: .isDirectory))
+        #expect(try sessions.load(source: source) == s.session)
     }
 
     @Test func renamingACategoryWhoseFolderIsNotOnDiskStaysUndoable() async throws {
@@ -1058,6 +1064,20 @@ struct ReviewServiceTests {
         s.putBack(["nope.jpg"])  // An id that is not trashed does nothing, and clears the errors.
         await s.settled()
         #expect(s.lastPutBackErrors.isEmpty)
+    }
+
+    @Test func twoPutBacksInARowKeepTheErrorsOfTheFirst() async throws {
+        let (f, ops) = try fakeFixture()
+        let s = f.service
+        _ = await s.moveToTrash(["a2.jpg", "b1.jpg"])
+        ops.delete(URL(filePath: try #require(s.session.trashed.first { $0.mediaID == "a2.jpg" }).trashPath))
+
+        s.putBack(["a2.jpg"])  // Fails: the Trash file is gone.
+        s.putBack(["b1.jpg"])  // Works. It must not clear the first error.
+        await s.settled()
+
+        #expect(s.lastPutBackErrors.map(\.mediaID) == ["a2.jpg"])
+        #expect(s.session.trashedIDs == ["a2.jpg"])
     }
 
     @Test func putBackClearsRedo() async throws {
