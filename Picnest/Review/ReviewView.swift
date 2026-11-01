@@ -19,12 +19,14 @@ struct ReviewView: View {
     private let sortService: SortService
     private let library: LibraryService
     private let app: AppModel
+    private let preferences: SidebarPreferences?
 
     /// The view model is made once per screen, in the `@State` initializer. `app` scans again
     /// (`rescan`) and closes the session after a sort (`done`, spec 9.1). `afterScan` is true when a scan
     /// opened this review (spec 3.7).
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, sortService: SortService,
-         library: LibraryService, app: AppModel, afterScan: Bool = false) {
+         library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil) {
+        self.preferences = preferences
         self.review = review
         self.sortService = sortService
         self.library = library
@@ -36,7 +38,7 @@ struct ReviewView: View {
 
     var body: some View {
         NavigationSplitView {
-            SidebarView(model: model)
+            SidebarView(model: model, preferences: preferences)
                 .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
         } detail: {
             detail

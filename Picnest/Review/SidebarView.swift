@@ -6,6 +6,8 @@ import SwiftUI
 /// Change Icon, Merge Into…, Delete.
 struct SidebarView: View {
     let model: ReviewViewModel
+    /// The appearance and language bar at the bottom. Nil in previews.
+    var preferences: SidebarPreferences?
 
     @State private var dropTarget: CategoryID?
 
@@ -45,6 +47,12 @@ struct SidebarView: View {
         .scrollContentBackground(.hidden)
         .background(Theme.sidebar.color)
         .tint(Theme.accent.color)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let preferences {
+                SidebarPreferencesBar(appearance: preferences.appearance, language: preferences.language,
+                                      relauncher: preferences.relauncher)
+            }
+        }
     }
 
     /// A section title as in the mockups: regular weight, secondary color, no capitals.

@@ -32,15 +32,7 @@ struct SettingsView: View {
                     ForEach(AppLanguage.allCases) { Text(verbatim: $0.displayName).tag($0) }
                 }
                 .pickerStyle(.menu)
-                if language.needsRestart {
-                    HStack {
-                        Text("Restart Picnest to change the language.")
-                        Spacer()
-                        Button("Restart") {
-                            if relauncher.request() { NSApp.terminate(nil) }
-                        }
-                    }
-                }
+                LanguageRestartRow(language: language, relauncher: relauncher)
             }
             Section("Updates") {
                 if let updater {
