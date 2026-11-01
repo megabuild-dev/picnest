@@ -43,22 +43,12 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .tint(Theme.accent.color)
-        .confirmationDialog(deletingTitle, isPresented: isPresented(Bindable(model).deletingCategory), titleVisibility: .visible) {
-            Button("Delete", role: .destructive) {
-                if let deleting = model.deletingCategory { Task { await model.deleteCategory(deleting) } }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(model.deletingCategory.map(model.deleteMessage(for:)) ?? "")
-        }
     }
 
     /// A section title as in the mockups: regular weight, secondary color, no capitals.
     private func sectionHeader(_ title: LocalizedStringKey) -> some View {
         Text(title).font(.system(size: 13)).foregroundStyle(Theme.textSecondary.color)
     }
-
-    private var deletingTitle: String { model.deletingCategory.map(model.deleteConfirmation(for:)) ?? "" }
 
     private func categoryRow(_ counts: [ReviewViewModel.SidebarItem: Int], _ category: PicnestCore.Category) -> some View {
         let id = category.id
@@ -107,11 +97,6 @@ struct SidebarView: View {
         }
         .badge(Text((counts[item] ?? 0).formatted()))
         .tag(item)
-    }
-
-    /// A Bool binding that is true while `value` is set. Setting it to false clears `value`.
-    private func isPresented<T>(_ value: Binding<T?>) -> Binding<Bool> {
-        Binding(get: { value.wrappedValue != nil }, set: { if !$0 { value.wrappedValue = nil } })
     }
 }
 

@@ -2578,16 +2578,6 @@
         }
       }
     },
-    "This name cannot make a folder name." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tên này không tạo được tên thư mục."
-          }
-        }
-      }
-    },
     "This name is already used." : {
       "localizations" : {
         "vi" : {

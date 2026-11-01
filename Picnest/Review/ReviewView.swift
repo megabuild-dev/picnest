@@ -68,6 +68,17 @@ struct ReviewView: View {
                 EditCategorySheet(model: model, category: category) { model.editingCategory = nil }
             }
         }
+        .confirmationDialog(
+            model.deletingCategory.map(model.deleteConfirmation(for:)) ?? "", isPresented: deletingCategoryBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let deleting = model.deletingCategory { Task { await model.deleteCategory(deleting) } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(model.deletingCategory.map(model.deleteMessage(for:)) ?? "")
+        }
         .sheet(item: Bindable(model).suggest) { SuggestSheet(model: $0) }
         .alert("Undo Last Sort", isPresented: undoMessageBinding) {
             Button("OK", role: .cancel) { model.undoSortMessage = nil }
@@ -232,6 +243,10 @@ struct ReviewView: View {
 
     private var trashMessageBinding: Binding<Bool> {
         Binding(get: { model.trashMessage != nil }, set: { if !$0 { model.trashMessage = nil } })
+    }
+
+    private var deletingCategoryBinding: Binding<Bool> {
+        Binding(get: { model.deletingCategory != nil }, set: { if !$0 { model.deletingCategory = nil } })
     }
 
     private var editingCategoryBinding: Binding<Bool> {

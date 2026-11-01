@@ -979,6 +979,7 @@ final class ReviewViewModel {
         if selectedItem == .category(c) { selectedItem = .notSure }
         clearSelection()
         showTrashErrors(await review.deleteCategoryAndPhotos(c))
+        closeEditIfCategoryIsGone()
     }
 
     /// The categories that `c` can merge into, in sidebar order.
@@ -989,6 +990,12 @@ final class ReviewViewModel {
     func merge(_ c: CategoryID, into target: CategoryID) {
         review.merge(c, into: target)
         if selectedItem == .category(c) { selectedItem = .category(target) }
+        closeEditIfCategoryIsGone()
+    }
+
+    /// Closes the Edit Category sheet when its category no longer exists (merged, deleted, or undone).
+    func closeEditIfCategoryIsGone() {
+        if let editing = editingCategory, !categories.contains(where: { $0.id == editing }) { editingCategory = nil }
     }
 
     /// Renames `c`. A name that is empty after trimming is ignored.
@@ -1006,34 +1013,26 @@ final class ReviewViewModel {
 
     /// Why a category name cannot be used. `message` is the text under the name field.
     enum CategoryNameIssue: Equatable {
-        case empty, duplicate, invalidFolderName
+        case empty, duplicate
 
         var message: LocalizedStringKey {
             switch self {
             case .empty: "Enter a name."
             case .duplicate: "A category with this name already exists."
-            case .invalidFolderName: "This name cannot make a folder name."
             }
         }
     }
 
     /// Checks a category name. `excluding` is the category that gets the name, so it does not clash with itself.
-    /// The folder rules are the ones of `SortPlanner`: they replace "/" and ":" and a leading ".", so only a name
-    /// with no usable characters is rejected as a folder name.
+    /// The folder rules of `SortPlanner` replace "/", ":" and a leading ".", so every non-empty name makes a folder.
     func validateCategoryName(_ name: String, excluding: CategoryID?) -> CategoryNameIssue? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return .empty }
         let wanted = Self.normalizedName(trimmed)
         let others = review.session.categories.filter { $0.id != excluding }
         if others.contains(where: { Self.normalizedName($0.displayName) == wanted }) { return .duplicate }
-        // `folderName(for:)` answers "Untitled" when nothing usable is left of the name.
-        if SortPlanner.folderName(for: trimmed) == Self.untitledFolder, wanted != Self.normalizedName(Self.untitledFolder) {
-            return .invalidFolderName
-        }
         return nil
     }
-
-    private static let untitledFolder = "Untitled"
 
     /// Trimmed, NFC, and without case and diacritics, for the comparison of names.
     private static func normalizedName(_ name: String) -> String {
@@ -1132,6 +1131,7 @@ final class ReviewViewModel {
     private func refreshIfSessionChanged() {
         guard sessionChanged else { return }
         sessionChanged = false
+        closeEditIfCategoryIsGone()
         watchSession()
         cache = nil
         groupsCache = nil

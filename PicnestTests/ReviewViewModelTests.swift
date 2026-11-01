@@ -293,7 +293,7 @@ struct ReviewViewModelTests {
     }
 
     /// The folder rules replace "/" and ":" with "-", so the name is not rejected: it makes a valid, unique folder.
-    @Test func testNameWithSlashIsInvalidFolderName() throws {
+    @Test func testNameWithSlashMakesValidFolder() throws {
         let model = try makeModel()
         #expect(model.validateCategoryName("Trips/2024", excluding: nil) == nil)
         let folder = SortPlanner.folderName(for: "Trips/2024")
@@ -301,7 +301,6 @@ struct ReviewViewModelTests {
         #expect(!folder.contains("/"))
         let unique = SortPlanner.uniqueFolderName(for: "Trips/2024", among: model.categories)
         #expect(unique == folder)
-        // The rules fall back to "Untitled" only for a name with no characters. That is the empty issue.
         #expect(model.validateCategoryName("/", excluding: nil) == nil)
         #expect(SortPlanner.folderName(for: "/") == "-")
     }
@@ -331,6 +330,17 @@ struct ReviewViewModelTests {
         #expect(model.saveCategoryEdit(food.id, name: "Meals", emoji: "🍕"))
         let saved = model.categories.first { $0.id == food.id }
         #expect(saved?.emoji == "🍕")
+        #expect(saved?.displayName == "Meals")
+    }
+
+    @Test func testEditSheetClosesWhenItsCategoryIsMerged() throws {
+        let model = try makeModel()
+        model.editingCategory = food.id
+        model.merge(food.id, into: documents.id)
+        #expect(model.editingCategory == nil)
+        model.editingCategory = documents.id
+        model.closeEditIfCategoryIsGone()
+        #expect(model.editingCategory == documents.id)
     }
 
     @Test func testSearchDoesNotChangeSidebarCounts() throws {
