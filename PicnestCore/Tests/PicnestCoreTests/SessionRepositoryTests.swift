@@ -161,6 +161,33 @@ private func makeSession(source: String) -> Session {
     #expect(json["notDuplicateKeys"] as? [String] == ["a", "b", "c", "d", "e"])
 }
 
+@Test func oldSessionWithoutFavoritesAndCollectionsDecodes() throws {
+    let dir = try TempDir()
+    let repo = SessionRepository(root: dir.url)
+    let source = URL(filePath: "/x/src")
+    let s = makeSession(source: source.path)
+    try repo.save(s)
+    let file = repo.directory(for: source).appending(path: "session.json")
+    var json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
+    #expect(json["favoriteIDs"] != nil)
+    #expect(json["collections"] != nil)
+    json.removeValue(forKey: "favoriteIDs")
+    json.removeValue(forKey: "collections")
+    try JSONSerialization.data(withJSONObject: json).write(to: file)
+
+    let loaded = try #require(try repo.load(source: source))
+    #expect(loaded.favoriteIDs == [])
+    #expect(loaded.collections == [])
+    #expect(loaded == s)
+}
+
+@Test func favoriteIDsAreSavedSorted() throws {
+    var s = makeSession(source: "/x/src")
+    s.favoriteIDs = ["b.jpg", "a.jpg"]
+    let json = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(s)) as? [String: Any])
+    #expect(json["favoriteIDs"] as? [String] == ["a.jpg", "b.jpg"])
+}
+
 /// Final review M2: a session with every field set saves and loads equal. The custom `encode` must write
 /// every field: the test also checks that the JSON has 1 key for each stored property.
 @Test func sessionWithEveryFieldRoundTrips() throws {
@@ -197,7 +224,9 @@ private func makeSession(source: String) -> Session {
             skipped: [.hidden: 1, .symlink: 2, .webFile: 3]),
         sortedAt: date.addingTimeInterval(60),
         trashed: [TrashedPhoto(mediaID: "g.jpg", trashPath: "/Users/x/.Trash/g.jpg", time: date.addingTimeInterval(5))],
-        notDuplicateKeys: [DuplicateGroup.key(for: ["a.jpg", "b.jpg"]), DuplicateGroup.key(for: ["c.jpg", "d.jpg"])])
+        notDuplicateKeys: [DuplicateGroup.key(for: ["a.jpg", "b.jpg"]), DuplicateGroup.key(for: ["c.jpg", "d.jpg"])],
+        favoriteIDs: ["a.jpg", "b.jpg"],
+        collections: [PhotoCollection(name: "Trip", memberIDs: ["b.jpg", "a.jpg"], order: 0)])
 
     try repo.save(s)
     #expect(try repo.load(source: source) == s)
@@ -205,16 +234,20 @@ private func makeSession(source: String) -> Session {
     let file = repo.directory(for: source).appending(path: "session.json")
     let json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
     let fields = Set(Mirror(reflecting: s).children.compactMap(\.label))
-    #expect(fields.count == 8)
+    #expect(fields.count == 10)
     #expect(Set(json.keys) == fields)
 
     // A `session.json` from before Move to Trash and the Duplicates view has neither new key.
     var old = json
     old.removeValue(forKey: "trashed")
     old.removeValue(forKey: "notDuplicateKeys")
+    old.removeValue(forKey: "favoriteIDs")
+    old.removeValue(forKey: "collections")
     try JSONSerialization.data(withJSONObject: old).write(to: file)
     var expected = s
     expected.trashed = []
     expected.notDuplicateKeys = []
+    expected.favoriteIDs = []
+    expected.collections = []
     #expect(try repo.load(source: source) == expected)
 }
