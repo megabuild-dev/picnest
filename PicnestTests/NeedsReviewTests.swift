@@ -16,24 +16,28 @@ struct NeedsReviewTests {
 
     init() throws { temp = try TempDir() }
 
-    private func assignment(_ category: PicnestCore.Category?, _ percent: Int) -> Assignment {
-        Assignment(categoryID: category?.id ?? UUID(), score: 0.3, secondCategoryID: nil, secondScore: nil,
+    /// `score` is the raw best score. Below `ClassifySettings.default.minScore` (0.22) the match is weak.
+    private func assignment(_ category: PicnestCore.Category, _ percent: Int, score: Float = 0.3) -> Assignment {
+        Assignment(categoryID: category.id, score: score, secondCategoryID: nil, secondScore: nil,
                    percent: percent, uncertain: true)
     }
 
-    /// Needs Review: Food trip1 50%, trip2 40%, n3 45%; Documents trip4 30%, n5 35%; Pets n6 20%;
-    /// x1 60% with a best guess that is not a category. n3 and trip4 are similar photos. ok.jpg is certain.
+    /// Needs Review: Food trip1 50%, trip2 40% (weak score), n3 45%; Documents trip4 70% (weak score), n5 35%;
+    /// Pets n6 20%, x1 (a placeholder guess of a photo with no vector: score 0, percent 0).
+    /// So percent and weak score disagree for trip2 (40%, weak), trip4 (70%, weak) and n3 (45%, not weak).
+    /// n3 and trip4 are similar photos. ok.jpg is certain.
     private func makeModel() throws -> ReviewViewModel {
         let source = try temp.folder("Photos")
-        let spec: [(String, PicnestCore.Category?, Int)] = [
-            ("trip1.jpg", food, 50), ("trip2.jpg", food, 40), ("n3.jpg", food, 45),
-            ("trip4.jpg", documents, 30), ("n5.jpg", documents, 35), ("n6.jpg", pets, 20), ("x1.jpg", nil, 60),
+        let spec: [(String, PicnestCore.Category, Int, Float)] = [
+            ("trip1.jpg", food, 50, 0.3), ("trip2.jpg", food, 40, 0.1), ("n3.jpg", food, 45, 0.3),
+            ("trip4.jpg", documents, 70, 0.1), ("n5.jpg", documents, 35, 0.3), ("n6.jpg", pets, 20, 0.3),
+            ("x1.jpg", pets, 0, 0),
         ]
         var states: [MediaID: PhotoState] = [
             "ok.jpg": .auto(Assignment(categoryID: food.id, score: 0.3, secondCategoryID: nil, secondScore: nil,
                                        percent: 90, uncertain: false)),
         ]
-        for (name, category, percent) in spec { states[name] = .auto(assignment(category, percent)) }
+        for (name, category, percent, score) in spec { states[name] = .auto(assignment(category, percent, score: score)) }
         let names = spec.map(\.0) + ["ok.jpg"]
         var images: [MediaID: Vector] = [:]
         var media: [MediaFile] = []
@@ -131,8 +135,6 @@ struct NeedsReviewTests {
         model.searchText = "zzz"
         #expect(model.emptyState == .noResults)
         model.searchText = ""
-        model.click("x1.jpg", modifiers: [])  // Its best guess is no category, so Accept cannot take it.
-        model.moveSelection(to: food.id)
         model.acceptAll()
         #expect(model.emptyState == .nothingToReview)
         model.searchText = "zzz"
@@ -159,7 +161,8 @@ struct NeedsReviewTests {
     @Test func testIssueFilterLowConfidence() throws {
         let model = try makeModel()
         model.reviewIssue = .lowConfidence
-        #expect(Set(model.visibleIDs) == ["trip2.jpg", "n3.jpg", "trip4.jpg", "n5.jpg", "n6.jpg"])
+        // The weak score decides, not the percent: trip4 has 70% and shows; n3 has 45% and does not.
+        #expect(Set(model.visibleIDs) == ["trip2.jpg", "trip4.jpg"])
         model.reviewIssue = nil
         #expect(model.visibleIDs.count == 7)
     }
@@ -168,7 +171,7 @@ struct NeedsReviewTests {
         let model = try makeModel()
         model.reviewIssue = .noCategory
         #expect(model.visibleIDs == ["x1.jpg"])
-        #expect(model.notSureGroups.map(\.categoryName) == ["Unknown"])
+        #expect(model.notSureGroups.map(\.categoryName) == ["Pets"])
     }
 
     @Test func testIssueFilterSimilar() async throws {
@@ -205,7 +208,66 @@ struct NeedsReviewTests {
     @Test func testIssueEmptyStateIsNoResults() throws {
         let model = try makeModel()
         model.reviewIssue = .similarPhotos
+        #expect(model.emptyState == .findingSimilar)  // Not searched yet.
+    }
+
+    @Test func testEmptyStateNoResultsAfterSimilarSearch() async throws {
+        let model = try makeModel()
+        await model.duplicates.find()
+        model.reviewIssue = .similarPhotos
+        model.searchText = "n5"
         #expect(model.emptyState == .noResults)
+    }
+
+    @Test func testSimilarEmptyStateFollowsSearchPhase() {
+        #expect(ReviewViewModel.similarEmptyState(for: .idle) == .findingSimilar)
+        #expect(ReviewViewModel.similarEmptyState(for: .finding(done: 1, total: 2)) == .findingSimilar)
+        #expect(ReviewViewModel.similarEmptyState(for: .failed("Disk error")) == .similarSearchFailed("Disk error"))
+        #expect(ReviewViewModel.similarEmptyState(for: .ready) == .noResults)
+        #expect(ReviewViewModel.similarEmptyState(for: .empty) == .noResults)
+    }
+
+    @Test func testEmptyFolderInNeedsReviewShowsNothingLeft() throws {
+        let model = try makeModel()
+        model.selectedItem = .all
+        model.clearReviewFilters()
+        // A model with no photos at all.
+        let source = try temp.folder("Empty")
+        let review = ReviewService(
+            session: Session(sourcePath: source.path(percentEncoded: false), candidateList: .everyday,
+                             categories: [food], states: [:],
+                             scan: ScanResult(media: [], dates: [:], skipped: [:]), sortedAt: nil),
+            source: source, images: [:], prompts: [:], classify: classify,
+            sessions: SessionRepository(root: temp.url.appending(path: "Sessions2")),
+            embeddings: EmbeddingRepository(embedder: FakeEmbedder(), cacheDirectory: temp.url.appending(path: "Cache2")))
+        let environment = AppEnvironment(
+            embedder: FakeEmbedder(), sessionsRoot: temp.url.appending(path: "Sessions2"), defaults: suite.defaults)
+        let empty = ReviewViewModel(
+            review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
+            library: environment.library, app: AppModel(environment: environment), onRescan: {},
+            defaults: suite.defaults)
+        empty.selectedItem = .notSure
+        #expect(empty.emptyState == .nothingToReview)
+    }
+
+    @Test func testIssueCountsAndAvailability() async throws {
+        let model = try makeModel()
+        #expect(model.reviewIssueCount(.lowConfidence) == 2)
+        #expect(model.reviewIssueCount(.noCategory) == 1)
+        #expect(model.isReviewIssueAvailable(.lowConfidence))
+        #expect(model.isReviewIssueAvailable(.noCategory))
+        #expect(model.isReviewIssueAvailable(.similarPhotos))  // Unknown until the search runs.
+        await model.duplicates.find()
+        #expect(model.reviewIssueCount(.similarPhotos) == 2)
+        // Accept the weak and placeholder photos: those menus have no match left.
+        model.reviewIssue = .lowConfidence
+        model.acceptAll()
+        model.reviewIssue = nil
+        #expect(model.reviewIssueCount(.lowConfidence) == 0)
+        #expect(!model.isReviewIssueAvailable(.lowConfidence))
+        model.click("x1.jpg", modifiers: [])
+        model.dontMoveSelection()
+        #expect(!model.isReviewIssueAvailable(.noCategory))
     }
 
     @Test func testSelectionPreviewHoldsUpToThreePhotosInGridOrder() throws {

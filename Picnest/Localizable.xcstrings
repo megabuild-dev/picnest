@@ -827,6 +827,16 @@
         }
       }
     },
+    "Could not look for similar photos." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể tìm ảnh tương tự."
+          }
+        }
+      }
+    },
     "Could not open the folder" : {
       "localizations" : {
         "vi" : {
@@ -1283,6 +1293,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đang tìm các nhóm…"
+          }
+        }
+      }
+    },
+    "Looking for similar photos…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang tìm ảnh tương tự…"
           }
         }
       }

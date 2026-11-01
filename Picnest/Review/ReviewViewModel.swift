@@ -88,8 +88,6 @@ final class ReviewViewModel {
     /// True after the user closes the amber notice of Needs Review. A rescan makes a new view model, so it shows again.
     var isNoticeDismissed = false
 
-    /// A Needs Review photo with a best guess below this percent has low confidence.
-    static let lowConfidencePercent = 50
 
     /// The toolbar filter. It reads and writes `selectedItem`; a category reads as `.all`.
     var filter: PhotoFilter {
@@ -412,6 +410,10 @@ final class ReviewViewModel {
         case emptyFolder
         /// The Needs Review chip has no photo. No action.
         case nothingToReview
+        /// The similar-photos filter waits for the duplicate search.
+        case findingSimilar
+        /// The duplicate search failed. The text is the error of the Duplicates view.
+        case similarSearchFailed(String)
         /// The Chosen by you chip has no photo. No action.
         case noneChosen
     }
@@ -423,14 +425,25 @@ final class ReviewViewModel {
         guard selectedItem != .duplicates, visibleIDs.isEmpty else { return nil }
         if selectedItem == .notSure {
             // Nothing left to check, or a search or issue filter that hides the photos that are left.
-            if count(of: .all) == 0 { return nil }
-            return count(of: .notSure) == 0 ? .nothingToReview : .noResults
+            if count(of: .notSure) == 0 { return .nothingToReview }
+            if reviewIssue == .similarPhotos { return Self.similarEmptyState(for: duplicates.state) }
+            return .noResults
         }
         if Self.searchNeedle(searchText) != nil { return .noResults }
         if count(of: .all) == 0 { return .emptyFolder }
         switch selectedItem {
         case .changedByYou: return .noneChosen
         default: return nil
+        }
+    }
+
+    /// What the similar-photos filter shows when no photo shows: a wait while the duplicate search has not
+    /// finished, its error if it failed, else "no results".
+    static func similarEmptyState(for phase: DuplicatesViewModel.State) -> EmptyState {
+        switch phase {
+        case .idle, .finding: .findingSimilar
+        case .failed(let message): .similarSearchFailed(message)
+        case .ready, .empty: .noResults
         }
     }
 
@@ -522,12 +535,13 @@ final class ReviewViewModel {
     }
 
     /// True if the Needs Review photo `id` has the `issue`. Pure over the state and the found similar photos.
-    private func hasIssue(_ issue: ReviewIssue, id: MediaID, state: PhotoState?, filter: GroupFilter,
-                          categories: Set<CategoryID>) -> Bool {
+    private func hasIssue(_ issue: ReviewIssue, id: MediaID, state: PhotoState?, filter: GroupFilter) -> Bool {
         let assignment = Self.assignment(state)
         switch issue {
-        case .lowConfidence: return (assignment?.percent ?? 0) < Self.lowConfidencePercent
-        case .noCategory: return assignment.map { !categories.contains($0.categoryID) } ?? true
+        // The weak-score branch of the uncertain rule, with the settings of the classifier.
+        case .lowConfidence: return assignment?.isWeakMatch(settings: classify.settings) ?? false
+        // No score at all: the placeholder guess of a photo without an image vector.
+        case .noCategory: return assignment?.isPlaceholder ?? true
         case .similarPhotos: return filter.similar.contains(id)
         }
     }
@@ -542,13 +556,12 @@ final class ReviewViewModel {
         let filter = groupFilter
         if let groupsCache, groupsCache.order == order, groupsCache.filter == filter { return groupsCache.groups }
         let needle = Self.searchNeedle(filter.search)
-        let categoryIDs = Set(session.categories.map(\.id))
         let files = session.visibleMedia.filter { media in
             let state = session.states[media.id]
             guard Self.includes(media, state: state, in: .notSure) else { return false }
             if let needle, !Self.matches(media, needle: needle) { return false }
             if let issue = filter.issue,
-               !hasIssue(issue, id: media.id, state: state, filter: filter, categories: categoryIDs) { return false }
+               !hasIssue(issue, id: media.id, state: state, filter: filter) { return false }
             return true
         }
         let position = Dictionary(
@@ -590,6 +603,32 @@ final class ReviewViewModel {
     func acceptAll() {
         review.acceptBestGuess(notSureGroups.flatMap(\.ids))
         clearSelection()
+    }
+
+    /// How many Needs Review photos have `issue`, ignoring the search text. For similar photos it counts the
+    /// found similar groups, so it is 0 until the duplicate search has run.
+    func reviewIssueCount(_ issue: ReviewIssue) -> Int {
+        let session = review.session
+        refreshIfSessionChanged()
+        let filter = GroupFilter(search: "", issue: issue, similar: issue == .similarPhotos ? similarPhotoIDs : [])
+        return session.visibleMedia.count { media in
+            let state = session.states[media.id]
+            return Self.includes(media, state: state, in: .notSure)
+                && hasIssue(issue, id: media.id, state: state, filter: filter)
+        }
+    }
+
+    /// Whether the menu of `issue` shows. A menu with no match is hidden, except the chosen one. The similar
+    /// menu shows until the duplicate search has run, because choosing it starts the search.
+    func isReviewIssueAvailable(_ issue: ReviewIssue) -> Bool {
+        if reviewIssue == issue { return true }
+        if issue == .similarPhotos {
+            switch duplicates.state {
+            case .ready, .empty: break
+            default: return true
+            }
+        }
+        return reviewIssueCount(issue) > 0
     }
 
     /// Clears the search text and the issue filter.

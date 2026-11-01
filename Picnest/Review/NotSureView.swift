@@ -54,11 +54,20 @@ private struct NeedsReviewEmptyView: View {
                     ContentUnavailableView.search(text: model.searchText)
                 }
                 Button("Clear Filters", action: model.clearReviewFilters)
+            case .findingSimilar:
+                ProgressView().controlSize(.small)
+                Text("Looking for similar photos…").foregroundStyle(Theme.textSecondary.color)
+            case .similarSearchFailed(let message):
+                ContentUnavailableView("Could not look for similar photos.", systemImage: "exclamationmark.triangle",
+                                       description: Text(message))
+                Button("Clear Filters", action: model.clearReviewFilters)
             default:
                 ContentUnavailableView("Nothing left to check.", systemImage: "checkmark.circle",
                                        description: Text("All photos have a category."))
             }
         }
+        // A search that was cancelled starts again when the view shows.
+        .task(id: state) { if state == .findingSimilar { await model.duplicates.find() } }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

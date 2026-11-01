@@ -194,7 +194,7 @@ struct ReviewViewModelTests {
         model.searchText = "x"
         #expect(model.emptyState == .noResults)
         model.selectedItem = .notSure
-        #expect(model.emptyState == nil)
+        #expect(model.emptyState == .nothingToReview)
     }
 
     @Test func testEmptyStatePerChip() throws {

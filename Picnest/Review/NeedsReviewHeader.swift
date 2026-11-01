@@ -20,7 +20,9 @@ struct NeedsReviewHeader: View {
                 NeedsReviewNotice { model.isNoticeDismissed = true }
             }
             HStack(spacing: 10) {
-                ForEach(ReviewIssue.allCases, id: \.self) { IssueMenu(model: model, issue: $0) }
+                ForEach(ReviewIssue.allCases, id: \.self) { issue in
+                    if model.isReviewIssueAvailable(issue) { IssueMenu(model: model, issue: issue) }
+                }
                 Spacer(minLength: 12)
                 if model.showsThumbnailSlider(layout: .grid) { SizeSlider(model: model) }
                 ReviewSortMenu(model: model)
