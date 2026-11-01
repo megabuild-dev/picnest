@@ -6,6 +6,11 @@ import SwiftUI
 
 /// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
 /// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
+/// The 3 filters of the toolbar. Each one is a sidebar item (`ReviewViewModel.filter`).
+enum PhotoFilter: CaseIterable {
+    case all, needsReview, chosenByYou
+}
+
 @MainActor
 @Observable
 final class ReviewViewModel {
@@ -60,6 +65,48 @@ final class ReviewViewModel {
         didSet { if selectedItem != oldValue { clearSelection() } }
     }
     var sortOrder: SortOrder = .lowestConfidence
+
+    /// The toolbar filter. It reads and writes `selectedItem`; a category reads as `.all`.
+    var filter: PhotoFilter {
+        get {
+            switch selectedItem {
+            case .notSure: .needsReview
+            case .changedByYou: .chosenByYou
+            default: .all
+            }
+        }
+        set {
+            selectedItem = switch newValue {
+            case .all: .all
+            case .needsReview: .notSure
+            case .chosenByYou: .changedByYou
+            }
+        }
+    }
+
+    /// Shows only the photos whose file name contains this text, ignoring case and diacritics.
+    /// Empty or blank text shows all. Sidebar counts do not change.
+    var searchText = "" {
+        didSet { if searchText != oldValue { cache = nil } }
+    }
+
+    static let thumbnailSizeRange: ClosedRange<Double> = 80...240
+    static let defaultThumbnailSize = 160.0
+    private static let thumbnailSizeKey = "thumbnailSize"
+
+    /// The grid thumbnail size in points, 80...240. Saved in `UserDefaults` key `thumbnailSize`.
+    var thumbnailSize: Double {
+        didSet {
+            let clamped = Self.clampedThumbnailSize(thumbnailSize)
+            if clamped != thumbnailSize { thumbnailSize = clamped; return }
+            defaults.set(clamped, forKey: Self.thumbnailSizeKey)
+        }
+    }
+    @ObservationIgnored private let defaults: UserDefaults
+
+    private static func clampedThumbnailSize(_ value: Double) -> Double {
+        min(max(value, thumbnailSizeRange.lowerBound), thumbnailSizeRange.upperBound)
+    }
     /// Grid columns, 2...8. The toolbar slider sets it.
     var columns = 3 {
         didSet {
@@ -109,7 +156,7 @@ final class ReviewViewModel {
 
     /// The cached `visibleIDs`, for the item and order they were made for. Selection changes re-render the
     /// grid, so the list must not be filtered and sorted again then (spec 12, risk 3).
-    @ObservationIgnored private var cache: (item: SidebarItem, order: SortOrder, ids: [MediaID])?
+    @ObservationIgnored private var cache: (item: SidebarItem, order: SortOrder, search: String, ids: [MediaID])?
     /// Set when `review.session` changes; the next read of `visibleIDs` makes the list again.
     @ObservationIgnored private var sessionChanged = false
     /// The cached `notSureGroups`, for the order they were made for. Dropped with `cache` when the session changes.
@@ -130,7 +177,11 @@ final class ReviewViewModel {
          app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
-         folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) {
+         folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
+         defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        let saved = defaults.object(forKey: Self.thumbnailSizeKey) as? Double
+        thumbnailSize = Self.clampedThumbnailSize(saved ?? Self.defaultThumbnailSize)
         self.folderExists = folderExists
         self.openURL = openURL
         self.revealURLs = revealURLs
@@ -303,19 +354,26 @@ final class ReviewViewModel {
     /// The photos of `selectedItem` in `sortOrder`. Made again only when the item, the order, or the
     /// session changes.
     var visibleIDs: [MediaID] {
-        let item = selectedItem, order = sortOrder
+        let item = selectedItem, order = sortOrder, search = searchText
         let session = review.session  // Also makes the reading view depend on the session.
         refreshIfSessionChanged()
-        if let cache, cache.item == item, cache.order == order { return cache.ids }
-        let ids: [MediaID]
+        if let cache, cache.item == item, cache.order == order, cache.search == search { return cache.ids }
+        var ids: [MediaID]
         if item == .notSure {
             // The grouped view shows the photos group by group, so grid order is the flattened groups.
             ids = notSureGroups.flatMap(\.ids)
+            if let needle = Self.searchNeedle(search) {
+                ids = ids.filter { mediaByID[$0].map { Self.matches($0, needle: needle) } ?? false }
+            }
         } else {
-            let files = session.visibleMedia.filter { Self.includes($0, state: session.states[$0.id], in: item) }
+            let needle = Self.searchNeedle(search)
+            let files = session.visibleMedia.filter { media in
+                Self.includes(media, state: session.states[media.id], in: item)
+                    && (needle.map { Self.matches(media, needle: $0) } ?? true)
+            }
             ids = sorted(files, session: session)
         }
-        cache = (item, order, ids)
+        cache = (item, order, search, ids)
         listComputations += 1
         dropHiddenSelection(visible: ids)
         return ids
@@ -776,6 +834,22 @@ final class ReviewViewModel {
 
     private static func fileName(_ media: MediaFile) -> String {
         (media.relativePath as NSString).lastPathComponent
+    }
+
+    /// The folded search text, or nil when it is empty or blank.
+    private static func searchNeedle(_ text: String) -> String? {
+        let needle = fold(text.trimmingCharacters(in: .whitespacesAndNewlines))
+        return needle.isEmpty ? nil : needle
+    }
+
+    /// Lowercase, no diacritics. `đ` has no decomposition, so it folds to `d` by hand.
+    private static func fold(_ text: String) -> String {
+        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+            .replacingOccurrences(of: "đ", with: "d")
+    }
+
+    private static func matches(_ media: MediaFile, needle: String) -> Bool {
+        fold(fileName(media)).contains(needle)
     }
 
     private static func includes(_ media: MediaFile, state: PhotoState?, in item: SidebarItem) -> Bool {

@@ -71,10 +71,12 @@ struct ReviewViewModelTests {
     private func makeModelAndReview(
         onRescan: @escaping () -> Void = {}, trashOps: FakeTrashFileOps = FakeTrashFileOps(), openURL: @escaping @MainActor (URL) -> Void = { _ in },
         revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in },
-        folderExists: @escaping (URL) -> Bool = { _ in true }) throws -> (model: ReviewViewModel, review: ReviewService) {
+        folderExists: @escaping (URL) -> Bool = { _ in true },
+        session makeCustom: ((URL) -> Session)? = nil,
+        defaults: UserDefaults? = nil) throws -> (model: ReviewViewModel, review: ReviewService) {
         let source = try temp.folder("Photos")
         let review = ReviewService(
-            session: makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
+            session: makeCustom?(source) ?? makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
             sessions: SessionRepository(root: temp.url.appending(path: "Sessions")),
             embeddings: EmbeddingRepository(embedder: FakeEmbedder(), cacheDirectory: temp.url.appending(path: "Cache")),
             trash: TrashService(fileOps: trashOps))
@@ -82,8 +84,109 @@ struct ReviewViewModelTests {
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
             library: environment.library, app: AppModel(environment: environment), onRescan: onRescan,
-            openURL: openURL, revealURLs: revealURLs, folderExists: folderExists)
+            openURL: openURL, revealURLs: revealURLs, folderExists: folderExists,
+            defaults: defaults ?? suite.defaults)
         return (model, review)
+    }
+
+    // MARK: - Filter, search, thumbnail size (UI redesign 4.2)
+
+    private func namedSession(_ names: [String]) -> (URL) -> Session {
+        { source in
+            var session = makeSession(source: source)
+            let extra = names.map { file($0) }
+            session.scan = ScanResult(media: session.scan.media + extra, dates: session.scan.dates, skipped: [:])
+            return session
+        }
+    }
+
+    @Test func testFilterMapsToSidebarItem() throws {
+        let model = try makeModel()
+        for (filter, item) in [(PhotoFilter.all, ReviewViewModel.SidebarItem.all),
+                               (.needsReview, .notSure), (.chosenByYou, .changedByYou)] {
+            model.filter = filter
+            #expect(model.selectedItem == item)
+            model.selectedItem = .duplicates
+            model.selectedItem = item
+            #expect(model.filter == filter)
+        }
+        model.selectedItem = .category(food.id)
+        #expect(model.filter == .all)
+        #expect(PhotoFilter.allCases.count == 3)
+    }
+
+    @Test func testSearchMatchesFileNameIgnoringCaseAndDiacritics() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Ảnh_01.jpg", "Trip/Anh_Dir.jpg", "zzz.jpg"]))
+        model.searchText = "anh"
+        #expect(Set(model.visibleIDs) == ["Ảnh_01.jpg", "Trip/Anh_Dir.jpg"])
+        model.searchText = "ẢNH_01"
+        #expect(model.visibleIDs == ["Ảnh_01.jpg"])
+    }
+
+    @Test func testSearchUsesFileNameNotFolder() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Holiday/x.jpg"]))
+        model.searchText = "holiday"
+        #expect(model.visibleIDs.isEmpty)
+    }
+
+    @Test func testSearchFoldsVietnameseD() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Đà_Lạt.jpg", "other.jpg"]))
+        model.searchText = "da lat".replacingOccurrences(of: " ", with: "_")
+        #expect(model.visibleIDs == ["Đà_Lạt.jpg"])
+        model.searchText = "đà"
+        #expect(model.visibleIDs == ["Đà_Lạt.jpg"])
+    }
+
+    @Test func testSearchEmptyShowsAll() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Ảnh_01.jpg"]))
+        let all = model.visibleIDs
+        model.searchText = "Ảnh"
+        #expect(model.visibleIDs.count == 1)
+        model.searchText = ""
+        #expect(model.visibleIDs == all)
+        model.searchText = "   "
+        #expect(model.visibleIDs == all)
+    }
+
+    @Test func testSearchWorksWithItemAndSortOrder() throws {
+        let model = try makeModel()
+        model.sortOrder = .name
+        model.selectedItem = .all
+        model.searchText = ".jpg"
+        #expect(model.visibleIDs == ["a.jpg", "b.jpg", "c.jpg", "d.jpg", "e.jpg", "f.jpg", "h.jpg"].filter { model.visibleIDs.contains($0) })
+        model.selectedItem = .changedByYou
+        model.searchText = "c"
+        #expect(model.visibleIDs == ["c.jpg"])
+        model.searchText = "a"
+        #expect(model.visibleIDs.isEmpty)
+        model.selectedItem = .notSure
+        model.searchText = "d"
+        #expect(model.visibleIDs == ["d.jpg"])
+        model.searchText = "a"
+        #expect(model.visibleIDs.isEmpty)
+    }
+
+    @Test func testSearchDoesNotChangeSidebarCounts() throws {
+        let model = try makeModel()
+        let before = model.sidebarCounts
+        model.searchText = "zzz-no-match"
+        #expect(model.sidebarCounts == before)
+        #expect(model.count == model.count(of: model.selectedItem))
+    }
+
+    @Test func testThumbnailSizeIsClampedAndSaved() throws {
+        let defaults = suite.defaults
+        let (model, _) = try makeModelAndReview(defaults: defaults)
+        #expect(model.thumbnailSize == 160)
+        model.thumbnailSize = 50
+        #expect(model.thumbnailSize == 80)
+        #expect(defaults.double(forKey: "thumbnailSize") == 80)
+        model.thumbnailSize = 999
+        #expect(model.thumbnailSize == 240)
+        #expect(defaults.double(forKey: "thumbnailSize") == 240)
+        model.thumbnailSize = 120
+        let (again, _) = try makeModelAndReview(defaults: defaults)
+        #expect(again.thumbnailSize == 120)
     }
 
     // MARK: - Save errors (final review I4)
