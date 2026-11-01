@@ -63,6 +63,8 @@ enum Theme {
     static let onAccent = ThemeColor(light: 0xFFFFFF, dark: 0xFFFFFF)
     /// Confirmed or kept: score badges, "Changed by you".
     static let confirmed = ThemeColor(light: 0x2A7048, dark: 0x4FB87C)
+    /// Text and glyphs on a filled `confirmed` badge (the Keep badge). 5.98:1 in light, 6.58:1 in dark.
+    static let onConfirmed = ThemeColor(light: 0xFFFFFF, dark: 0x10241A)
     /// Needs review: "Not sure", uncertain scores.
     static let needsReview = ThemeColor(light: 0x855000, dark: 0xE0A030)
     static let destructive = ThemeColor(light: 0xB3261E, dark: 0xFF6B63)

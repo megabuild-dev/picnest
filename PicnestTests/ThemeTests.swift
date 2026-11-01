@@ -55,6 +55,11 @@ final class ThemeTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(Theme.onBadge.dark.contrast(with: blend(Theme.badgeBackground.dark)), 4.5)
     }
 
+    func testOnConfirmedIsReadableOnConfirmedFill() {
+        XCTAssertGreaterThanOrEqual(Theme.onConfirmed.light.contrast(with: Theme.confirmed.light), 4.5)
+        XCTAssertGreaterThanOrEqual(Theme.onConfirmed.dark.contrast(with: Theme.confirmed.dark), 4.5)
+    }
+
     func testColorResolvesPerAppearance() throws {
         let accent = Theme.accent
         XCTAssertNotEqual(accent.light, accent.dark)

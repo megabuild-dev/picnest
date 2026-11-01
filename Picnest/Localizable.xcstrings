@@ -197,6 +197,40 @@
         }
       }
     },
+    "%lld photos go to the Trash" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo goes to the Trash"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos go to the Trash"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh sẽ vào Thùng rác"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld photos need a quick check" : {
       "localizations" : {
         "en" : {
@@ -727,6 +761,22 @@
         }
       }
     },
+    "Clean Up (%lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean Up (%lld)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dọn dẹp (%lld)"
+          }
+        }
+      }
+    },
     "Clean Up All (%lld)" : {
       "localizations" : {
         "vi" : {
@@ -1082,7 +1132,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bản sao y hệt (%lld)"
+            "value" : "Bản sao giống hệt (%lld)"
           }
         }
       }
@@ -1227,12 +1277,44 @@
         }
       }
     },
+    "Kept" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kept"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã giữ"
+          }
+        }
+      }
+    },
     "Kind" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loại"
+          }
+        }
+      }
+    },
+    "Kind of duplicates" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kind of duplicates"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loại ảnh trùng"
           }
         }
       }
@@ -1485,16 +1567,6 @@
         }
       }
     },
-    "Move %lld to Trash" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chuyển %lld ảnh vào Thùng rác"
-          }
-        }
-      }
-    },
     "Move the photos that are not marked Keep to the Trash" : {
       "localizations" : {
         "vi" : {
@@ -1715,8 +1787,14 @@
         }
       }
     },
-    "Not Duplicates" : {
+    "Not duplicates" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not duplicates"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2103,7 +2181,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ảnh giống nhau (%lld)"
+            "value" : "Ảnh tương tự (%lld)"
           }
         }
       }
@@ -2604,6 +2682,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Công cụ"
+          }
+        }
+      }
+    },
+    "Trash" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trash"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thùng rác"
           }
         }
       }

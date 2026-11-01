@@ -10,6 +10,7 @@
 		0D135A442D6E88198A5A795D /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */; };
 		16DC62252371603DC3D9DD17 /* SuggestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */; };
 		17B6C890FD0E7560878A2EC6 /* CatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47958C12A51561B635AA7868 /* CatalogTests.swift */; };
+		20386BCE23B82A1E7C242D8D /* DuplicateGroupCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79CA12F607E49B987E75890F /* DuplicateGroupCard.swift */; };
 		219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */; };
 		21ABC7AB273C92070EBEBE84 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989FD2A75D20A49C2832027B /* ScanView.swift */; };
 		23916343736674F0E7E86524 /* AppearanceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FF717F28C895BC0150D447 /* AppearanceStore.swift */; };
@@ -122,6 +123,7 @@
 		6F2D9F900CB1D1EE3B6762AD /* LanguageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageStore.swift; sourceTree = "<group>"; };
 		70654CE25C0D4A3AEB26F66C /* SortMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMessages.swift; sourceTree = "<group>"; };
 		7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeViewModelTests.swift; sourceTree = "<group>"; };
+		79CA12F607E49B987E75890F /* DuplicateGroupCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateGroupCard.swift; sourceTree = "<group>"; };
 		7A59DEB649794DC24646B1F0 /* SortViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortViewModel.swift; sourceTree = "<group>"; };
 		7D2B96D82F0EB454AE50B464 /* NeedsReviewHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeedsReviewHeader.swift; sourceTree = "<group>"; };
 		7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModelTests.swift; sourceTree = "<group>"; };
@@ -277,6 +279,7 @@
 			isa = PBXGroup;
 			children = (
 				0344361077AD59CA5DE3D15A /* CategoryHeaderView.swift */,
+				79CA12F607E49B987E75890F /* DuplicateGroupCard.swift */,
 				501266281830058D97AF399D /* DuplicatesView.swift */,
 				D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */,
 				440CC284BD70E17AD5C652A9 /* EditCategorySheet.swift */,
@@ -520,6 +523,7 @@
 				D5A8270477F96902A7700CB6 /* CategoryHeaderView.swift in Sources */,
 				79E8030F958AF0D6BBA2BA37 /* CoreErrorMessages.swift in Sources */,
 				264EBA9BD31D7B33B1891056 /* CountText.swift in Sources */,
+				20386BCE23B82A1E7C242D8D /* DuplicateGroupCard.swift in Sources */,
 				8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */,
 				219B8CB8814CA69A739B35A1 /* DuplicatesViewModel.swift in Sources */,
 				7EAEAD07DB874250C302D278 /* EditCategorySheet.swift in Sources */,
