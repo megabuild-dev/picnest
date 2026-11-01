@@ -602,7 +602,11 @@ struct ReviewServiceTests {
         s.rename(a.id, to: "Holiday")
         await s.settled()
         #expect(category(a.id, s)?.displayName == "A")
-        #expect(s.folderError != nil)
+        guard case .renameFailed(let from, let to, _) = s.folderError else {
+            Issue.record("Expected renameFailed, got \(String(describing: s.folderError))")
+            return
+        }
+        #expect(from == "A" && to == "Holiday")
         #expect(FileManager.default.fileExists(atPath: source.appending(path: "A/p1.jpg").path))
         #expect(s.session.scan.media.map(\.id) == ["A/p1.jpg", "A/p2.jpg"])
     }
@@ -663,7 +667,7 @@ struct ReviewServiceTests {
         #expect(errors.isEmpty)
         #expect(s.session.trashedIDs == ["A/p1.jpg", "A/p2.jpg"])
         #expect(FileManager.default.fileExists(atPath: source.appending(path: "A/untracked.txt").path))
-        #expect(s.folderError?.contains("\"A\" stays") == true)
+        #expect(s.folderError == .folderKept("A", otherFiles: 3))  // The fake Trash leaves p1 and p2 on disk.
     }
 
     // MARK: - Move to Trash

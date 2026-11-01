@@ -31,12 +31,56 @@
         }
       }
     },
+    "%@ in this category move to the Trash, and the folder \"%@\" is deleted. Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ trong danh mục này sẽ được chuyển vào Thùng rác, và thư mục \"%@\" sẽ bị xóa. Nhấn ⌘Z để trả ảnh về. Tệp không thuộc danh mục này vẫn được giữ lại, thư mục cũng vậy."
+          }
+        }
+      }
+    },
     "%@ still \"Not sure\":" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ vẫn \"Chưa chắc\":"
+          }
+        }
+      }
+    },
+    "%lld files" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld tệp"
+                }
+              }
+            }
           }
         }
       }
@@ -136,40 +180,6 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld ảnh không thể được chuyển. Chúng vẫn ở chỗ cũ."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%lld photos in this category move to the Trash," : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld photo in this category move to the Trash,"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld photos in this category move to the Trash,"
-                }
-              }
-            }
-          }
-        },
-        "vi" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld ảnh trong danh mục này sẽ được chuyển vào Thùng rác,"
                 }
               }
             }
@@ -1890,6 +1900,16 @@
         }
       }
     },
+    "The app scans the folder again and proposes new categories. Your categories and picks are lost. The last sort can no longer be undone." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Không thể hoàn tác lần sắp xếp trước nữa."
+          }
+        }
+      }
+    },
     "The destination is the source folder. Choose another folder." : {
       "localizations" : {
         "vi" : {
@@ -1900,12 +1920,32 @@
         }
       }
     },
-    "The last sort can no longer be undone." : {
+    "The folder \"%@\" could not be removed." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Không thể hoàn tác lần sắp xếp trước nữa."
+            "value" : "Không thể xóa thư mục \"%@\"."
+          }
+        }
+      }
+    },
+    "The folder \"%@\" could not be renamed to \"%@\": %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể đổi tên thư mục \"%@\" thành \"%@\": %@"
+          }
+        }
+      }
+    },
+    "The folder \"%@\" stays, because it holds %@ that were not in this category." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục \"%@\" vẫn được giữ lại, vì nó chứa %@ không thuộc danh mục này."
           }
         }
       }
@@ -2136,16 +2176,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "đã có một tệp ở vị trí ban đầu của nó"
-          }
-        }
-      }
-    },
-    "and the folder \"%@\" is deleted. Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "và thư mục \"%@\" sẽ bị xóa. Nhấn ⌘Z để trả ảnh về. Tệp không thuộc danh mục này vẫn được giữ lại, thư mục cũng vậy."
           }
         }
       }

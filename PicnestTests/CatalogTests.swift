@@ -29,7 +29,7 @@ struct CatalogTests {
         let strings: [String: Entry]
     }
 
-    /// This file is in `PicnestTests/`: 3 steps up from `#filePath` (file, folder, repo root) reach the repo root.
+    /// This file is in `PicnestTests/`: 2 steps up from `#filePath` (the file, then `PicnestTests/`) reach the repo root.
     static let catalogURL = URL(filePath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()  // PicnestTests/, then the repo root
         .appending(path: "Picnest/Localizable.xcstrings")

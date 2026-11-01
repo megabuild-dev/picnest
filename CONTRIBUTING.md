@@ -31,6 +31,13 @@ xcodebuild test -project Picnest.xcodeproj -scheme Picnest -destination 'platfor
 
 The app tests need the model files. The core tests do not.
 
+## Translate Picnest
+
+All UI text is in `Picnest/Localizable.xcstrings`. English is the source language, and `vi` is the first translation.
+After you add or change a text in Swift, build the app, then run `python3 -I scripts/sync-string-catalog.py`.
+The script adds each new key to the catalog. Give every new key a `vi` value with state `translated`.
+`python3 -I scripts/sync-string-catalog.py --check` shows keys that the catalog lacks. The tests fail on a key with no `vi` value.
+
 ## Code rules
 
 - **Layers.** Code flows UI → services → repositories → system APIs. Views have no business logic. Services do not read files or call Core ML directly.

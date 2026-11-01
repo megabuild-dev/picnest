@@ -10,6 +10,8 @@ enum CoreErrorMessages {
             return SortMessages.text(for: error)
         case let error as TrashError:
             return text(for: error)
+        case let error as FolderError:
+            return text(for: error)
         case EmbedderError.unreadable(let url):
             return String(localized: "Picnest could not read “\(url.lastPathComponent)”.")
         case let failure as CoreMLEmbedder.Failure:
@@ -21,6 +23,18 @@ enum CoreErrorMessages {
             return String(localized: "A file of the model is missing or damaged. Install Picnest again.")
         default:
             return error.localizedDescription
+        }
+    }
+
+    /// The alert text of a category folder that could not be renamed or removed.
+    static func text(for error: FolderError) -> String {
+        switch error {
+        case .renameFailed(let old, let new, let reason):
+            return String(localized: "The folder \"\(old)\" could not be renamed to \"\(new)\": \(reason)")
+        case .folderKept(let folder, let others):
+            return String(localized: "The folder \"\(folder)\" stays, because it holds \(CountText.files(others)) that were not in this category.")
+        case .folderNotRemoved(let folder):
+            return String(localized: "The folder \"\(folder)\" could not be removed.")
         }
     }
 

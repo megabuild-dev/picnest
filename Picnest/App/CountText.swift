@@ -10,4 +10,8 @@ enum CountText {
     static func folders(_ n: Int, locale: Locale = .current) -> String {
         String(localized: "\(n) folders", locale: locale)
     }
+
+    static func files(_ n: Int, locale: Locale = .current) -> String {
+        String(localized: "\(n) files", locale: locale)
+    }
 }

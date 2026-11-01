@@ -85,7 +85,8 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Picnest/Picnest.entitlements
         # The model scripts read and write folders, which the script sandbox does not allow.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
-        # Xcode reads the strings in Swift code into the String Catalog on each build.
+        # Each build extracts the strings in Swift code (*.stringsdata). Only the Xcode app writes them into the
+        # catalog, so run scripts/sync-string-catalog.py after a build (--check fails when the catalog differs).
         SWIFT_EMIT_LOC_STRINGS: YES
         LOCALIZATION_PREFERS_STRING_CATALOGS: YES
         # The 1 place that sets the model size (a MobileCLIPSize.modelStem). The scripts below copy

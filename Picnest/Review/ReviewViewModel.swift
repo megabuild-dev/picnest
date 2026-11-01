@@ -277,8 +277,9 @@ final class ReviewViewModel {
 
     /// The text of the Start Over confirmation.
     var startOverMessage: String {
-        let text = String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost.")
-        return canUndoLastSort ? text + " " + String(localized: "The last sort can no longer be undone.") : text
+        canUndoLastSort
+            ? String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. The last sort can no longer be undone.")
+            : String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost.")
     }
 
     /// File > **Start Over…**: shows the confirmation.
@@ -614,7 +615,7 @@ final class ReviewViewModel {
     // MARK: - Category edits
 
     /// Why the last folder rename failed, or nil. The alert of the review screen shows it.
-    var folderErrorMessage: String? { review.folderError }
+    var folderErrorMessage: String? { review.folderError.map(CoreErrorMessages.text(for:)) }
 
     func dismissFolderError() { review.dismissFolderError() }
 
@@ -628,9 +629,8 @@ final class ReviewViewModel {
     /// The warning of that dialog: the photos go to the Trash and the folder goes too.
     func deleteMessage(for c: CategoryID) -> String {
         let folder = SortPlanner.folderNames(for: review.session.categories)[c] ?? categoryName(c)
-        let photos = review.photoIDs(in: c).count
-        return String(localized: "\(photos) photos in this category move to the Trash,") + " "
-            + String(localized: "and the folder \"\(folder)\" is deleted. Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder.")
+        let photos = CountText.photos(review.photoIDs(in: c).count)
+        return String(localized: "\(photos) in this category move to the Trash, and the folder \"\(folder)\" is deleted. Press ⌘Z to put the photos back. A file that is not in this category stays, and so does the folder.")
     }
 
     private func categoryName(_ c: CategoryID) -> String {
