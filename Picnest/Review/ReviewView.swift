@@ -33,7 +33,7 @@ struct ReviewView: View {
     var body: some View {
         NavigationSplitView {
             SidebarView(model: model)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 320)
+                .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
         } detail: {
             detail
                 .background(.background)

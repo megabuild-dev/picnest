@@ -496,11 +496,11 @@ struct ReviewViewModelTests {
 
     @Test func titleShowsEmojiForCategories() throws {
         let model = try makeModel()
-        #expect(model.title == "All photos")
+        #expect(model.title == "All Photos")
         model.selectedItem = .category(food.id)
         #expect(model.title == "🍜 Food")
         model.selectedItem = .notSure
-        #expect(model.title == "Not sure")
+        #expect(model.title == "Needs Review")
     }
 
     @Test func columnsDefaultToThreeAndStayInRange() throws {

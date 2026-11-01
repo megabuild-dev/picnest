@@ -389,7 +389,7 @@
         }
       }
     },
-    "All photos" : {
+    "All Photos" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -509,16 +509,6 @@
         }
       }
     },
-    "Changed by you" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bạn đã thay đổi"
-          }
-        }
-      }
-    },
     "Change…" : {
       "localizations" : {
         "vi" : {
@@ -575,6 +565,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hãy chọn một thư mục nằm ngoài thư mục nguồn."
+          }
+        }
+      }
+    },
+    "Chosen by you" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã chọn"
           }
         }
       }
@@ -969,6 +969,16 @@
         }
       }
     },
+    "Library" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư viện"
+          }
+        }
+      }
+    },
     "Light" : {
       "localizations" : {
         "vi" : {
@@ -1237,6 +1247,16 @@
         }
       }
     },
+    "Needs Review" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cần xem lại"
+          }
+        }
+      }
+    },
     "New Category" : {
       "localizations" : {
         "vi" : {
@@ -1317,16 +1337,6 @@
         }
       }
     },
-    "Not sure" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chưa chắc"
-          }
-        }
-      }
-    },
     "Nothing left to check." : {
       "localizations" : {
         "vi" : {
@@ -1393,16 +1403,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bản gốc vẫn ở trong thư mục nguồn."
-          }
-        }
-      }
-    },
-    "Other" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Khác"
           }
         }
       }
@@ -1616,16 +1616,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hiện trong Finder"
-          }
-        }
-      }
-    },
-    "Review" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Xem lại"
           }
         }
       }

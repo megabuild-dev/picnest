@@ -232,9 +232,9 @@ final class ReviewViewModel {
 
     var title: String {
         switch selectedItem {
-        case .all: String(localized: "All photos")
-        case .notSure: String(localized: "Not sure")
-        case .changedByYou: String(localized: "Changed by you")
+        case .all: String(localized: "All Photos")
+        case .notSure: String(localized: "Needs Review")
+        case .changedByYou: String(localized: "Chosen by you")
         case .category(let c):
             review.session.categories.first { $0.id == c }.map { "\($0.emoji) \($0.displayName)" }
                 ?? String(localized: "Category")
