@@ -42,6 +42,7 @@ struct SelectableTile: View {
     var body: some View {
         PhotoTile(model: model, id: id, isSelected: isSelected)
             .photoInteractions(model: model, id: id, onTap: onTap)
+            .tileFavorite(model: model, id: id)
     }
 }
 
@@ -134,6 +135,12 @@ struct PhotoGridInteractions<Content: View>: View {
             .onKeyPress(keys: [.delete, .deleteForward], phases: .down) { press in
                 guard press.modifiers == .command, !model.selection.isEmpty else { return .ignored }
                 Task { await model.trashSelection() }
+                return .handled
+            }
+            // `.` toggles the favorite of the selection. Only the focused grid gets it, never a text field.
+            .onKeyPress(characters: CharacterSet(charactersIn: "."), phases: .down) { press in
+                guard press.modifiers.isEmpty, model.canFavoriteSelection else { return .ignored }
+                model.toggleFavoriteSelection()
                 return .handled
             }
             .onKeyPress(characters: .decimalDigits, phases: .down) { press in

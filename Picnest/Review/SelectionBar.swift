@@ -30,18 +30,22 @@ struct SelectionBar: View {
         HStack(spacing: 10) {
             Text("\(model.selection.count) selected").fontWeight(.bold).monospacedDigit()
             SelectionActions(model: model)
-            // The hints drop out, the right one first, when the window is narrow.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 10) {
-                    hint
-                    Spacer(minLength: 10)
-                    shortcuts
-                }
-                HStack(spacing: 10) {
-                    hint
+            if model.bodyKind == .recentlyDeleted {
+                Spacer(minLength: 0)
+            } else {
+                // The hints drop out, the right one first, when the window is narrow.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        hint
+                        Spacer(minLength: 10)
+                        shortcuts
+                    }
+                    HStack(spacing: 10) {
+                        hint
+                        Spacer(minLength: 0)
+                    }
                     Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
             }
         }
         .buttonStyle(.bordered)
@@ -73,12 +77,22 @@ struct SelectionBar: View {
     }
 }
 
-/// The buttons that act on the selection: **Accept Best Guess**, **Move to…**, **Don't Move**, **Move to Trash**.
-/// The selection bar and the inspector share them. The caller puts them in a stack.
+/// The buttons that act on the selection: **Accept Best Guess**, **Move to…**, **Don't Move**, **Move to Trash**,
+/// and the more menu. In Recently Deleted only **Put Back**. The selection bar and the inspector share them.
+/// The caller puts them in a stack.
 struct SelectionActions: View {
     let model: ReviewViewModel
 
     var body: some View {
+        if model.bodyKind == .recentlyDeleted {
+            Button("Put Back", systemImage: "arrow.uturn.backward", action: model.putBackSelection)
+                .help("Move the selected photos out of the Trash, back to their places")
+        } else {
+            libraryActions
+        }
+    }
+
+    @ViewBuilder private var libraryActions: some View {
         if model.canAcceptSelection {
             Button("Accept Best Guess", systemImage: "checkmark", action: model.acceptSelection)
                 .tint(Theme.accent.color)
@@ -91,6 +105,34 @@ struct SelectionActions: View {
             .help("Keep the selected photos where they are")
         Button("Move to Trash", systemImage: "trash") { Task { await model.trashSelection() } }
             .help("Move the selected photos to the Trash. Undo puts them back.")
+        Menu("More", systemImage: "ellipsis") { FavoriteCollectionMenuItems(model: model, targets: Array(model.selection)) }
+            .menuStyle(.button).labelStyle(.iconOnly).fixedSize()
+    }
+}
+
+/// The items for favorites and collections: **Add to Favorites** or **Remove from Favorites**, **Add to Collection**,
+/// and **Remove from Collection** in a collection. The selection bar and the photo context menu share them.
+struct FavoriteCollectionMenuItems: View {
+    let model: ReviewViewModel
+    /// The photos that the items act on. They decide the text of the favorite item.
+    let targets: [MediaID]
+    /// Runs before each action. The context menu selects its photo here.
+    var beforeAction: () -> Void = {}
+
+    var body: some View {
+        Button(FavoriteText.title(isFavorite: model.allFavorites(targets))) {
+            beforeAction(); model.toggleFavoriteSelection()
+        }
+        Menu("Add to Collection") {
+            ForEach(model.collections) { collection in
+                Button(collection.name) { beforeAction(); model.addSelection(to: collection.id) }
+            }
+            if !model.collections.isEmpty { Divider() }
+            Button("New Collection…") { beforeAction(); model.requestNewCollectionFromSelection() }
+        }
+        if model.canRemoveFromCollection {
+            Button("Remove from Collection") { beforeAction(); model.removeSelectionFromCollection() }
+        }
     }
 }
 
@@ -124,6 +166,14 @@ struct PhotoContextMenu: View {
 
     var body: some View {
         // Building the menu changes nothing. Each action selects the photo first.
+        if model.bodyKind == .recentlyDeleted {
+            Button("Put Back") { model.contextMenuSelect(id); model.putBackSelection() }
+        } else {
+            libraryItems
+        }
+    }
+
+    @ViewBuilder private var libraryItems: some View {
         Button("Quick Look") { model.contextMenuSelect(id); model.openPreview(id) }
         Button("Open") { model.contextMenuSelect(id); model.openInDefaultApp(id) }
         Button("Show in Finder") { model.contextMenuSelect(id); model.showInFinder() }
@@ -140,6 +190,8 @@ struct PhotoContextMenu: View {
             Button("Accept Best Guess") { model.contextMenuSelect(id); model.acceptSelection() }
         }
         Button("Don't Move") { model.contextMenuSelect(id); model.dontMoveSelection() }
+        Divider()
+        FavoriteCollectionMenuItems(model: model, targets: model.contextTargets(for: id)) { model.contextMenuSelect(id) }
         Divider()
         Button("Move to Trash") { model.contextMenuSelect(id); Task { await model.trashSelection() } }
     }

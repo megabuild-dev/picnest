@@ -37,6 +37,17 @@ struct ReviewView: View {
     }
 
     var body: some View {
+        alerts
+            // The suggest sheet opens by itself once after a scan (spec 3.7).
+            .task { model.suggestAfterScanIfNeeded() }
+            .onChange(of: model.isNamingNewCategory) { if model.isNamingNewCategory { newCategoryName = "" } }
+            // Edit > Undo and Redo act on this review (ReviewCommands).
+            .focusedSceneValue(\.review, model)
+            .overlay { organizingOverlay }
+    }
+
+    /// The screen with its sheets and dialogs. Split from `body` so the compiler type-checks it in time.
+    private var screen: some View {
         NavigationSplitView {
             SidebarView(model: model, preferences: preferences)
                 .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
@@ -93,6 +104,11 @@ struct ReviewView: View {
         } message: {
             Text("The photos stay in their folders.")
         }
+    }
+
+    /// The alerts and the confirmation dialogs.
+    private var alerts: some View {
+        screen
         .sheet(item: Bindable(model).suggest) { SuggestSheet(model: $0) }
         .alert("Undo Last Sort", isPresented: undoMessageBinding) {
             Button("OK", role: .cancel) { model.undoSortMessage = nil }
@@ -117,6 +133,11 @@ struct ReviewView: View {
         } message: {
             Text(model.trashMessage ?? "")
         }
+        .alert("Put Back", isPresented: putBackErrorBinding) {
+            Button("OK", role: .cancel) { model.putBackErrorMessage = nil }
+        } message: {
+            Text(model.putBackErrorMessage ?? "")
+        }
         .alert("Category Folder", isPresented: folderErrorBinding) {
             Button("OK", role: .cancel) { model.dismissFolderError() }
         } message: {
@@ -135,12 +156,6 @@ struct ReviewView: View {
         } message: {
             Text(model.organizeErrorMessage ?? "")
         }
-        // The suggest sheet opens by itself once after a scan (spec 3.7).
-        .task { model.suggestAfterScanIfNeeded() }
-        .onChange(of: model.isNamingNewCategory) { if model.isNamingNewCategory { newCategoryName = "" } }
-        // Edit > Undo and Redo act on this review (ReviewCommands).
-        .focusedSceneValue(\.review, model)
-        .overlay { organizingOverlay }
     }
 
     /// A blocking overlay while **Done** moves the classified photos into category folders (spec 7.2).
@@ -258,6 +273,10 @@ struct ReviewView: View {
 
     private var trashMessageBinding: Binding<Bool> {
         Binding(get: { model.trashMessage != nil }, set: { if !$0 { model.trashMessage = nil } })
+    }
+
+    private var putBackErrorBinding: Binding<Bool> {
+        Binding(get: { model.putBackErrorMessage != nil }, set: { if !$0 { model.putBackErrorMessage = nil } })
     }
 
     private var deletingCollectionBinding: Binding<Bool> {

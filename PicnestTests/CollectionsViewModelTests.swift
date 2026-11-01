@@ -228,4 +228,29 @@ struct CollectionsViewModelTests {
         #expect(review.session.trashedIDs == ["a.jpg"])
         #expect(model.visibleIDs == ["a.jpg"])
     }
+
+    // MARK: - Favorite actions and thumbnails of trashed photos (UI redesign 3.8)
+
+    @Test func testToggleFavoriteOfOnePhotoLeavesTheSelection() throws {
+        let (model, review) = try make()
+        select(model, ["a.jpg", "b.jpg"])
+        model.toggleFavorite("c.jpg")
+        #expect(review.session.favoriteIDs == ["c.jpg"])
+        #expect(model.selection == ["a.jpg", "b.jpg"])
+        model.toggleFavorite("c.jpg")
+        #expect(review.session.favoriteIDs.isEmpty)
+    }
+
+    @Test func testFavoriteMenuTitleFollowsTheTargets() throws {
+        let (model, _) = try make { $0.favoriteIDs = ["a.jpg"] }
+        #expect(model.allFavorites(["a.jpg"]))
+        #expect(!model.allFavorites(["a.jpg", "b.jpg"]))
+        #expect(!model.allFavorites([]))
+    }
+
+    @Test func testTileLabelNamesAFavorite() throws {
+        let (model, _) = try make { $0.favoriteIDs = ["a.jpg"] }
+        #expect(model.tile("a.jpg").accessibilityLabel.contains("Favorite"))
+        #expect(!model.tile("b.jpg").accessibilityLabel.contains("Favorite"))
+    }
 }

@@ -757,6 +757,7 @@ final class ReviewViewModel {
             if let a = Self.assignment(state) { parts.append("\(a.percent)%") }
         }
         if state?.isManual == true { parts.append(String(localized: "Chosen by you")) }
+        if isFavorite(id) { parts.append(String(localized: "Favorite")) }
         if selection.contains(id) { parts.append(String(localized: "selected")) }
         return parts.joined(separator: ", ")
     }
@@ -820,6 +821,10 @@ final class ReviewViewModel {
     }
 
     func thumbnail(_ id: MediaID, maxPixel: Int) async -> CGImage? {
+        // A trashed photo is no longer under the source folder: read it from the Trash.
+        if let record = review.session.trashed.first(where: { $0.mediaID == id }) {
+            return await thumbnails.thumbnail(at: URL(filePath: record.trashPath), maxPixel: maxPixel)
+        }
         guard let media = mediaByID[id] else { return nil }
         return await thumbnails.thumbnail(for: media, source: source, maxPixel: maxPixel)
     }
@@ -922,7 +927,7 @@ final class ReviewViewModel {
             if !selection.contains(id) { selection = [id] }
             anchor = id
         }
-        guard let anchor, let media = mediaByID[anchor] else { return }
+        guard bodyKind != .recentlyDeleted, let anchor, let media = mediaByID[anchor] else { return }
         previewURL = url(of: media)
     }
 
@@ -947,7 +952,8 @@ final class ReviewViewModel {
     @discardableResult
     func moveSelection(toKey n: Int) -> Bool {
         let categories = categories
-        guard !selection.isEmpty, (1...9).contains(n), n <= categories.count else { return false }
+        guard bodyKind != .recentlyDeleted, !selection.isEmpty, (1...9).contains(n), n <= categories.count
+        else { return false }
         moveSelection(to: categories[n - 1].id)
         return true
     }
@@ -990,7 +996,7 @@ final class ReviewViewModel {
     /// puts them back. A photo that cannot move stays, and `trashMessage` tells why.
     func trashSelection() async {
         let ids = selectedInGridOrder
-        guard !ids.isEmpty else { return }
+        guard bodyKind != .recentlyDeleted, !ids.isEmpty else { return }
         let errors = await review.moveToTrash(ids)
         clearSelection()
         showTrashErrors(errors)
@@ -1210,10 +1216,31 @@ final class ReviewViewModel {
 
     func isFavorite(_ id: MediaID) -> Bool { review.session.favoriteIDs.contains(id) }
 
+    /// True when `ids` has photos and all of them are favorites: the toggle then removes them.
+    func allFavorites(_ ids: [MediaID]) -> Bool { !ids.isEmpty && ids.allSatisfy(isFavorite) }
+
+    /// The heart of 1 photo. It does not change the selection.
+    func toggleFavorite(_ id: MediaID) { review.toggleFavorite([id]) }
+
+    /// The key `.` and the favorite items work on the selection, but not in Recently Deleted.
+    var canFavoriteSelection: Bool { bodyKind != .recentlyDeleted && !selection.isEmpty }
+
+    /// True in a collection: the photos can leave it.
+    var canRemoveFromCollection: Bool {
+        if case .collection = selectedItem { true } else { false }
+    }
+
+    /// Opens the new collection sheet with the selection in it.
+    func requestNewCollectionFromSelection() {
+        let ids = selectedInGridOrder
+        guard !ids.isEmpty else { return }
+        requestNewCollection(adding: ids)
+    }
+
     /// Adds the selection to the favorites, or removes it when every selected photo is a favorite.
     func toggleFavoriteSelection() {
         let ids = selectedInGridOrder
-        guard !ids.isEmpty else { return }
+        guard bodyKind != .recentlyDeleted, !ids.isEmpty else { return }
         review.toggleFavorite(ids)
     }
 

@@ -41,6 +41,11 @@ struct PhotoTile: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(tile.accessibilityLabel)
         .accessibilityAddTraits(isSelected ? [.isImage, .isSelected] : .isImage)
+        .accessibilityActions {
+            if model.bodyKind != .recentlyDeleted {
+                Button(action: { model.toggleFavorite(id) }) { Text(FavoriteText.title(isFavorite: model.isFavorite(id))) }
+            }
+        }
     }
 
     private func caption(_ tile: ReviewViewModel.TileModel) -> some View {

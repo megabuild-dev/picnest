@@ -613,6 +613,26 @@
         }
       }
     },
+    "Add to Collection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm vào bộ sưu tập"
+          }
+        }
+      }
+    },
+    "Add to Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm vào Yêu thích"
+          }
+        }
+      }
+    },
     "All" : {
       "localizations" : {
         "vi" : {
@@ -1289,6 +1309,16 @@
         }
       }
     },
+    "Favorite" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yêu thích"
+          }
+        }
+      }
+    },
     "Favorites" : {
       "localizations" : {
         "vi" : {
@@ -1793,6 +1823,16 @@
         }
       }
     },
+    "Move the selected photos out of the Trash, back to their places" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đưa các ảnh đã chọn ra khỏi Thùng rác, về lại vị trí cũ"
+          }
+        }
+      }
+    },
     "Move the selected photos to the Trash. Undo puts them back." : {
       "localizations" : {
         "vi" : {
@@ -1909,6 +1949,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bộ sưu tập mới"
+          }
+        }
+      }
+    },
+    "New Collection…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ sưu tập mới…"
           }
         }
       }
@@ -2222,6 +2272,16 @@
         }
       }
     },
+    "Put Back" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt lại"
+          }
+        }
+      }
+    },
     "Put each one in its most likely category." : {
       "localizations" : {
         "vi" : {
@@ -2288,6 +2348,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Làm lại"
+          }
+        }
+      }
+    },
+    "Remove from Collection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa khỏi bộ sưu tập"
+          }
+        }
+      }
+    },
+    "Remove from Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa khỏi Yêu thích"
           }
         }
       }

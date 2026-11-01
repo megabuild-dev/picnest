@@ -106,9 +106,13 @@ private struct SinglePhoto: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             preview
-            Text(verbatim: facts.name)
-                .font(.system(size: 15, weight: .bold))
-                .textSelection(.enabled)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: facts.name)
+                    .font(.system(size: 15, weight: .bold))
+                    .textSelection(.enabled)
+                Spacer(minLength: 0)
+                if model.bodyKind != .recentlyDeleted { FavoriteButton(model: model, id: facts.id) }
+            }
             VStack(alignment: .leading, spacing: 8) {
                 row("Category") { status }
                 row("Date") {
@@ -187,7 +191,17 @@ private struct SinglePhoto: View {
         .background(Theme.needsReview.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    private var actions: some View {
+    @ViewBuilder private var actions: some View {
+        if model.bodyKind == .recentlyDeleted {
+            Button("Put Back", systemImage: "arrow.uturn.backward", action: model.putBackSelection)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+        } else {
+            libraryActions
+        }
+    }
+
+    private var libraryActions: some View {
         HStack(spacing: 8) {
             if facts.isUncertain {
                 Button("Accept suggestion", systemImage: "checkmark", action: model.acceptSelection)
