@@ -25,9 +25,9 @@ struct ThumbnailImage: View {
         if let image {
             Image(decorative: image, scale: 1).resizable().scaledToFill()
         } else {
-            Rectangle().fill(.quaternary).overlay {
+            Rectangle().fill(Theme.placeholderFill.color).overlay {
                 if failed {
-                    Image(systemName: "photo").font(.title2).foregroundStyle(.tertiary)
+                    Image(systemName: "photo").font(.title2).foregroundStyle(Theme.placeholderGlyph.color)
                 }
             }
         }

@@ -26,7 +26,7 @@ struct NeedsReviewTests {
     /// Pets n6 20%, x1 (a placeholder guess of a photo with no vector: score 0, percent 0).
     /// So percent and weak score disagree for trip2 (40%, weak), trip4 (70%, weak) and n3 (45%, not weak).
     /// n3 and trip4 are similar photos. ok.jpg is certain.
-    private func makeModel() throws -> ReviewViewModel {
+    private func makeModel(search: DuplicatesViewModel.Search? = nil) throws -> ReviewViewModel {
         let source = try temp.folder("Photos")
         let spec: [(String, PicnestCore.Category, Int, Float)] = [
             ("trip1.jpg", food, 50, 0.3), ("trip2.jpg", food, 40, 0.1), ("n3.jpg", food, 45, 0.3),
@@ -67,7 +67,7 @@ struct NeedsReviewTests {
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
             library: environment.library, app: AppModel(environment: environment), onRescan: {},
-            defaults: suite.defaults)
+            defaults: suite.defaults, duplicateSearch: search)
         model.selectedItem = .notSure
         return model
     }
@@ -87,14 +87,14 @@ struct NeedsReviewTests {
     @Test func testSelectGroupSelectsOnlyMatches() throws {
         let model = try makeModel()
         model.searchText = "trip"
-        model.selectGroup(at: 0)
+        model.selectGroup(model.notSureGroups[0])
         #expect(model.selection == ["trip1.jpg", "trip2.jpg"])
     }
 
     @Test func testAcceptGroupAcceptsOnlyMatches() throws {
         let model = try makeModel()
         model.searchText = "trip"
-        model.acceptGroup(at: 0)
+        model.acceptGroup(model.notSureGroups[0])
         #expect(model.count(of: .changedByYou) == 2)
         #expect(model.count(of: .notSure) == 5)
         model.searchText = ""
@@ -196,6 +196,133 @@ struct NeedsReviewTests {
         model.acceptAll()
         #expect(model.count(of: .changedByYou) == 2)
         #expect(model.count(of: .notSure) == 5)
+    }
+
+    @Test func testLeavingTheSimilarFilterCancelsTheSearch() async throws {
+        let model = try makeModel()
+        model.reviewIssue = .similarPhotos
+        let search = try #require(model.similarSearch)
+        model.reviewIssue = nil
+        #expect(search.isCancelled)
+        #expect(model.similarSearch == nil)
+        await search.value
+        #expect(model.duplicates.state == .idle)  // A cancelled search is idle, not found and not stuck finding.
+        #expect(model.visibleIDs.count == 7)
+    }
+
+    @Test func testChoosingAnotherIssueOrItemCancelsTheSearch() async throws {
+        let model = try makeModel()
+        model.reviewIssue = .similarPhotos
+        let first = try #require(model.similarSearch)
+        model.reviewIssue = .lowConfidence
+        #expect(first.isCancelled)
+        model.reviewIssue = .similarPhotos
+        let second = try #require(model.similarSearch)
+        model.selectedItem = .all  // Leaving Needs Review clears the issue.
+        #expect(second.isCancelled)
+        #expect(model.similarSearch == nil)
+        await first.value
+        await second.value
+        #expect(model.duplicates.state == .idle)
+    }
+
+    @Test func testSimilarSearchRunsAgainAfterACancel() async throws {
+        let model = try makeModel()
+        model.reviewIssue = .similarPhotos
+        let first = try #require(model.similarSearch)
+        model.reviewIssue = nil
+        await first.value
+        model.reviewIssue = .similarPhotos
+        let second = try #require(model.similarSearch)
+        await second.value
+        #expect(Set(model.visibleIDs) == ["n3.jpg", "trip4.jpg"])
+        #expect(model.duplicates.state == .ready)
+        #expect(model.similarSearch != nil)  // Finished: the task stays until the filter changes, and is harmless.
+    }
+
+    /// A duplicate search that pauses until the test resumes it, 1 run at a time (first in, first out).
+    @MainActor private final class PausedSearch {
+        private(set) var calls = 0
+        private var waiting: [CheckedContinuation<Void, Never>] = []
+
+        var search: DuplicatesViewModel.Search {
+            { [self] _ in
+                calls += 1
+                await withCheckedContinuation { waiting.append($0) }
+                return []
+            }
+        }
+
+        func resumeOldest() { if !waiting.isEmpty { waiting.removeFirst().resume() } }
+    }
+
+    private func wait(_ condition: () -> Bool) async {
+        for _ in 0..<2000 where !condition() { await Task.yield() }
+    }
+
+    private func isFinding(_ d: DuplicatesViewModel) -> Bool {
+        if case .finding = d.state { return true }
+        return false
+    }
+
+    // Scenario A: Similar photos runs, then the user opens Duplicates. The search must start again, not stay idle.
+    @Test func testOpeningDuplicatesWhileTheSimilarSearchRunsStartsANewSearch() async throws {
+        let stub = PausedSearch()
+        let model = try makeModel(search: stub.search)
+        model.reviewIssue = .similarPhotos
+        await wait { stub.calls == 1 }
+        model.selectedItem = .duplicates
+        #expect(model.duplicates.state == .idle)  // Freed at once.
+        let view = Task { await model.duplicates.find() }  // The Duplicates view starts its search.
+        await wait { stub.calls == 2 }
+        #expect(isFinding(model.duplicates))
+        stub.resumeOldest()  // The stale run ends: it writes nothing.
+        for _ in 0..<200 { await Task.yield() }  // Let the stale run end.
+        #expect(isFinding(model.duplicates))
+        stub.resumeOldest()
+        await view.value
+        #expect(model.duplicates.state == .empty)
+        #expect(model.duplicates.findCount == 2)
+    }
+
+    // Scenario A2: the Duplicates view leaves and comes back before the old run ends.
+    @Test func testLeavingAndReturningToDuplicatesStartsANewSearch() async throws {
+        let stub = PausedSearch()
+        let model = try makeModel(search: stub.search)
+        let first = Task { await model.duplicates.find() }
+        await wait { stub.calls == 1 }
+        first.cancel()  // The view task is cancelled when the view goes away.
+        await wait { model.duplicates.state == .idle }
+        #expect(model.duplicates.state == .idle)
+        let second = Task { await model.duplicates.find() }
+        await wait { stub.calls == 2 }
+        stub.resumeOldest()
+        await first.value
+        #expect(isFinding(model.duplicates))  // The old run did not set idle.
+        stub.resumeOldest()
+        await second.value
+        #expect(model.duplicates.state == .empty)
+        #expect(model.duplicates.findCount == 2)
+    }
+
+    // Scenario B: Similar photos off and on again quickly.
+    @Test func testTogglingTheSimilarFilterQuicklyKeepsOneRunningSearch() async throws {
+        let stub = PausedSearch()
+        let model = try makeModel(search: stub.search)
+        model.reviewIssue = .similarPhotos
+        await wait { stub.calls == 1 }
+        let first = try #require(model.similarSearch)
+        model.reviewIssue = nil
+        model.reviewIssue = .similarPhotos
+        let second = try #require(model.similarSearch)
+        await wait { stub.calls == 2 }
+        stub.resumeOldest()
+        await first.value
+        #expect(isFinding(model.duplicates))
+        stub.resumeOldest()
+        await second.value
+        #expect(model.duplicates.state == .empty)
+        #expect(model.duplicates.findCount == 2)
     }
 
     @Test func testLeavingNeedsReviewClearsIssue() throws {

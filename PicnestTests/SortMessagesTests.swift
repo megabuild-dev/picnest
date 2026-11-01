@@ -47,6 +47,15 @@ struct SortMessagesTests {
         #expect(CountText.photos(1000, locale: en) == "1,000 photos")
     }
 
+    @Test func testReviewCountTextsHaveSeparatorsAndPlurals() {
+        let en = Locale(identifier: "en_US")
+        #expect(CountText.photos(2413, locale: en) == "2,413 photos")
+        #expect(CountText.needQuickCheck(1, locale: en) == "1 photo needs a quick check")
+        #expect(CountText.needQuickCheck(2413, locale: en) == "2,413 photos need a quick check")
+        #expect(CountText.photosSelected(1, locale: en) == "1 photo selected")
+        #expect(CountText.photosSelected(1200, locale: en) == "1,200 photos selected")
+    }
+
     /// Each `FolderError` case of the core gives its English text, and the catalog has its key.
     @Test func testFolderErrorMessages() throws {
         let strings = try CatalogTests.load().strings

@@ -68,8 +68,13 @@ enum Theme {
     /// Needs review: "Needs Review", uncertain scores.
     static let needsReview = ThemeColor(light: 0x855000, dark: 0xE0A030)
     static let destructive = ThemeColor(light: 0xB3261E, dark: 0xFF6B63)
-    /// Selected sidebar row (mockup #F3E3E4).
+    /// Highlight of a chosen card or list row (mockup #F3E3E4). The sidebar rows use the system selection with `accent`.
     static let selection = ThemeColor(light: 0xF3E3E4, dark: 0x3A2A30)
+
+    /// The ground of an image that has not loaded, a progress track, and a key cap, and the glyph on it.
+    /// The glyph reaches 3:1 on the fill, as a non-text mark.
+    static let placeholderFill = ThemeColor(light: 0xEBE5E2, dark: 0x353031)
+    static let placeholderGlyph = ThemeColor(light: 0x847A7F, dark: 0x9A9196)
 
     /// Dark pill on a photo (used at alpha 0.8) and its text. Same in light and dark, because the photo decides the ground.
     static let badgeBackground = ThemeColor(light: 0x1A1618, dark: 0x1A1618)

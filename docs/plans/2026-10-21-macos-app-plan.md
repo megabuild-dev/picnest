@@ -619,7 +619,7 @@ Rules: spec 7.3 steps 1â€“6. Before a new run: if `lastIsComplete() == false` â†
 
 **Interfaces:**
 - Consumes: `ReviewService.notSureGroups`, `acceptGroup`, `acceptAllNotSure` (Task 10).
-- Produces (on `ReviewViewModel`): `var notSureGroups: [NotSureGroup]` with `NotSureGroup { categoryName: String; ids: [MediaID] }`; `func acceptGroup(at index: Int)`; `func selectGroup(at index: Int)`; `func acceptAll()`.
+- Produces (on `ReviewViewModel`): `var notSureGroups: [NotSureGroup]` with `NotSureGroup { categoryName: String; ids: [MediaID] }`; `func acceptGroup(_ group: NotSureGroup)`; `func selectGroup(_ group: NotSureGroup)`; `func acceptAll()`.
 
 - [ ] **Step 1: Write the failing tests**: groups are largest first; `acceptGroup` empties that group and raises "Changed by you" by its size; `acceptAll` leaves "Not sure" empty; undo after `acceptAll` restores all groups.
 - [ ] **Step 2: Run them.** Expected: FAIL.

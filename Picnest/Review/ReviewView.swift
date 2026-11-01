@@ -40,7 +40,7 @@ struct ReviewView: View {
                 .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
         } detail: {
             detail
-                .background(.background)
+                .background(Theme.background.color)
                 .navigationTitle(model.title)
                 .navigationSubtitle(countText)
                 .searchable(text: Bindable(model).searchText, placement: .toolbar, prompt: "Search")
@@ -146,6 +146,7 @@ struct ReviewView: View {
                     }
                 }
                 .padding(20)
+                // A system blur, not a color: it follows the wallpaper and the appearance.
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                 .shadow(color: Theme.shadow.color.opacity(0.2), radius: 14, y: 6)
             }
@@ -174,7 +175,7 @@ struct ReviewView: View {
     }
 
     /// The photo count under the title, for example "2,413 photos".
-    private var countText: LocalizedStringKey { "\(model.count) photos" }
+    private var countText: String { CountText.photos(model.count) }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {

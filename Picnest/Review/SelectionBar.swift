@@ -20,6 +20,7 @@ struct SelectionBar: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        // A system blur, not a color: it follows the wallpaper and the appearance.
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.textPrimary.color.opacity(0.1), lineWidth: 0.5))
         .shadow(color: Theme.shadow.color.opacity(0.14), radius: 11, y: 6)
@@ -155,7 +156,7 @@ private struct KeyCap: View {
             .font(.system(size: 11, design: .monospaced))
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
-            .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 4))
+            .background(Theme.placeholderFill.color, in: RoundedRectangle(cornerRadius: 4))
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.textPrimary.color.opacity(0.15), lineWidth: 0.5))
     }
 }

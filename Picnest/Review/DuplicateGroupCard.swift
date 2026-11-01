@@ -14,16 +14,13 @@ struct DuplicateGroupCard: View {
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: 12) {
                     ForEach(group.ids, id: \.self) { id in
-                        DuplicateTile(model: model, id: id, isKeep: model.isKeep(id, in: group)) {
-                            model.toggleKeep(id, in: group)
-                            onTap()
-                        }
-                        // Double-click first, so a double-click never changes Keep.
-                        .onTapGesture(count: 2) { model.openPreview(id) }
-                        .onTapGesture {
-                            model.toggleKeep(id, in: group)
-                            onTap()
-                        }
+                        DuplicateTile(
+                            model: model, id: id, isKeep: model.isKeep(id, in: group),
+                            onChoose: {
+                                model.toggleKeep(id, in: group)
+                                onTap()
+                            },
+                            onOpen: { model.openPreview(id) })
                     }
                 }
                 .padding(4)
@@ -38,7 +35,8 @@ struct DuplicateGroupCard: View {
                 Button(model.trashTitle(of: group)) { Task { await model.trash(group) } }
                     .buttonStyle(.borderedProminent)
                     .disabled(model.trashCount(of: group) == 0 || model.isCleaning)
-                    .accessibilityLabel(model.trashSummary(of: group))
+                    .accessibilityLabel(model.trashTitle(of: group))
+                    .accessibilityHint(model.trashSummary(of: group))
             }
         }
         .padding(14)
@@ -53,7 +51,10 @@ private struct DuplicateTile: View {
     let model: DuplicatesViewModel
     let id: MediaID
     let isKeep: Bool
+    /// One click on the photo or the **Keep** choice: toggles Keep once.
     let onChoose: () -> Void
+    /// A double-click on the photo.
+    let onOpen: () -> Void
 
     @State private var image: CGImage?
     @State private var failed = false
@@ -62,31 +63,38 @@ private struct DuplicateTile: View {
         let tile = model.tile(id)
         let shape = RoundedRectangle(cornerRadius: Theme.Metrics.tileCorner)
         VStack(alignment: .leading, spacing: 5) {
-            Color.clear
-                .aspectRatio(4 / 3, contentMode: .fit)
-                .overlay { thumbnail }
-                .overlay(alignment: .topLeading) { stateBadge }
-                .clipShape(shape)
-                .contentShape(shape)
-                .overlay {
-                    shape.strokeBorder(isKeep ? Theme.confirmed.color : Theme.textSecondary.color.opacity(0.25),
-                                       lineWidth: isKeep ? 2.5 : 0.5)
-                }
-                .opacity(isKeep ? 1 : 0.8)
-            Text(tile.name)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.textPrimary.color)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Text(details(tile))
-                .font(.system(size: 11))
-                .monospacedDigit()
-                .foregroundStyle(Theme.textSecondary.color)
-                .lineLimit(1)
+            // The click area is the photo and its text. The Keep button below is outside it, so 1 click on
+            // the button toggles Keep once and never reaches the tap gestures of the photo.
+            VStack(alignment: .leading, spacing: 5) {
+                Color.clear
+                    .aspectRatio(4 / 3, contentMode: .fit)
+                    .overlay { thumbnail }
+                    .overlay(alignment: .topLeading) { stateBadge }
+                    .clipShape(shape)
+                    .contentShape(shape)
+                    .overlay {
+                        shape.strokeBorder(isKeep ? Theme.confirmed.color : Theme.textSecondary.color.opacity(0.25),
+                                           lineWidth: isKeep ? 2.5 : 0.5)
+                    }
+                    .opacity(isKeep ? 1 : 0.8)
+                Text(tile.name)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.textPrimary.color)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Text(details(tile))
+                    .font(.system(size: 11))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.textSecondary.color)
+                    .lineLimit(1)
+            }
+            .contentShape(Rectangle())
+            // Double-click first, so a double-click never changes Keep.
+            .onTapGesture(count: 2, perform: onOpen)
+            .onTapGesture(perform: onChoose)
             keepChoice
         }
         .frame(width: DuplicatesViewModel.tileWidth)
-        .contentShape(Rectangle())
         .task(id: id) { await load() }
         .help(isKeep ? LocalizedStringKey("Keep. Click to unmark.") : LocalizedStringKey("Click to mark Keep."))
         .accessibilityElement(children: .ignore)

@@ -18,6 +18,18 @@ final class ThemeTests: XCTestCase {
         }
     }
 
+    func testPlaceholderGlyphReachesNonTextContrastOnPlaceholderFill() {
+        XCTAssertGreaterThanOrEqual(Theme.placeholderGlyph.light.contrast(with: Theme.placeholderFill.light), 3.0)
+        XCTAssertGreaterThanOrEqual(Theme.placeholderGlyph.dark.contrast(with: Theme.placeholderFill.dark), 3.0)
+    }
+
+    func testPlaceholderFillDiffersFromEveryGround() {
+        for (name, ground) in [("background", Theme.background), ("surface", Theme.surface), ("sidebar", Theme.sidebar)] {
+            XCTAssertNotEqual(Theme.placeholderFill.light, ground.light, "\(name), light")
+            XCTAssertNotEqual(Theme.placeholderFill.dark, ground.dark, "\(name), dark")
+        }
+    }
+
     func testOnAccentContrastOnAccent() {
         XCTAssertGreaterThanOrEqual(Theme.onAccent.light.contrast(with: Theme.accent.light), 4.5)
         XCTAssertGreaterThanOrEqual(Theme.onAccent.dark.contrast(with: Theme.accent.dark), 4.5)

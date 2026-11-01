@@ -133,7 +133,7 @@ struct EndToEndTests {
         reviewModel!.moveSelection(to: target)
         reviewModel!.selectedItem = .notSure
         let group = try #require(reviewModel!.notSureGroups.first)
-        reviewModel!.acceptGroup(at: 0)
+        reviewModel!.acceptGroup(group)
         await try review(app!).settled()
 
         // 3. Quit (drop every model and service) and open the folder again: the changes are still there.

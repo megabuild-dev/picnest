@@ -75,9 +75,18 @@ final class DuplicatesViewModel {
     /// How many times `find` searched. For tests.
     @ObservationIgnored private(set) var findCount = 0
 
+    /// The duplicate search. It calls the progress closure while it runs.
+    typealias Search = (@escaping @Sendable (Int, Int) -> Void) async throws -> [DuplicateGroup]
+
+    @ObservationIgnored private let search: Search
+    /// Counts the runs of `find` and the cancels. A run that is not the current one writes no state.
+    @ObservationIgnored private var generation = 0
+
+    /// `search` is for tests. It defaults to `ReviewService.findDuplicates`.
     init(review: ReviewService, thumbnail: @escaping (MediaID, Int) async -> CGImage?,
-         onTrashErrors: @escaping ([TrashError]) -> Void) {
+         onTrashErrors: @escaping ([TrashError]) -> Void, search: Search? = nil) {
         self.review = review
+        self.search = search ?? { [review] progress in try await review.findDuplicates(progress: progress) }
         thumbnailLoader = thumbnail
         self.onTrashErrors = onTrashErrors
         source = URL(filePath: review.session.sourcePath, directoryHint: .isDirectory)
@@ -93,21 +102,49 @@ final class DuplicatesViewModel {
     /// cancelled search (the user left the view) runs again on the next open.
     func find() async {
         guard !hasFound, !isFinding else { return }
+        generation += 1
+        let run = generation
         phase = .finding(done: 0, total: 0)
         lastDone = 0
         findCount += 1
         do {
-            let groups = try await review.findDuplicates { [weak self] done, total in
-                Task { @MainActor in self?.progress(done, total) }
+            let groups = try await withTaskCancellationHandler {
+                try await search { [weak self] done, total in
+                    Task { @MainActor in
+                        guard let self, self.generation == run else { return }
+                        self.progress(done, total)
+                    }
+                }
+            } onCancel: {
+                // A cancelled caller (the user left the view) frees the search at once, so a new `find` can start
+                // while the old run still unwinds.
+                Task { @MainActor [weak self] in self?.cancelFind(run: run) }
             }
+            // A run that was cancelled, or replaced by a newer one, writes nothing.
+            guard generation == run else { return }
+            try Task.checkCancellation()
             setFound(groups)
             hasFound = true
             phase = .ready
         } catch is CancellationError {
-            phase = .idle
+            if generation == run { phase = .idle }
         } catch {
+            guard generation == run else { return }
             phase = .failed(String(localized: "Picnest could not look for duplicates: \(CoreErrorMessages.text(for: error))"))
         }
+    }
+
+    /// Stops waiting for the running search: the state is idle at once, and the old run writes nothing when
+    /// it ends. Does nothing when no search runs. A new `find` can start right after.
+    func cancelFind() {
+        guard isFinding else { return }
+        generation += 1
+        phase = .idle
+        lastDone = 0
+    }
+
+    private func cancelFind(run: Int) {
+        if generation == run { cancelFind() }
     }
 
     private var isFinding: Bool {
@@ -183,8 +220,13 @@ final class DuplicatesViewModel {
 
     var cleanUpTitle: String { String(localized: "Clean Up All (\(cleanUpCount))") }
 
+    /// The text of the confirmation. It says "in both tabs" when the Exact copies and the Similar photos
+    /// tabs both have groups, because **Clean Up All** covers both.
     var cleanUpConfirmation: String {
-        String(localized: "Move \(cleanUpCount) photos to the Trash? You can put them back with Undo or from the Trash in Finder.")
+        if exactCount > 0 && similarCount > 0 {
+            return String(localized: "Move \(cleanUpCount) photos in both tabs to the Trash? You can put them back with Undo or from the Trash in Finder.")
+        }
+        return String(localized: "Move \(cleanUpCount) photos to the Trash? You can put them back with Undo or from the Trash in Finder.")
     }
 
     // MARK: - Actions

@@ -91,7 +91,7 @@ private struct SuggestRowView: View {
             }
         }
         .padding(12)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.placeholderFill.color.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
         .opacity(row.isOn ? 1 : 0.55)
     }
 }
@@ -102,7 +102,7 @@ private struct SuggestThumbnail: View {
     @State private var image: CGImage?
 
     var body: some View {
-        Rectangle().fill(.quaternary)
+        Rectangle().fill(Theme.placeholderFill.color)
             .frame(width: 96, height: 72)
             .overlay {
                 if let image { Image(decorative: image, scale: 1).resizable().scaledToFill() }

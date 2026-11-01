@@ -4,8 +4,6 @@ import Observation
 import PicnestCore
 import SwiftUI
 
-/// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
-/// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
 /// The 3 filters of the toolbar. Each one is a sidebar item (`ReviewViewModel.filter`).
 enum PhotoFilter: CaseIterable {
     case all, needsReview, chosenByYou
@@ -16,6 +14,8 @@ enum ReviewIssue: CaseIterable {
     case lowConfidence, noCategory, similarPhotos
 }
 
+/// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
+/// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
 @MainActor
 @Observable
 final class ReviewViewModel {
@@ -81,10 +81,26 @@ final class ReviewViewModel {
     var reviewIssue: ReviewIssue? {
         didSet {
             guard reviewIssue != oldValue else { return }
-            if reviewIssue == .similarPhotos { Task { await duplicates.find() } }
+            startOrCancelSimilarSearch(leaving: oldValue == .similarPhotos)
             dropSelectionHiddenByFilter()
         }
     }
+    /// The search that the similar-photos filter started, or nil. Another issue, another sidebar item, or the end
+    /// of the model cancels it; a cancelled search is idle again (`DuplicatesViewModel.find`).
+    @ObservationIgnored nonisolated(unsafe) private(set) var similarSearch: Task<Void, Never>?
+
+    private func startOrCancelSimilarSearch(leaving: Bool) {
+        similarSearch?.cancel()
+        similarSearch = nil
+        // Leaving the filter frees the search at once, so the Duplicates view or the filter can start it again.
+        if leaving { duplicates?.cancelFind() }
+        guard reviewIssue == .similarPhotos else { return }
+        guard let duplicates else { return }
+        similarSearch = Task { await duplicates.find() }
+    }
+
+    deinit { similarSearch?.cancel() }
+
     /// True after the user closes the amber notice of Needs Review. A rescan makes a new view model, so it shows again.
     var isNoticeDismissed = false
 
@@ -189,8 +205,6 @@ final class ReviewViewModel {
     /// Only `createNewCategory` and `cancelNewCategory` clear it.
     private var pendingMoveIDs: [MediaID]?
 
-    private static let dayFormat = Date.ISO8601FormatStyle(timeZone: .current).year().month().day()
-
     /// `app` holds the undo flag that every window shares, and starts over (`startOver`). `afterScan` is true
     /// when a scan or a rescan opened this review.
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
@@ -198,7 +212,7 @@ final class ReviewViewModel {
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
-         defaults: UserDefaults = .standard) {
+         defaults: UserDefaults = .standard, duplicateSearch: DuplicatesViewModel.Search? = nil) {
         self.defaults = defaults
         let saved = defaults.object(forKey: Self.thumbnailSizeKey) as? Double
         thumbnailSize = Self.clampedThumbnailSize(saved ?? Self.defaultThumbnailSize)
@@ -221,7 +235,8 @@ final class ReviewViewModel {
                 guard let file = await review.mediaByID[id] else { return nil }
                 return await thumbnails.thumbnail(for: file, source: source, maxPixel: maxPixel)
             },
-            onTrashErrors: { [weak self] in self?.showTrashErrors($0) })
+            onTrashErrors: { [weak self] in self?.showTrashErrors($0) },
+            search: duplicateSearch)
         watchSession()
     }
 
@@ -267,9 +282,7 @@ final class ReviewViewModel {
 
     var count: Int { count(of: selectedItem) }
 
-    /// The source folder path with the home folder as `~`.
-    var sourcePathText: String { Self.abbreviate(review.session.sourcePath, home: NSHomeDirectory()) }
-
+    /// A path with the home folder as `~`.
     nonisolated static func abbreviate(_ path: String, home: String) -> String {
         let home = home.hasSuffix("/") && home.count > 1 ? String(home.dropLast()) : home
         if path == home { return "~" }
@@ -591,20 +604,29 @@ final class ReviewViewModel {
         return sortedGroups
     }
 
-    /// **Accept N** of the group at `index`: the shown photos of the group go to the best guess and become
+    /// The photos of the rendered `group` that still show in its category group: visible and still Needs Review.
+    /// The order of the groups can change between the render and the click, so the group is found again by its
+    /// category and never by its position.
+    private func shownIDs(of group: NotSureGroup) -> [MediaID] {
+        guard let current = notSureGroups.first(where: { $0.category == group.category }) else { return [] }
+        let rendered = Set(group.ids)
+        return current.ids.filter(rendered.contains)
+    }
+
+    /// **Accept N** of the rendered `group`: its photos that still show go to the best guess and become
     /// "Changed by you". Hidden photos (search, issue filter) stay in Needs Review.
-    func acceptGroup(at index: Int) {
-        let groups = notSureGroups
-        guard groups.indices.contains(index) else { return }
-        review.acceptBestGuess(groups[index].ids)
+    func acceptGroup(_ group: NotSureGroup) {
+        let ids = shownIDs(of: group)
+        guard !ids.isEmpty else { return }
+        review.acceptBestGuess(ids)
         dropHiddenSelection(visible: visibleIDs)
     }
 
-    /// **Select All** of the group at `index`: replaces the selection with the shown photos of the group.
-    func selectGroup(at index: Int) {
-        let groups = notSureGroups
-        guard groups.indices.contains(index), let first = groups[index].ids.first else { return }
-        selection = Set(groups[index].ids)
+    /// **Select All** of the rendered `group`: replaces the selection with its photos that still show.
+    func selectGroup(_ group: NotSureGroup) {
+        let ids = shownIDs(of: group)
+        guard let first = ids.first else { return }
+        selection = Set(ids)
         anchor = first
     }
 
@@ -702,6 +724,19 @@ final class ReviewViewModel {
         if state?.isManual == true { parts.append(String(localized: "Chosen by you")) }
         if selection.contains(id) { parts.append(String(localized: "selected")) }
         return parts.joined(separator: ", ")
+    }
+
+    /// What the inspector shows. A photo selection comes first, then the category of the screen, else a hint.
+    var inspectorContent: InspectorContent {
+        if selection.count > 1 { return .many(selection.count) }
+        if let id = selection.first, let facts = inspectorFacts(for: id) { return .photo(facts) }
+        if let category = selectedCategory {
+            return .category(CategoryFacts(
+                id: category.id, emoji: category.emoji, name: category.displayName,
+                photoCount: count(of: .category(category.id)), folderName: categoryFolderName(category.id),
+                canReveal: categoryFolder(category.id) != nil))
+        }
+        return .hint
     }
 
     /// The facts of the inspector for `id`, or nil if the photo is unknown.
@@ -1269,7 +1304,7 @@ final class ReviewViewModel {
             return String(localized: "or \(category.displayName) \(percent)%")
         }
         guard let date = session.scan.dates[id], date.source != .modificationTime else { return Self.noDate }
-        return date.date.formatted(Self.dayFormat)
+        return date.date.formatted(.dateTime.year().month().day())
     }
 
     private static func assignment(_ state: PhotoState?) -> Assignment? {

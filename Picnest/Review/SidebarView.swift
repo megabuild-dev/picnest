@@ -42,6 +42,8 @@ struct SidebarView: View {
             } header: { sectionHeader("Tools") }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(Theme.sidebar.color)
         .tint(Theme.accent.color)
     }
 
@@ -122,7 +124,7 @@ private struct SidebarIcon: View {
             }
         }
         .frame(width: 22, height: 22)
-        .background(.background, in: RoundedRectangle(cornerRadius: 6))
+        .background(Theme.background.color, in: RoundedRectangle(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.textPrimary.color.opacity(0.08), lineWidth: 0.5))
     }
 }
