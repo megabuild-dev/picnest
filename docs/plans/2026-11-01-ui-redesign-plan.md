@@ -3,7 +3,7 @@ id: picnest-ui-redesign-plan
 title: Picnest UI Redesign Implementation Plan
 type: plan
 status: active
-tags: [picnest, ui, theme, localization, swiftui, plan, collections]
+tags: [picnest, ui, theme, localization, swiftui, plan, collections, photo-editor]
 links:
   - "[[2026-11-01-ui-redesign-design]]"
   - "[[2026-10-21-macos-app-design]]"
@@ -30,7 +30,7 @@ links:
 - [x] Phase 1: App shell (tasks 1.1 to 1.4). Merged into `ui-redesign`. Manual checks C and D wait for the owner.
 - [x] Phase 2: Screens (tasks 2.1 to 2.8). Merged into `ui-redesign`. Owner steps open: manual checklist, mockup comparison, native-speaker review of the Vietnamese text.
 - [x] Phase 3: Favorites, Collections, Recently Deleted (tasks 3.1 to 3.10). Merged into `ui-redesign`. Manual checks F, G, H and the sidebar comparison with mockups 01 to 03 wait for the owner.
-- [ ] Phase 4: Photo Editor. Same rule.
+- [x] Phase 4: Photo Editor (tasks 4.1 to 4.8). Merged into `ui-redesign`. Manual checks I, J, K wait for the owner.
 - [ ] Phase 5: Layout Editor. Same rule.
 
 ## Branches
@@ -583,9 +583,302 @@ Each has a default in the tasks above. Change a default before its task starts.
 
 ---
 
+## Phase 4: Photo Editor
+
+Sub-branch: `feature/ui-redesign/phase-4-photo-editor`. Spec: section 4.5, sections 3, 6 (row "Edit tabs"), 7 (calls 5 and 7). Mockup: `design/picnest-ui-04-photo-editor.png`. Design text: section 8.
+Core tests use Swift Testing (`@Test func name()`). App tests use XCTest (`func testName()`). Read `ImageRepository.swift`, `ThumbnailService.swift`, `SortPlanner.swift` (`uniqueName`), `ReviewCommands.swift`, `ReviewView.swift`, `InspectorView.swift`, and `PicnestCore/Tests/PicnestCoreTests/Support/TestImages.swift` before you start.
+
+### Facts from the code
+
+- The app has no App Sandbox (`project.yml`: `ENABLE_APP_SANDBOX: NO`). The export needs no new entitlement. The save panel is for user choice, not for sandbox access.
+- No code uses Core Image today. `ImageRepository` decodes with ImageIO and `kCGImageSourceCreateThumbnailWithTransform`, so its images are upright (EXIF orientation applied).
+- ImageIO on macOS 15 writes `public.jpeg`, `public.heic`, `public.png`, `public.tiff`, and `com.compuserve.gif`. It cannot write WebP (`CGImageDestinationCopyTypeIdentifiers`, checked 2026-11-01).
+- The data has no "Edited" notion. Spec call 5 renamed "Edited by me" to **Chosen by you** to keep the word "Edited" for this editor. This phase saves no recipe, so it adds no badge, no flag, and no `Session` field.
+- The "preview" of the spec is the system Quick Look panel (`QuickLookPreview.swift`). An app cannot add a button to it. Double-click and Space open Quick Look (`PhotoGridView.swift`), and they keep this rule.
+- There is 1 window (`Window("Picnest", id: "main")`). `ReviewViewModel.swift` has 1,609 lines. The editor gets its own ViewModel.
+- ⌘Z goes to the review through `ReviewCommands` and `UndoRouting`. With the editor open, ⌘Z must not undo a category move.
+
+### Key decisions
+
+**Scope.** The table lists what this phase does and does not do.
+
+| In this phase | Out of this phase |
+|---------------|-------------------|
+| Crop with aspect ratios, straighten | A saved recipe, an "Edited" badge |
+| Rotate 90° left and right, flip horizontal and vertical | Auto-enhance, filters, other adjustments |
+| Exposure, Contrast, Warmth, Saturation | RAW, HDR, and 16-bit output |
+| Reset, Undo, Redo, **Show Original** | Video, batch edit, a photo in Recently Deleted |
+| Filmstrip of the set, **Export edited copy** | Export to the Photos app, a Share button |
+
+**Entry points (a change from spec 4.5 "opens from the preview").** The inspector gets an **Edit** button for 1 photo. The photo context menu gets **Edit Photo…**. The menu item **Image > Edit Photo** has ⌘E. Double-click stays Quick Look. Task 4.8 writes this change into spec 4.5.
+
+**Where it opens.** The editor replaces the detail column of `ReviewView`. While it is open, the sidebar collapses (`NavigationSplitViewVisibility.detailOnly`), the inspector hides, and the toolbar shows only the editor items. On close, the sidebar, the inspector state, the selection, and the scroll position come back. There is no tab bar (spec 6 and call 7).
+
+**The edit value.** `PhotoEdit` in `PicnestCore/Domain` holds the full edit. The pipeline order is fixed: EXIF orientation, quarter turns, flip, straighten, crop, adjustments, all in the frame the user sees. `PhotoEdit.flip` negates `straighten`, so a flip keeps the same picture, mirrored.
+- Straighten turns the image about its center and scales it up so that no empty corner shows (`CropGeometry.straightenScale`).
+- The crop is a rect in 0…1 units of the frame after straighten, quarter turns, and flip. Origin is top left. So 1 value works on the preview and on the full-size image.
+- A quarter turn or a flip moves the crop rect with the image.
+
+**Adjustment map.** Each slider has the range -100…100, step 1, default 0. `PhotoEditService.filterValues(for:)` is the 1 place that maps a slider value to a filter value:
+
+| Slider | Core Image filter | Value at -100 / 0 / +100 |
+|--------|-------------------|--------------------------|
+| Exposure | `CIExposureAdjust` `inputEV` | -2 / 0 / +2 |
+| Contrast | `CIColorControls` `inputContrast` | 0.75 / 1 / 1.25 |
+| Saturation | `CIColorControls` `inputSaturation` | 0 / 1 / 2 |
+| Warmth | `CITemperatureAndTint` | Neutral 6500 K. Target from 4500 K to 8500 K. The test fixes the direction: +100 makes red higher than blue on gray |
+
+**Undo.** `EditHistory` is a value type in Core. A button press is 1 step. A slider drag or a crop drag is 1 step, committed when the drag ends. **Reset** is 1 step, so ⌘Z brings the edit back. The history keeps 100 steps. A step to another photo clears it.
+
+**Preview and performance.** The preview reads `ThumbnailService.thumbnail(at:maxPixel: 1600)`, so it shares the app cache. Each change starts a new preview task and cancels the old one. The filter work runs off the main actor on 1 shared `CIContext`. Only the export decodes the full-size image.
+
+**Export.** The format list is JPEG, HEIC, and PNG. The default follows the original: `jpg`/`jpeg` → JPEG, `heic`/`heif` → HEIC, `png`/`tiff`/`gif` → PNG, `webp` → JPEG. JPEG and HEIC quality is 0.9. A GIF exports its first frame. An image with alpha that goes to JPEG or HEIC gets a white background.
+- The save panel suggests `<stem> edited.<ext>` in the folder of the original. If that name exists, the name gets ` 2`, ` 3`, and so on (`SortPlanner.uniqueName`, made internal).
+- The copy keeps the EXIF, TIFF, GPS, and IPTC data of the original. It gets orientation 1, the new pixel size, and no embedded thumbnail.
+- Core refuses a destination that is the original or any photo of the session, even after the user clicks **Replace** in the panel. `ProtectedFiles` makes the compare: canonical source folder, NFC, case-insensitive (APFS default).
+- The writer writes a temp file in the destination folder, then moves it into place. A failed export leaves no file.
+- If the copy goes into the source folder, the next rescan adds it as a new photo. The editor does not add it to the session.
+
+**Files that move while the editor is open.** `canEdit` needs `canSortOrRescan`. While the editor is open, `canSortOrRescan` is `false`. So **Done**, **Sort Photos…**, **Rescan**, **Undo Last Sort**, and **Start Over…** (⇧⌘R) are off. Before an export, the service checks that the original still exists.
+
+**Leaving with changes.** **Back**, Esc, a filmstrip step, ← and → ask "Discard your edits?" when the edit is not `.original`. Buttons: **Discard Edits** and **Cancel**. An export does not clear the edit, because the user can export again.
+
+### Phase 4 Review Focus
+
+Each line has a test or a check in the named task.
+
+1. A JPEG with EXIF orientation 6 (rotated 90° on the camera). The preview and the export are upright, and the export has orientation 1 and swapped pixel size. Tasks 4.3 and 4.4.
+2. The user picks the file name of the original in the save panel and clicks **Replace**. The export fails with a message, and the original keeps its SHA-256, size, and modification date. Task 4.4.
+3. The editor is open and the user presses ⌘Z or ⇧⌘R. ⌘Z undoes the last edit, not a category move. **Start Over…** is off. Task 4.6.
+4. A quarter turn left and a quarter turn right give the same pixel size but different images. A flip does not change the size. Corner colors of a 4-color PNG prove each one. Task 4.3.
+5. The disk is full or the folder is read-only during an export. The message shows, no temp file stays, and the original does not change. Task 4.4.
+
+### Task 4.1: Edit types and history
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Domain/PhotoEdit.swift`
+- Create: `PicnestCore/Tests/PicnestCoreTests/PhotoEditTests.swift`
+
+**Interfaces:**
+- Produces: `public enum AdjustmentKind: String, CaseIterable, Sendable { case exposure, contrast, warmth, saturation }`.
+- Produces: `public struct NormalizedRect: Sendable, Hashable { var x, y, width, height: Double; static let full }`.
+- Produces: `public enum AspectRatio: String, CaseIterable, Sendable, Hashable { case original, freeform, square, fourThree, threeTwo, sixteenNine }` with `func ratio(frame: PixelSize, original: PixelSize) -> Double?` (`nil` for `freeform`). Fixed ratios follow the frame: a portrait frame gives 3:4, not 4:3.
+- Produces: `public struct PhotoEdit: Sendable, Hashable` with `straighten: Double` (degrees, clamped to -45…45), `quarterTurns: Int` (clockwise, 0…3), `flipHorizontal: Bool`, `flipVertical: Bool`, `crop: NormalizedRect`, `aspect: AspectRatio`, `subscript(_ kind: AdjustmentKind) -> Int` (clamped to -100…100), `static let original`, `var isOriginal: Bool`, `mutating func rotate(clockwise: Bool)`, `mutating func flip(horizontal: Bool)`.
+- Produces: `public enum ExportFormat: String, CaseIterable, Sendable { case jpeg, heic, png }` with `var utType: UTType`, `var fileExtension: String`, `static func defaultFormat(forExtension ext: String) -> ExportFormat` (rules in "Export").
+- Produces: `public struct EditHistory: Sendable { init(limit: Int = 100); var current: PhotoEdit { get }; mutating func show(_ e: PhotoEdit); mutating func commit(); mutating func set(_ e: PhotoEdit); mutating func reset(); mutating func undo(); mutating func redo(); var canUndo: Bool; var canRedo: Bool }`. `show` changes `current` with no step. `commit` makes 1 step from the last committed value, only if it changed. `set` is `show` then `commit`.
+
+- [ ] **Step 1: Write the failing tests:** `originalIsOriginal`, `adjustmentIsClamped` (`150` reads `100`), `straightenIsClamped` (`-60` reads `-45`), `fourRotationsGiveTheOriginal`, `rotateMovesTheCrop` (crop `x: 0, y: 0, w: 0.5, h: 0.25` turned clockwise gives `x: 0.75, y: 0, w: 0.25, h: 0.5`), `flipHorizontalMovesTheCrop`, `twoFlipsGiveTheOriginal`, `portraitFrameTurnsFourThree` (`ratio` of a 30 × 40 frame is 0.75), `defaultFormatFollowsTheOriginal` (`JPG` → `.jpeg`, `HEIF` → `.heic`, `gif` → `.png`, `webp` → `.jpeg`), `dragIsOneUndoStep` (10 `show` calls, 1 `commit`, 1 `undo` gives `.original`), `commitWithoutChangeAddsNoStep`, `resetIsUndoable`, `newStepClearsRedo`, `historyKeepsAtMost100Steps`.
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter PhotoEditTests`. Expected: build fails (`PhotoEdit` not defined).
+- [ ] **Step 3: Implement** the types in `PhotoEdit.swift`.
+- [ ] **Step 4: Run** the same command. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(core): add the photo edit value and its history`.
+
+### Task 4.2: Crop and straighten geometry
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Services/CropGeometry.swift`
+- Create: `PicnestCore/Tests/PicnestCoreTests/CropGeometryTests.swift`
+
+**Interfaces:**
+- Consumes: `NormalizedRect` (task 4.1).
+- Produces: `public enum CropHandle: CaseIterable, Sendable { case topLeft, top, topRight, right, bottomRight, bottom, bottomLeft, left, move }`.
+- Produces: `public enum CropGeometry` with pure static functions. `frameAspect` is width ÷ height of the frame in pixels.
+  - `straightenScale(degrees: Double, width: Double, height: Double) -> Double`. The smallest scale so that the turned image covers the whole frame.
+  - `drag(_ r: NormalizedRect, handle: CropHandle, dx: Double, dy: Double, ratio: Double?, frameAspect: Double, minSide: Double = 0.05) -> NormalizedRect`. Keeps the rect inside 0…1, keeps `ratio` (in pixels) when it is set, and keeps each side at least `minSide`. `.move` keeps the size.
+  - `fit(_ r: NormalizedRect, ratio: Double?, frameAspect: Double) -> NormalizedRect`. The largest rect with `ratio` inside 0…1, centered on the center of `r`. `nil` returns `r`.
+
+- [ ] **Step 1: Write the failing tests:** `zeroAngleNeedsNoScale` (1.0), `scaleCoversTheCorners` (for 10°, 4:3: the 4 frame corners turned by -10° and divided by the scale are inside the image), `dragStopsAtTheEdge`, `dragKeepsTheMinimumSide`, `dragKeepsTheRatio` (ratio 1, frame 4:3: `width × 4 == height × 3` within 1e-9), `moveKeepsTheSize`, `fitSquareOnLandscapeFrame` (frame 4:3, full rect gives `w: 0.75, h: 1`), `fitFreeformChangesNothing`.
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter CropGeometryTests`. Expected: build fails.
+- [ ] **Step 3: Implement** `CropGeometry`.
+- [ ] **Step 4: Run.** Expected: PASS.
+- [ ] **Step 5: Commit** `feat(core): add crop and straighten geometry`.
+
+### Task 4.3: The Core Image pipeline
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Services/PhotoEditService.swift`
+- Create: `PicnestCore/Tests/PicnestCoreTests/PhotoEditServiceTests.swift`
+- Modify: `PicnestCore/Tests/PicnestCoreTests/Support/TestImages.swift`
+
+**Interfaces:**
+- Consumes: tasks 4.1 and 4.2, `ThumbnailService.thumbnail(at:maxPixel:)`.
+- Produces: `public final class PhotoEditService: Sendable` with `init(thumbnails: ThumbnailService, images: ImageRepository, context: CIContext = CIContext())`. Task 4.4 adds the parameter `writer: ImageExportRepository = ImageExportRepository()` before `context`.
+  - `static let previewMaxPixel = 1600`
+  - `func preview(at url: URL) async -> CGImage?` (calls the thumbnail service).
+  - `func apply(_ e: PhotoEdit, to image: CGImage, cropping: Bool = true) -> CGImage?`. Pure. `cropping: false` gives the whole frame after straighten, turns, and flips, for the crop tool.
+  - `static func outputSize(of e: PhotoEdit, source: PixelSize) -> PixelSize`. Pure, rounded to whole pixels.
+  - `static func filterValues(for e: PhotoEdit) -> (ev: Double, contrast: Double, saturation: Double, targetKelvin: Double)` (the table in "Adjustment map").
+- Produces in `TestImages`: `writeQuadrants(to url: URL, type: UTType, width: Int, height: Int, orientation: Int = 1, colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!) throws`. Top left is red, top right green, bottom left blue, bottom right white, after the orientation. Also `static func color(at point: (x: Int, y: Int), in image: CGImage) -> (r: UInt8, g: UInt8, b: UInt8)`. It reads in sRGB. Do not use `CGColorSpaceCreateDeviceRGB()` in new fixtures, because color management can shift a channel by more than 8.
+
+- [ ] **Step 1: Write the failing tests.** Use a 40 × 20 PNG of quadrants. Read corners at 3 pixels in from each corner, with a tolerance of 8 per channel.
+  - `originalEditKeepsSizeAndPixels`.
+  - `rotateRightTurnsClockwise` (size 20 × 40; top-left corner is blue, top-right is red).
+  - `rotateLeftTurnsCounterclockwise` (size 20 × 40; top-left is green). With the test above, this is Review Focus 4.
+  - `flipHorizontalSwapsLeftAndRight` (size 40 × 20; top-left is green), `flipVerticalSwapsTopAndBottom`.
+  - `cropLeftHalfKeepsRedAndBlue` (crop `x: 0, w: 0.5`; size 20 × 20).
+  - `straightenFillsTheCorners` (5°: no corner pixel has alpha below 255).
+  - `exifOrientationSixPreviewIsUpright` (JPEG with orientation 6 through `preview(at:)`: top-left is red; Review Focus 1).
+  - `outputSizeMatchesApply` (5 edits; `outputSize` equals the size of `apply`).
+  - `previewAndFullSizeHaveTheSameAspect` (same edit on 40 × 20 and 400 × 200: aspect within 1 pixel).
+  - `positiveExposureMakesGrayBrighter`, `zeroSaturationMakesRedGray` (r, g, b within 8), `positiveWarmthMakesRedHigherThanBlue`, `positiveContrastSpreadsDarkAndLight`.
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter PhotoEditServiceTests`. Expected: build fails.
+- [ ] **Step 3: Implement** the pipeline. Use `CIImage(cgImage:)`, `transformed(by:)`, `cropped(to:)`, and the filters in the table. Core Image has its origin at bottom left, and `NormalizedRect` has it at top left. Convert in 1 private helper. Call `clampedToExtent()` before the straighten transform. Make each crop rect integral, so no soft edge pixel stays.
+- [ ] **Step 4: Run.** Expected: PASS.
+- [ ] **Step 5: Commit** `feat(core): add the photo edit pipeline`.
+
+### Task 4.4: Export an edited copy
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Repositories/ImageExportRepository.swift`
+- Modify: `PicnestCore/Sources/PicnestCore/Repositories/ImageRepository.swift`, `Services/PhotoEditService.swift`, `Services/SortPlanner.swift` (`uniqueName` from `private` to `internal`)
+- Create: `PicnestCore/Tests/PicnestCoreTests/PhotoExportTests.swift`
+- Create: `PicnestCore/Tests/PicnestCoreTests/Support/FileFingerprint.swift` (move the SHA-256 helpers of `HashRepositoryTests` and `SortServiceTests` here; do not add a third copy)
+
+**Interfaces:**
+- Produces on `ImageRepository`: `func fullImage(at url: URL) -> (image: CGImage, properties: [CFString: Any])?`. It is full size and upright. Use `CGImageSourceCreateThumbnailAtIndex` at index 0 with 3 options: `kCGImageSourceCreateThumbnailFromImageAlways: true`, `kCGImageSourceCreateThumbnailWithTransform: true`, and `kCGImageSourceThumbnailMaxPixelSize` = the larger side. Without `FromImageAlways`, ImageIO returns the small EXIF thumbnail of a camera JPEG.
+- Produces: `public struct ImageExportRepository: Sendable` with `init(fileOps: any FileOps = LocalFileOps())` and `func write(_ image: CGImage, to url: URL, format: ExportFormat, quality: Double, properties: [CFString: Any], replacing: Bool) throws`. It writes `.<name>.<UUID>.tmp` in the same folder. Then it calls `fileOps.move` (never overwrites), or `FileManager.replaceItemAt` when `replacing` is `true`. It removes the temp file on any error.
+- Rule: the output keeps the color space of the source image (for example Display P3). If the source has none, use sRGB. Pass it to the `CIContext` output and to the `CGImage` that the writer gets.
+- Produces: `public enum PhotoExportError: Error, Equatable, Sendable { case wouldReplaceOriginal, originalMissing, cannotRead, cannotWrite(String) }`.
+- Produces: `public struct ProtectedFiles: Sendable { init(source: URL, mediaIDs: Set<MediaID>, otherPaths: [String]); func contains(_ url: URL) -> Bool }`. The init calls `canonicalKeyPath` on `source` 1 time. It keeps the ids lowercased. It does not touch the disk for each photo.
+- Rule for `contains`: take the canonical path of the parent folder of `url`, plus the file name. If the result is inside the source folder, compare the NFC, lowercased relative path with the ids. Compare each of `otherPaths` (the `trashPath` values) the same way, lowercased.
+- Produces on `PhotoEditService`: `static let exportQuality = 0.9`, `func exportCopy(of original: URL, edit: PhotoEdit, to destination: URL, format: ExportFormat, protected: ProtectedFiles) async throws -> URL` (runs off the caller's actor), and `static func uniqueName(_ name: String, in folder: URL) -> String` (calls `SortPlanner.uniqueName` with the names in the folder).
+- Rule: `exportCopy` throws `wouldReplaceOriginal` when the destination is the original or `protected.contains(destination)`.
+- Rule: the properties are those of the original, with orientation 1, the new pixel width and height, and no thumbnail dictionary. An image with alpha that goes to JPEG or HEIC is drawn on white first.
+
+- [ ] **Step 1: Write the failing tests.** Each test that touches an original records its SHA-256, size, and modification date before, and checks all 3 after.
+  - `exportWritesANewFileAndKeepsTheOriginal` (the copy decodes; its size is `outputSize`).
+  - `exportToTheOriginalPathIsRefused` (`wouldReplaceOriginal`; Review Focus 2). Also with the name in other letter case (`img_2048.JPG`).
+  - `exportOverAnotherSessionPhotoIsRefused`.
+  - `exportOfOrientationSixIsUprightWithOrientationOne` (properties `Orientation` is 1 and width × height are swapped; Review Focus 1).
+  - `exportKeepsTheExifDate` (use `TestImages.writeJPEG(exifDate:)`).
+  - `exportInEachFormatHasItsType` (JPEG, HEIC, PNG: `CGImageSourceGetType` matches).
+  - `failedWriteLeavesNoFile` (read-only folder: throws `cannotWrite`, and the folder has no new file).
+  - `failedMoveRemovesTheTempFile` (a `FileOps` whose `move` throws after the temp file exists: throws `cannotWrite`, and the folder has no `.tmp`; Review Focus 5).
+  - `exportOfAJPEGWithAnEmbeddedThumbnailIsFullSize` (write the fixture with `kCGImageDestinationEmbedThumbnail: true`; the copy has the full size).
+  - `exportKeepsADisplayP3ColorSpace` (the copy has the color space name `CGColorSpace.displayP3`).
+  - `exportWithMissingOriginalThrows` (`originalMissing`).
+  - `replacingAnUnprotectedFileWorks` (an existing `a edited.jpg` is replaced, with no temp file left).
+  - `uniqueNameAddsANumber` (`IMG edited.jpg` exists, so the result is `IMG edited 2.jpg`; NFD input gives the same result).
+  - `alphaToJPEGHasAWhiteBackground`.
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter PhotoExportTests`. Expected: build fails.
+- [ ] **Step 3: Implement** the repository, the 2 service methods, and `fullImage`. Move the hash helper and update its 2 old users.
+- [ ] **Step 4: Run all core tests:** `swift test --package-path PicnestCore`. Expected: PASS, with `HashRepositoryTests` and `SortServiceTests` unchanged in result.
+- [ ] **Step 5: Commit** `feat(core): export an edited copy and never replace a photo`.
+
+### Task 4.5: Editor ViewModel
+
+**Files:**
+- Create: `Picnest/Editor/PhotoEditorViewModel.swift`
+- Create: `PicnestTests/PhotoEditorViewModelTests.swift`
+- Modify: `Picnest/App/AppEnvironment.swift` (make 1 `PhotoEditService` from the shared `ImageRepository` and `ThumbnailService`), `Picnest/App/CoreErrorMessages.swift` (text for each `PhotoExportError`), `Picnest/Localizable.xcstrings`
+
+**Interfaces:**
+- Consumes: tasks 4.1 to 4.4.
+- Produces: `struct EditorPhoto: Identifiable, Hashable { let id: MediaID; let url: URL; let fileName: String }`.
+- Produces: `enum EditorTool: CaseIterable { case crop, straighten, rotate, adjust }`.
+- Produces: `@MainActor @Observable final class PhotoEditorViewModel` with `init(photos: [EditorPhoto], start: MediaID, service: PhotoEditService, protected: ProtectedFiles, chooseDestination: @escaping @MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?, revealURL: @escaping @MainActor (URL) -> Void, onClose: @escaping @MainActor () -> Void)`.
+  - State: `tool`, `edit: PhotoEdit` (from the history), `previewImage: CGImage?`, `isShowingOriginal: Bool`, `isExporting: Bool`, `exportError: String?`, `lastExport: URL?`, `isConfirmingDiscard: Bool`, `current: EditorPhoto`, `positionText` ("1 of 5"), `canUndo`, `canRedo`, `hasChanges`.
+  - Actions: `rotate(clockwise:)`, `flip(horizontal:)`, `setAspect(_:)` (calls `CropGeometry.fit`), `dragCrop(_ handle: CropHandle, dx: Double, dy: Double)`, `setStraighten(_:)`, `setAdjustment(_:_:)`, `endDrag()` (commits), `reset()`, `undo()`, `redo()`, `step(by offset: Int)`, `select(_ id: MediaID)`, `requestClose()`, `confirmDiscard()`, `export() async`, `revealLastExport()`.
+- Rule: `step`, `select`, and `requestClose` set `isConfirmingDiscard` when `hasChanges`. `confirmDiscard` then does the waiting action.
+- Rule: each change cancels the last preview task and starts 1 new task. `isShowingOriginal` shows the base preview with no edit.
+- Rule: the suggested name is the catalog key `"%@ edited"` with the file stem, then `PhotoEditService.uniqueName`. The extension comes from `ExportFormat.defaultFormat(forExtension:)`.
+- Copy (en, vi draft): **Edit Photo** / Chỉnh sửa ảnh; "Original stays unchanged" / "Ảnh gốc được giữ nguyên"; "Picnest never changes the original file. Export edited copy saves a new file." / "Picnest không bao giờ thay đổi tệp gốc. Xuất bản sao đã chỉnh sửa sẽ lưu một tệp mới."; **Reset** / Đặt lại; **Undo** / Hoàn tác; **Redo** / Làm lại; **Export edited copy** / Xuất bản sao đã chỉnh sửa; **Crop** / Cắt, "Trim and reframe" / "Cắt và căn khung"; **Straighten** / Làm thẳng, "Fix horizon" / "Chỉnh đường chân trời"; **Rotate** / Xoay, "Turn photo" / "Xoay ảnh"; **Adjust** / Điều chỉnh, "Tone and color" / "Tông màu và màu sắc"; **Aspect ratio** / Tỉ lệ khung hình; **Original** / Gốc; **Freeform** / Tự do; **Square** / Vuông; **Rotate & flip** / Xoay và lật; **Rotate left** / Xoay trái; **Rotate right** / Xoay phải; **Flip horizontal** / Lật ngang; **Flip vertical** / Lật dọc; **Adjustments** / Các điều chỉnh; **Exposure** / Phơi sáng; **Contrast** / Tương phản; **Warmth** / Độ ấm; **Saturation** / Độ bão hòa; "%@ · Original" / "%@ · Gốc"; "%@ · Edited" / "%@ · Đã chỉnh sửa"; "Edited copy will be exported separately" / "Bản sao đã chỉnh sửa sẽ được xuất riêng"; "%lld photos in this set" (plural) / "%lld ảnh trong bộ này"; "%1$lld of %2$lld" / "%1$lld / %2$lld"; "%@ edited" / "%@ đã chỉnh sửa"; **Show Original** / Xem ảnh gốc; "Discard your edits?" / "Bỏ các chỉnh sửa?"; "The edits are not saved. The original stays unchanged." / "Các chỉnh sửa chưa được lưu. Ảnh gốc được giữ nguyên."; **Discard Edits** / Bỏ chỉnh sửa; "Saved “%@”." / "Đã lưu “%@”."; "Choose another name. Picnest never replaces a photo of this folder." / "Hãy chọn tên khác. Picnest không bao giờ ghi đè ảnh trong thư mục này."; "The original photo is not in its folder now." / "Ảnh gốc không còn trong thư mục."; "Picnest could not read the photo." / "Picnest không đọc được ảnh."; "Picnest could not save the edited copy: %@" / "Picnest không lưu được bản sao đã chỉnh sửa: %@". Reuse the existing keys **Cancel** and **Show in Finder**.
+
+- [ ] **Step 1: Write the failing tests.** Use `writeTestJPEG` from `PicnestTests/Support.swift` and a fake `chooseDestination`.
+  - `testRotateIsOneUndoStep`, `testSliderDragIsOneUndoStepAfterEndDrag`, `testResetThenUndoBringsTheEditBack`, `testRedoAfterUndo`.
+  - `testSquareAspectFitsTheCrop`.
+  - `testStepWithChangesAsksBeforeDiscard` (`isConfirmingDiscard`, `current` unchanged; `confirmDiscard` moves on and gives `.original`).
+  - `testStepWithoutChangesMovesAtOnce`, `testPositionText` ("2 of 3").
+  - `testCloseWithChangesAsks`, `testCloseWithoutChangesCallsOnClose`.
+  - `testSuggestedNameIsUniqueInTheFolder` (`a edited.jpg` exists, so the panel gets `a edited 2.jpg`).
+  - `testCancelledPanelExportsNothing`.
+  - `testExportOverTheOriginalShowsTheMessage` (fake panel returns the original URL; `exportError` is the catalog text; the original keeps its bytes).
+  - `testExportKeepsTheEditAndSetsLastExport`.
+  - `testPreviewUpdatesAfterAnEdit` (`waitUntil` the preview width changes after `rotate`).
+- [ ] **Step 2: Run** `xcodebuild test … -only-testing:PicnestTests/PhotoEditorViewModelTests`. Expected: build fails.
+- [ ] **Step 3: Implement.** Run `xcodegen generate` for the new folder. Add every string above with `en` and `vi`.
+- [ ] **Step 4: Run the full app tests** and `python3 -I scripts/sync-string-catalog.py --check`. Expected: PASS, exit 0.
+- [ ] **Step 5: Commit** `feat(editor): add the photo editor view model`.
+
+### Task 4.6: Open the editor and route the keys
+
+**Files:**
+- Modify: `Picnest/Review/ReviewViewModel.swift`, `Picnest/Review/ReviewCommands.swift`, `Picnest/Review/SelectionBar.swift` (`PhotoContextMenu`), `Picnest/Review/InspectorView.swift`, `Picnest/Localizable.xcstrings`
+- Create: `PicnestTests/EditorEntryTests.swift`
+
+**Interfaces:**
+- Consumes: task 4.5.
+- Produces on `ReviewViewModel`: `canEdit(_ id: MediaID) -> Bool`, `openEditor(_ id: MediaID? = nil)`, `editor: PhotoEditorViewModel?` (read only), `closeEditor()`, `var isEditing: Bool`.
+- Rule: `canEdit` is `true` only for a photo of kind `.image`, with no `.unreadable` state, outside Recently Deleted, while `canSortOrRescan` is `true`.
+- Rule: the set is the selected images in grid order when 2 or more are selected. Else it is the visible images of the current item. `start` is the given id, or the anchor.
+- Rule: `canSortOrRescan` is `false` while `isEditing`.
+- Rule: `protected` is `ProtectedFiles(source:mediaIDs:otherPaths:)` with every `scan.media` id and every `trashPath`.
+- Rule: while `isEditing`, the sidebar stays hidden. Remove the sidebar toggle (`.toolbar(removing: .sidebarToggle)`). A change of `selectedItem` while editing calls `editor.requestClose()` and keeps the old item until the close.
+- Produces: `UndoRouting.route(firstResponderIsText: Bool, editorCanAct: Bool?, reviewCanAct: Bool) -> UndoRouting` with the new case `.editor`. `editorCanAct` is `nil` when no editor is open. The order is: text field, then editor, then review. An open editor that cannot act gives `.nothing`, never `.review`.
+- Produces: menu **Image > Edit Photo** (⌘E), on only when `canEdit(anchor)`. Context menu **Edit Photo…** after **Open**. Inspector button **Edit** (`slider.horizontal.3`) for 1 photo. Copy: **Edit Photo** / Chỉnh sửa ảnh (reuse the task 4.5 key), **Edit Photo…** / Chỉnh sửa ảnh…, **Edit** / Chỉnh sửa, **Image** / Hình ảnh.
+
+- [ ] **Step 1: Write the failing tests:** `testCanEditOnlyAReadableImage` (video, unreadable, and trashed give `false`), `testCanEditIsOffWhileFilesMove`, `testOpenEditorUsesTheSelectionAsTheSet`, `testOpenEditorWithOneSelectedUsesTheVisiblePhotos`, `testEditingTurnsOffSortRescanDoneAndStartOver` (Review Focus 3), `testCloseEditorKeepsTheSelection`, `testProtectedFilesHoldEveryPhoto` (a session photo, a trashed photo, and the NFD and upper-case name of a photo are protected; a new name is not), `testSidebarChangeWhileEditingAsksToClose`. In the same file: `testUndoRoutingOrder` (text before editor before review; an open editor that cannot act gives `.nothing`; Review Focus 3).
+- [ ] **Step 2: Run** `xcodebuild test … -only-testing:PicnestTests/EditorEntryTests`. Expected: build fails.
+- [ ] **Step 3: Implement** the ViewModel part and the routing. `ReviewCommands` reads the editor from `review?.editor`. Then add the menu item, the context menu item, and the inspector button.
+- [ ] **Step 4: Run the full app tests** and the catalog check. Expected: PASS, exit 0. `AppDelegateTests` and the old undo tests stay green.
+- [ ] **Step 5: Commit** `feat(editor): open the editor and route undo to it`.
+
+### Task 4.7: The editor screen
+
+**Files:**
+- Create: `Picnest/Editor/PhotoEditorView.swift` (header, layout, keys), `Picnest/Editor/EditorCanvas.swift` (preview, crop frame, grid), `Picnest/Editor/EditorToolRail.swift`, `Picnest/Editor/EditorPanel.swift` (aspect, straighten, rotate and flip, adjustments), `Picnest/Editor/EditorFilmstrip.swift`
+- Modify: `Picnest/Review/ReviewView.swift`, `Picnest/Design/Theme.swift`, `PicnestTests/ThemeTests.swift`, `Picnest/Localizable.xcstrings`
+
+**Interfaces:**
+- Consumes: tasks 4.5 and 4.6.
+- Produces in `Theme`: `canvasBackground` (light `0xEFEAE7`, dark `0x141213`), `cropLine` (`0xFFFFFF` in both), `cropShade` (`0x000000` in both) with `Theme.cropShadeAlpha = 0.45`. In `Theme.Metrics`: `editorToolRail: CGFloat = 220`, `editorPanel: CGFloat = 300`, `filmstripHeight: CGFloat = 96`.
+- Produces: `PhotoEditorView(model: PhotoEditorViewModel)`. `ReviewView.detail` shows it when `model.editor` is set, and sets the split view visibility to `.detailOnly`. It removes the sidebar toggle while the editor shows (task 4.6 rule).
+- Layout (mockup 04), from top to bottom and left to right:
+  - Header: **Edit Photo**, "Original stays unchanged" with an info button, **Reset**, **Undo**, **Export edited copy** (`.borderedProminent`).
+  - Left rail: the 4 tools, each with icon, title, and subtitle.
+  - Center: the canvas, then "IMG_2048.jpg · Original" or "· Edited", then "Edited copy will be exported separately".
+  - Right panel, section 1 and 2: Aspect ratio (a menu that shows the output W × H), Straighten (slider -45…45, step 0.1).
+  - Right panel, section 3 and 4: Rotate & flip (4 buttons), Adjustments (4 sliders, value at the right).
+  - Bottom: the filmstrip, "N photos in this set", and ‹ "1 of 5" ›.
+- The tool sets the canvas mode. **Crop** shows the whole frame with shade, a 3 × 3 grid, and 8 handles. **Straighten** shows the grid. **Rotate** and **Adjust** show the cropped result. A tool click scrolls the panel to its section.
+- The toolbar shows **Back** (`chevron.left`, label "Back to Photos" / "Quay lại ảnh") and **Redo**. The account avatar and the tab bar are out (spec 6).
+- Keys: ⌘Z and ⇧⌘Z go through task 4.6. Esc closes. ← and → step. ⌘R turns left, and ⌥⌘R turns right. ⇧⌘E exports.
+- Hold **Show Original** to see the base image. Arrows and Esc work only when no text field and no slider has focus.
+- Accessibility: each icon button has a label. Each slider has a value text ("+20"). The crop frame has an adjustable action: up makes it 5% larger, down makes it 5% smaller, around its center. With **Reduce Motion** on, no motion plays.
+
+- [ ] **Step 1: Add the tokens.** Add `testCropLineIsVisibleOnShade` to `ThemeTests`: `cropLine` on `cropShade` has a contrast of at least 4.5 in both modes.
+- [ ] **Step 2: Build** the 5 views. Reuse `ThumbnailImage` in the filmstrip. Convert crop drag points to 0…1 units in the canvas, then call `dragCrop`.
+- [ ] **Step 3: Hook** the view into `ReviewView`, the discard dialog, the export error alert, and the "Saved" note with **Show in Finder**.
+- [ ] **Step 4: Manual check I (editing).** Open a landscape JPEG, a portrait HEIC with EXIF orientation 6, and a PNG with alpha. On each, crop square, straighten 10°, turn right, flip, and set each slider. Export, then open the copy in Preview. It looks like the editor preview. Press ⌘Z until the photo is `.original`. Run `shasum -a 256` on the original before and after. The hash is the same.
+- [ ] **Step 5: Manual check J (layout).** In `en` and `vi`, Light and Dark, at 1000 × 680, no text is cut, and the panel scrolls. Compare with mockup 04. Write the differences in a list.
+- [ ] **Step 6: Manual check K (keys and VoiceOver).** Press ⌘Z in the editor after a category move in the library. Only the edit undoes. Press ⇧⌘R: nothing happens. VoiceOver reads every button and slider.
+- [ ] **Step 7: Run the full app tests** and the catalog check. Expected: PASS, exit 0. Commit `feat(editor): add the photo editor screen`.
+
+### Task 4.8: Docs and final pass
+
+**Files:** `docs/dictionary.md`, `docs/specs/2026-11-01-ui-redesign-design.md`, `BUILD.md` (only if a new check needs a step), this plan.
+
+- [ ] **Step 1: Dictionary.** Add Photo Editor, Edited copy, Export edited copy, Original. Each says that it changes no file of the source folder, except the new copy where the user saves it.
+- [ ] **Step 2: Spec 4.5.** Write the entry points (inspector, context menu, ⌘E; Quick Look has no button), the export formats, and the rule that protects session photos. Link to this plan section.
+- [ ] **Step 3: Search for color literals** as in task 2.8 step 1. Expected: nothing in `Picnest/Editor`.
+- [ ] **Step 4: Run both test suites and the catalog check.** Expected: PASS, exit 0.
+- [ ] **Step 5: Merge phase 4** into `ui-redesign`. Tick the Status line.
+
+### Open questions for the owner (phase 4)
+
+Each has a default in the tasks above. Change a default before its task starts.
+
+1. Where the save panel opens first (task 4.5). Default: the folder of the original. A copy there shows as a new photo after the next rescan. Other choice: `~/Pictures`.
+2. Metadata of the copy (task 4.4). Default: keep EXIF, date, and GPS. Other choice: remove GPS location.
+3. Export formats and quality (task 4.4). Default: JPEG, HEIC, PNG, quality 0.9, format of the original. Other choice: a quality slider in the panel.
+4. The filmstrip (task 4.7). Default: in scope, with the selection or the visible photos as the set. Other choice: 1 photo only, no filmstrip.
+5. Entry points (task 4.6). Default: inspector, context menu, ⌘E. Double-click stays Quick Look. Other choice: Return or double-click opens the editor.
+6. An animated GIF (task 4.4). Default: the editor uses the first frame and exports PNG. Other choice: no edit for a GIF.
+
+---
+
 ## Later phases
 
 Write a detailed plan for each phase after the phase before it is merged. Reason: each phase depends on facts that the earlier phases and code reading give.
 
-- **Phase 4 (Photo Editor).** Core Image. Edit value type with Reset and Undo. Output only through **Export edited copy**. The original file does not change (test: file hash before and after).
 - **Phase 5 (Layout Editor).** Contact sheet first, then Collage. Export PNG and PDF. Test the output size for A4 landscape.

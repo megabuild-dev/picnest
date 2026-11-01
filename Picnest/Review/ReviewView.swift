@@ -14,6 +14,8 @@ struct ReviewView: View {
     @SceneStorage("inspectorShown") private var inspectorShown = true
     /// Grid or list. Kept for the app.
     @AppStorage(LibraryLayout.storageKey) private var layout: LibraryLayout = .grid
+    /// The sidebar hides while the photo editor shows (the editor fills the window).
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     private let review: ReviewService
     private let sortService: SortService
@@ -25,14 +27,15 @@ struct ReviewView: View {
     /// (`rescan`) and closes the session after a sort (`done`, spec 9.1). `afterScan` is true when a scan
     /// opened this review (spec 3.7).
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, sortService: SortService,
-         library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil) {
+         library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil,
+         photoEdits: PhotoEditService) {
         self.preferences = preferences
         self.review = review
         self.sortService = sortService
         self.library = library
         self.app = app
         _model = State(initialValue: ReviewViewModel(
-            review: review, classify: classify, thumbnails: thumbnails, library: library, app: app,
+            review: review, classify: classify, thumbnails: thumbnails, library: library, photoEdits: photoEdits, app: app,
             afterScan: afterScan, onRescan: app.rescan))
     }
 
@@ -48,21 +51,29 @@ struct ReviewView: View {
 
     /// The screen with its sheets and dialogs. Split from `body` so the compiler type-checks it in time.
     private var screen: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView(model: model, preferences: preferences)
                 .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
         } detail: {
-            detail
-                .background(Theme.background.color)
-                .navigationTitle(model.title)
-                .navigationSubtitle(countText)
-                .searchable(text: Bindable(model).searchText, placement: .toolbar, prompt: "Search")
-                .toolbar { toolbar }
-                .inspector(isPresented: $inspectorShown) {
-                    InspectorView(model: model)
-                        .inspectorColumnWidth(min: 280, ideal: 300, max: 360)
-                }
+            if let editor = model.editor {
+                PhotoEditorView(model: editor, library: model)
+                    .navigationTitle("Edit Photo")
+                    .toolbar(removing: .sidebarToggle)
+                    .toolbar { editorToolbar(editor) }
+            } else {
+                detail
+                    .background(Theme.background.color)
+                    .navigationTitle(model.title)
+                    .navigationSubtitle(countText)
+                    .searchable(text: Bindable(model).searchText, placement: .toolbar, prompt: "Search")
+                    .toolbar { toolbar }
+                    .inspector(isPresented: $inspectorShown) {
+                        InspectorView(model: model)
+                            .inspectorColumnWidth(min: 280, ideal: 300, max: 360)
+                    }
+            }
         }
+        .onChange(of: model.isEditing) { columnVisibility = model.isEditing ? .detailOnly : .automatic }
         .alert("New Category", isPresented: Bindable(model).isNamingNewCategory) {
             TextField("Name", text: $newCategoryName)
             Button("Create") { model.createNewCategory(name: newCategoryName) }
@@ -239,6 +250,21 @@ struct ReviewView: View {
         }
     }
 
+    /// Back and Redo only: no avatar, no tab bar, no search (spec 6).
+    @ToolbarContentBuilder private func editorToolbar(_ editor: PhotoEditorViewModel) -> some ToolbarContent {
+        ToolbarItem(placement: .navigation) {
+            Button("Back to Photos", systemImage: "chevron.left", action: editor.requestClose)
+                .labelStyle(.iconOnly)
+                .help("Back to Photos")
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button("Redo", systemImage: "arrow.uturn.forward", action: editor.redo)
+                .labelStyle(.iconOnly)
+                .disabled(!editor.canRedo)
+                .help("Redo")
+        }
+    }
+
     /// The actions that the mockup has no button for.
     private var moreMenu: some View {
         Menu("More", systemImage: "ellipsis.circle") {
@@ -327,6 +353,11 @@ enum ReviewPreviewData {
     }
 
     /// A library over a temporary sessions folder and a private defaults suite.
+    static func photoEdits() -> PhotoEditService {
+        let images = ImageRepository()
+        return PhotoEditService(thumbnails: ThumbnailService(images: images), images: images)
+    }
+
     static func library() -> LibraryService {
         let root = FileManager.default.temporaryDirectory.appending(path: "PicnestPreview", directoryHint: .isDirectory)
         let sessions = SessionRepository(root: root.appending(path: "Sessions"))
@@ -394,7 +425,8 @@ extension ReviewView {
     fileprivate init(previewSelecting ids: [MediaID]) {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),
-                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app())
+                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app(),
+                  photoEdits: ReviewPreviewData.photoEdits())
         let model = _model.wrappedValue
         for id in ids { model.click(id, modifiers: .command) }
     }
@@ -405,7 +437,8 @@ extension ReviewView {
     fileprivate init(previewNotSure: Void) {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),
-                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app())
+                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app(),
+                  photoEdits: ReviewPreviewData.photoEdits())
         _model.wrappedValue.selectedItem = .notSure
     }
 }

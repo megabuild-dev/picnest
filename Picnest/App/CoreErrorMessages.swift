@@ -12,6 +12,8 @@ enum CoreErrorMessages {
             return text(for: error)
         case let error as FolderError:
             return text(for: error)
+        case let error as PhotoExportError:
+            return text(for: error)
         case EmbedderError.unreadable(let url):
             return String(localized: "Picnest could not read “\(url.lastPathComponent)”.")
         case let failure as CoreMLEmbedder.Failure:
@@ -35,6 +37,17 @@ enum CoreErrorMessages {
             return String(localized: "The folder \"\(folder)\" stays, because it holds \(CountText.files(others)) that were not in this category.")
         case .folderNotRemoved(let folder):
             return String(localized: "The folder \"\(folder)\" could not be removed.")
+        }
+    }
+
+    /// The text of an edited copy that could not be saved.
+    static func text(for error: PhotoExportError) -> String {
+        switch error {
+        case .wouldReplaceOriginal:
+            return String(localized: "Choose another name. Picnest never replaces a photo of this folder.")
+        case .originalMissing: return String(localized: "The original photo is not in its folder now.")
+        case .cannotRead: return String(localized: "Picnest could not read the photo.")
+        case .cannotWrite(let reason): return String(localized: "Picnest could not save the edited copy: \(reason)")
         }
     }
 

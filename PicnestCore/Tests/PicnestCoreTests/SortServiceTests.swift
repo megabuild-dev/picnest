@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import Testing
 @testable import PicnestCore
@@ -107,27 +106,7 @@ struct SortFixture {
 
     /// Relative file paths under a folder, sorted.
     static func files(in folder: URL) throws -> [String] {
-        try snapshot(folder).keys.filter { !$0.hasSuffix("/") }.sorted()
-    }
-
-    /// Relative path → size and SHA-256 for files; folders end with "/". Empty if the folder does not exist.
-    static func snapshot(_ folder: URL) throws -> [String: String] {
-        guard FileManager.default.fileExists(atPath: folder.path) else { return [:] }
-        var out: [String: String] = [:]
-        let root = folder.resolvingSymlinksInPath().standardizedFileURL.path
-        guard let e = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.isDirectoryKey]) else { return [:] }
-        for case let url as URL in e {
-            let path = url.resolvingSymlinksInPath().standardizedFileURL.path
-            let rel = String(path.dropFirst(root.count + 1))
-            if (try url.resourceValues(forKeys: [.isDirectoryKey])).isDirectory == true {
-                out[rel + "/"] = "dir"
-            } else {
-                let data = try Data(contentsOf: url)
-                let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-                out[rel] = "\(data.count) \(hash)"
-            }
-        }
-        return out
+        try FileFingerprint.snapshot(folder).keys.filter { !$0.hasSuffix("/") }.sorted()
     }
 }
 
@@ -154,18 +133,18 @@ struct SortServiceTests {
         let f = try SortFixture()
         let service = SortService()
         let plan = try f.plan(service)
-        let srcBefore = try SortFixture.snapshot(f.source)
-        #expect(try SortFixture.snapshot(f.destination).isEmpty)
+        let srcBefore = try FileFingerprint.snapshot(f.source)
+        #expect(try FileFingerprint.snapshot(f.destination).isEmpty)
 
         let events = try await drain(service.run(plan, mode: .copy, journal: f.journal, stop: { false }))
         guard case .finished(let copied, let moved)? = events.last else { Issue.record("no finished"); return }
         #expect(copied == 5 && moved == 0)
         #expect(try SortFixture.files(in: f.destination) == ["Food/a.jpg", "Food/c.jpg", "Food/d.jpg", "Pets/b.jpg", "Pets/e.jpg"])
-        #expect(try SortFixture.snapshot(f.source) == srcBefore)
+        #expect(try FileFingerprint.snapshot(f.source) == srcBefore)
         #expect(try f.journal.lastIsComplete() == true)
 
         try service.undo(journal: f.journal)
-        #expect(try SortFixture.snapshot(f.source) == srcBefore)
+        #expect(try FileFingerprint.snapshot(f.source) == srcBefore)
         #expect(!FileManager.default.fileExists(atPath: f.destination.path))
         #expect(try f.journal.lastIsComplete() == nil)
     }
@@ -174,7 +153,7 @@ struct SortServiceTests {
         let f = try SortFixture()
         let service = SortService()
         let plan = try f.plan(service, mode: .move)
-        let srcBefore = try SortFixture.snapshot(f.source)
+        let srcBefore = try FileFingerprint.snapshot(f.source)
 
         let events = try await drain(service.run(plan, mode: .move, journal: f.journal, stop: { false }))
         guard case .finished(let copied, let moved)? = events.last else { Issue.record("no finished"); return }
@@ -183,7 +162,7 @@ struct SortServiceTests {
         #expect(try SortFixture.files(in: f.destination).count == 5)
 
         try service.undo(journal: f.journal)
-        #expect(try SortFixture.snapshot(f.source) == srcBefore)
+        #expect(try FileFingerprint.snapshot(f.source) == srcBefore)
         #expect(!FileManager.default.fileExists(atPath: f.destination.path))
     }
 
@@ -201,7 +180,7 @@ struct SortServiceTests {
     @Test func organizeMovesFilesIntoCategoryFoldersWithoutJournal() async throws {
         let f = try SortFixture()
         let service = SortService()
-        let before = try SortFixture.snapshot(f.source)
+        let before = try FileFingerprint.snapshot(f.source)
         let plan = try service.planInPlace(try f.session(), source: f.source)
         #expect(plan.entries.count == 5)
 
@@ -217,7 +196,7 @@ struct SortServiceTests {
         #expect(files.filter { $0.hasPrefix("Food/") }.count == 3)
         #expect(files.filter { $0.hasPrefix("Pets/") }.count == 2)
         #expect(files.allSatisfy { $0.contains("_Food_") || $0.contains("_Pets_") })
-        #expect(Set(try SortFixture.snapshot(f.source).values) == Set(before.values))
+        #expect(Set(try FileFingerprint.snapshot(f.source).values) == Set(before.values))
     }
 
     @Test func organizeStopsIfAFileChangedSinceScan() async throws {
@@ -297,7 +276,7 @@ struct SortServiceTests {
         let ops = TestFileOps(failOnCopy: 3)
         let service = SortService(fileOps: ops)
         let plan = try f.plan(service)
-        let srcBefore = try SortFixture.snapshot(f.source)
+        let srcBefore = try FileFingerprint.snapshot(f.source)
 
         var thrown: Error?
         do { try await drain(service.run(plan, mode: .copy, journal: f.journal, stop: { false })) } catch { thrown = error }
@@ -311,7 +290,7 @@ struct SortServiceTests {
         try service.undo(journal: f.journal)
         #expect(try SortFixture.files(in: f.destination).isEmpty)
         #expect(!FileManager.default.fileExists(atPath: f.destination.path))
-        #expect(try SortFixture.snapshot(f.source) == srcBefore)
+        #expect(try FileFingerprint.snapshot(f.source) == srcBefore)
     }
 
     @Test func failedMoveCanBeUndone() async throws {
@@ -319,14 +298,14 @@ struct SortServiceTests {
         let ops = TestFileOps(failOnCopy: 4)
         let service = SortService(fileOps: ops)
         let plan = try f.plan(service, mode: .move)
-        let srcBefore = try SortFixture.snapshot(f.source)
+        let srcBefore = try FileFingerprint.snapshot(f.source)
 
         await #expect(throws: CocoaError.self) { try await drain(service.run(plan, mode: .move, journal: f.journal, stop: { false })) }
         #expect(try f.journal.read().filter { $0.op == .move }.count == 3)
         #expect(try SortFixture.files(in: f.source).count == 2)
 
         try service.undo(journal: f.journal)
-        #expect(try SortFixture.snapshot(f.source) == srcBefore)
+        #expect(try FileFingerprint.snapshot(f.source) == srcBefore)
         #expect(!FileManager.default.fileExists(atPath: f.destination.path))
     }
 
@@ -392,7 +371,7 @@ struct SortServiceTests {
         let ops = TestFileOps()
         let service = SortService(fileOps: ops)
         let plan = try f.plan(service, mode: .move)
-        let srcBefore = try SortFixture.snapshot(f.source)
+        let srcBefore = try FileFingerprint.snapshot(f.source)
 
         let e = await sortError { try await drain(service.run(plan, mode: .move, journal: f.journal, stop: { ops.copies >= 2 })) }
         #expect(e == .stopped)
@@ -401,7 +380,7 @@ struct SortServiceTests {
         #expect(try f.journal.read().filter { $0.op == .move }.count == 2)
 
         try service.undo(journal: f.journal)
-        #expect(try SortFixture.snapshot(f.source) == srcBefore)
+        #expect(try FileFingerprint.snapshot(f.source) == srcBefore)
         #expect(!FileManager.default.fileExists(atPath: f.destination.path))
     }
 
@@ -410,7 +389,7 @@ struct SortServiceTests {
         let ops = TestFileOps(gateOnCopy: 2)
         let service = SortService(fileOps: ops)
         let plan = try f.plan(service, mode: .move)
-        let srcBefore = try SortFixture.snapshot(f.source)
+        let srcBefore = try FileFingerprint.snapshot(f.source)
 
         let stream = service.run(plan, mode: .move, journal: f.journal, stop: { false })
         let consumer = Task { for try await _ in stream {} }
@@ -427,7 +406,7 @@ struct SortServiceTests {
         #expect(try SortFixture.files(in: f.source).count == 3)
 
         try service.undo(journal: f.journal)
-        #expect(try SortFixture.snapshot(f.source) == srcBefore)
+        #expect(try FileFingerprint.snapshot(f.source) == srcBefore)
         #expect(!FileManager.default.fileExists(atPath: f.destination.path))
     }
 
@@ -460,12 +439,12 @@ struct SortServiceTests {
         let service = SortService()
         for mode in [SortMode.copy, .move] {
             let plan = try f.plan(service, mode: mode)
-            let srcBefore = try SortFixture.snapshot(f.source)
+            let srcBefore = try FileFingerprint.snapshot(f.source)
             try await drain(service.run(plan, mode: mode, journal: f.journal, stop: { false }))
             #expect(try SortFixture.files(in: f.destination).count == 2)
             for entry in plan.entries { #expect(FileManager.default.fileExists(atPath: entry.destination.path)) }
             try service.undo(journal: f.journal)
-            #expect(try SortFixture.snapshot(f.source) == srcBefore)
+            #expect(try FileFingerprint.snapshot(f.source) == srcBefore)
             #expect(!FileManager.default.fileExists(atPath: f.destination.path))
         }
     }

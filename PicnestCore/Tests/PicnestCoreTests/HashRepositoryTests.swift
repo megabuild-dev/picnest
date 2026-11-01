@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import Testing
 @testable import PicnestCore
@@ -15,10 +14,6 @@ struct HashRepositoryTests {
             modified: values.contentModificationDate ?? Date())
     }
 
-    private func sha256(_ data: Data) -> String {
-        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-    }
-
     @Test func hashesOnlySharedSizes() async throws {
         let dir = try TempDir()
         let source = dir.url.appending(path: "Photos", directoryHint: .isDirectory)
@@ -33,9 +28,9 @@ struct HashRepositoryTests {
         let reports = Reports()
         let hashes = try await repo.hashes(for: media, source: source) { done, total in reports.add(done, total) }
         #expect(hashes.keys.sorted() == ["a.jpg", "b.jpg", "c.jpg"])
-        #expect(hashes["a.jpg"] == sha256(same))
-        #expect(hashes["b.jpg"] == sha256(same))
-        #expect(hashes["c.jpg"] == sha256(other))
+        #expect(hashes["a.jpg"] == FileFingerprint.sha256(same))
+        #expect(hashes["b.jpg"] == FileFingerprint.sha256(same))
+        #expect(hashes["c.jpg"] == FileFingerprint.sha256(other))
         #expect(reports.last.map { $0 == (3, 3) } == true)
     }
 
@@ -61,7 +56,7 @@ struct HashRepositoryTests {
         var changed = a
         changed.modified = a.modified.addingTimeInterval(10)
         let third = try await HashRepository(cacheDirectory: cache).hashes(for: [changed, b], source: source)
-        #expect(third["a.jpg"] == sha256(Data(repeating: 2, count: 2048)))
+        #expect(third["a.jpg"] == FileFingerprint.sha256(Data(repeating: 2, count: 2048)))
     }
 
     @Test func unreadableFileHasNoHash() async throws {

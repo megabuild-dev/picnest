@@ -91,7 +91,17 @@ final class ReviewViewModel {
 
     var selectedItem: SidebarItem = .all {
         didSet {
-            guard selectedItem != oldValue else { return }
+            guard selectedItem != oldValue, !isRevertingItem else { return }
+            if let editor {
+                // The photo editor holds this item. Keep it until the editor closes (it may ask first).
+                let requested = selectedItem
+                isRevertingItem = true
+                selectedItem = oldValue
+                isRevertingItem = false
+                itemAfterClose = requested
+                editor.requestClose()
+                return
+            }
             // The issue filter belongs to the Needs Review view only.
             reviewIssue = nil
             clearSelection()
@@ -201,6 +211,13 @@ final class ReviewViewModel {
     /// Open a photo in its default app, and show photos in Finder. `NSWorkspace` by default; tests replace them.
     @ObservationIgnored private let openURL: @MainActor (URL) -> Void
     @ObservationIgnored private let revealURLs: @MainActor ([URL]) -> Void
+    @ObservationIgnored private let photoEdits: PhotoEditService
+    @ObservationIgnored private let chooseExportDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
+    /// The photo editor, or nil. It opens with `openEditor` and closes with `closeEditor`.
+    private(set) var editor: PhotoEditorViewModel?
+    /// The sidebar item that the user chose while the editor was open. It shows when the editor closes.
+    @ObservationIgnored private var itemAfterClose: SidebarItem?
+    @ObservationIgnored private var isRevertingItem = false
     @ObservationIgnored private let folderExists: (URL) -> Bool
     /// A lookup of every scanned photo, trashed ones too: a photo that comes back from the Trash needs its
     /// entry. Lists use `session.visibleMedia`. The scan does not change while this review is open: a rescan
@@ -230,12 +247,17 @@ final class ReviewViewModel {
     /// `app` holds the undo flag that every window shares, and starts over (`startOver`). `afterScan` is true
     /// when a scan or a rescan opened this review.
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
-         app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
+         photoEdits: PhotoEditService, app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
-         defaults: UserDefaults = .standard, duplicateSearch: DuplicatesViewModel.Search? = nil) {
+         defaults: UserDefaults = .standard, duplicateSearch: DuplicatesViewModel.Search? = nil,
+         chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil) {
         self.defaults = defaults
+        self.photoEdits = photoEdits
+        self.chooseExportDestination = chooseExportDestination ?? { name, folder, format in
+            await EditorSavePanel.choose(suggestedName: name, folder: folder, format: format)
+        }
         let saved = defaults.object(forKey: Self.thumbnailSizeKey) as? Double
         thumbnailSize = Self.clampedThumbnailSize(saved ?? Self.defaultThumbnailSize)
         self.folderExists = folderExists
@@ -332,9 +354,10 @@ final class ReviewViewModel {
     /// True while **Undo Last Sort** runs in any window.
     var isUndoingSort: Bool { app.isUndoingSort }
     /// False while a sort or an undo of a sort runs, while files move to or from the Trash (final review I1),
-    /// or while **Start Over…** runs: **Rescan**, **Sort Photos…**, **Undo Last Sort**, and **Start Over…** are off.
+    /// or while **Start Over…** runs, or while the photo editor is open: **Rescan**, **Sort Photos…**,
+    /// **Undo Last Sort**, **Done**, and **Start Over…** are off.
     var canSortOrRescan: Bool {
-        !isUndoingSort && !review.isMovingFiles && !app.isStartingOver && !library.isSortRunning
+        !isEditing && !isUndoingSort && !review.isMovingFiles && !app.isStartingOver && !library.isSortRunning
     }
     /// The text of the Undo Last Sort alert, or nil.
     var undoSortMessage: String?
@@ -941,6 +964,55 @@ final class ReviewViewModel {
 
     /// The photos that Quick Look can step through: the visible photos in grid order.
     var previewURLs: [URL] { visibleIDs.compactMap { mediaByID[$0].map(url(of:)) } }
+
+    // MARK: - Photo editor (UI redesign, Phase 4)
+
+    var isEditing: Bool { editor != nil }
+
+    /// True if the photo editor can open `id`: a readable image that is not in the Trash, outside Recently
+    /// Deleted, while no files move and no editor is open.
+    func canEdit(_ id: MediaID) -> Bool {
+        canSortOrRescan && bodyKind != .recentlyDeleted && isEditable(id)
+    }
+
+    /// True for a readable image that is not in the Trash. Ignores the state of the screen.
+    private func isEditable(_ id: MediaID) -> Bool {
+        guard let media = mediaByID[id], media.kind == .image else { return false }
+        return review.session.states[id] != .unreadable && !review.session.trashed.contains { $0.mediaID == id }
+    }
+
+    /// Opens the photo editor. The set is the selected images in grid order when 2 or more photos are selected,
+    /// else the visible images of the current item. It starts at `id`, or at the anchor photo.
+    func openEditor(_ id: MediaID? = nil) {
+        guard let start = id ?? anchor, canEdit(start) else { return }
+        let ids = selection.count >= 2 ? selectedInGridOrder : visibleIDs
+        let photos = ids.filter(isEditable).compactMap { id in
+            mediaByID[id].map { EditorPhoto(id: id, url: url(of: $0), fileName: Self.fileName($0)) }
+        }
+        guard !photos.isEmpty else { return }
+        let session = review.session
+        let protected = ProtectedFiles(
+            source: source, mediaIDs: Set(mediaByID.values.map(\.relativePath)),
+            otherPaths: session.trashed.map(\.trashPath))
+        itemAfterClose = nil
+        editor = PhotoEditorViewModel(
+            photos: photos, start: start, service: photoEdits, protected: protected,
+            chooseDestination: chooseExportDestination,
+            revealURL: { [weak self] in self?.revealURLs([$0]) },
+            onClose: { [weak self] in self?.closeEditor() },
+            onCancelClose: { [weak self] in self?.itemAfterClose = nil },
+            readSize: { [weak self] id in await self?.pixelSize(of: id) })
+    }
+
+    /// Closes the photo editor and drops its edit. The selection stays. A sidebar item that the user chose
+    /// meanwhile shows now.
+    func closeEditor() {
+        editor = nil
+        if let item = itemAfterClose {
+            itemAfterClose = nil
+            selectedItem = item
+        }
+    }
 
     // MARK: - Photo actions
 

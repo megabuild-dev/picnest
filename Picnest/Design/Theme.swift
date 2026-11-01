@@ -85,7 +85,17 @@ enum Theme {
     /// Shadows and the dim layer behind a blocking overlay. Used at an alpha of 0.12 to 0.2.
     static let shadow = ThemeColor(light: 0x000000, dark: 0x000000)
 
+    /// The ground behind the photo in the editor.
+    static let canvasBackground = ThemeColor(light: 0xEFEAE7, dark: 0x141213)
+    /// The crop frame, its grid, and its handles. The shade is the dimmed area outside the crop, used at `cropShadeAlpha`.
+    static let cropLine = ThemeColor(light: 0xFFFFFF, dark: 0xFFFFFF)
+    static let cropShade = ThemeColor(light: 0x000000, dark: 0x000000)
+    static let cropShadeAlpha = 0.45
+
     enum Metrics {
+        static let editorToolRail: CGFloat = 220
+        static let editorPanel: CGFloat = 300
+        static let filmstripHeight: CGFloat = 96
         static let tileCorner: CGFloat = 10
         static let gridSpacing: CGFloat = 12
         static let sidebarMin: CGFloat = 220

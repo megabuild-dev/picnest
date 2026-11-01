@@ -39,5 +39,9 @@ links:
 | Collection | A named group of photos. It does not move a file. |
 | Recently Deleted | The sidebar list of photos that the user moved to the Trash. It does not move a file. |
 | Put Back | The action that returns a photo from Recently Deleted. It moves the file from the macOS Trash to its original path. |
+| Photo Editor | The screen where the user crops, straightens, rotates, flips, and adjusts a photo. It changes no file of the source folder. The only output is the edited copy. |
+| Original | The photo file in the source folder. The Photo Editor never changes it. The editor shows it with the text "Original stays unchanged". |
+| Edited copy | The new file that **Export edited copy** writes. It is the only file the editor makes. The user chooses where to save it. |
+| Export edited copy | The action that saves the edit as a new file. It changes no file of the source folder, except the new copy where the user saves it. |
 
 See [CLI design](https://github.com/megabuild-dev/classifyimages/blob/main/docs/specs/2026-10-14-image-classifier-design.md) for the full design. See [[2026-10-21-macos-app-design]] for the macOS app.

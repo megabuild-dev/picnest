@@ -202,6 +202,16 @@ private struct SinglePhoto: View {
     }
 
     private var libraryActions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            moveActions
+            Button("Edit", systemImage: "slider.horizontal.3") { model.openEditor(facts.id) }
+                .disabled(!model.canEdit(facts.id))
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+    }
+
+    private var moveActions: some View {
         HStack(spacing: 8) {
             if facts.isUncertain {
                 Button("Accept suggestion", systemImage: "checkmark", action: model.acceptSelection)
@@ -215,8 +225,6 @@ private struct SinglePhoto: View {
             Menu("More", systemImage: "ellipsis") { PhotoContextMenu(model: model, id: facts.id, anchor: anchor.view) }
                 .menuStyle(.button).labelStyle(.iconOnly).fixedSize()
         }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
     }
 }
 
@@ -243,7 +251,7 @@ private struct ConfidenceBar: View {
     let model = ReviewViewModel(
         review: ReviewPreviewData.review(), classify: ClassifyService(),
         thumbnails: ThumbnailService(images: ImageRepository()), library: ReviewPreviewData.library(),
-        app: ReviewPreviewData.app(), onRescan: {})
+        photoEdits: ReviewPreviewData.photoEdits(), app: ReviewPreviewData.app(), onRescan: {})
     model.selectedItem = .notSure
     if let first = model.visibleIDs.first { model.click(first, modifiers: []) }
     return InspectorView(model: model)

@@ -220,11 +220,11 @@ public struct SortPlanner: Sendable {
         }
     }
 
-    private static func key(_ name: String) -> String {
+    static func key(_ name: String) -> String {
         name.precomposedStringWithCanonicalMapping.lowercased()
     }
 
-    private static func uniqueName(_ name: String, taken: Set<String>) -> String {
+    static func uniqueName(_ name: String, taken: Set<String>) -> String {
         guard taken.contains(key(name)) else { return name }
         let ns = name as NSString
         let ext = ns.pathExtension

@@ -114,15 +114,16 @@ final class FakeTrashFileOps: FileOps, @unchecked Sendable {
     }
 }
 
-/// Writes a square JPEG of 1 color to `url`, for tests that read real image files (hashes, pixel sizes).
-func writeTestJPEG(to url: URL, red: CGFloat, green: CGFloat, blue: CGFloat, size: Int) throws {
+/// Writes a JPEG of 1 color to `url`, for tests that read real image files (hashes, pixel sizes).
+/// It is square (`size` × `size`) unless `height` is given.
+func writeTestJPEG(to url: URL, red: CGFloat, green: CGFloat, blue: CGFloat, size: Int, height: Int? = nil) throws {
     enum Failure: Error { case encode }
     guard let context = CGContext(
-        data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
+        data: nil, width: size, height: height ?? size, bitsPerComponent: 8, bytesPerRow: 0,
         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
     else { throw Failure.encode }
     context.setFillColor(red: red, green: green, blue: blue, alpha: 1)
-    context.fill(CGRect(x: 0, y: 0, width: size, height: size))
+    context.fill(CGRect(x: 0, y: 0, width: size, height: height ?? size))
     guard let image = context.makeImage(),
           let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
     else { throw Failure.encode }
@@ -275,7 +276,9 @@ struct ReviewFixture {
         revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in },
         folderExists: @escaping (URL) -> Bool = { _ in true },
         session makeCustom: ((URL) -> Session)? = nil,
-        defaults: UserDefaults? = nil) throws -> (model: ReviewViewModel, review: ReviewService) {
+        defaults: UserDefaults? = nil,
+        chooseExport: (@MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?)? = nil)
+        throws -> (model: ReviewViewModel, review: ReviewService) {
         let source = try temp.folder("Photos")
         let review = ReviewService(
             session: makeCustom?(source) ?? makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
@@ -285,9 +288,10 @@ struct ReviewFixture {
         let environment = self.environment
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), onRescan: onRescan,
+            library: environment.library, photoEdits: environment.photoEdits, app: AppModel(environment: environment), onRescan: onRescan,
             openURL: openURL, revealURLs: revealURLs, folderExists: folderExists,
-            defaults: defaults ?? suite.defaults)
+            defaults: defaults ?? suite.defaults,
+            chooseExportDestination: chooseExport)
         return (model, review)
     }
 }

@@ -1082,7 +1082,7 @@ struct ReviewViewModelTests {
         let environment = self.environment
         return ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), afterScan: afterScan, onRescan: {})
+            library: environment.library, photoEdits: environment.photoEdits, app: AppModel(environment: environment), afterScan: afterScan, onRescan: {})
     }
 
     @Test func suggestOpensOnceAfterScanWithManyNotSure() throws {
@@ -1134,7 +1134,7 @@ struct ReviewViewModelTests {
         guard case .review(let review, _) = app.screen else { throw Failure.notInReview }
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: app, onRescan: {})
+            library: environment.library, photoEdits: environment.photoEdits, app: app, onRescan: {})
         return (app, model, folder, environment)
     }
 
@@ -1208,7 +1208,7 @@ struct ReviewViewModelTests {
         let environment = self.environment
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), onRescan: {})
+            library: environment.library, photoEdits: environment.photoEdits, app: AppModel(environment: environment), onRescan: {})
         model.selectedItem = .notSure
         return (model, review)
     }
@@ -1315,7 +1315,7 @@ struct ReviewViewModelTests {
         let view = NSHostingView(rootView: ReviewView(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
             sortService: environment.sortService, library: environment.library,
-            app: AppModel(environment: environment)))
+            app: AppModel(environment: environment), photoEdits: environment.photoEdits))
         view.frame = NSRect(x: 0, y: 0, width: 1200, height: 800)
         view.layoutSubtreeIfNeeded()
         #expect(view.fittingSize.width > 0)
@@ -1349,7 +1349,7 @@ struct ReviewViewModelTests {
                 embeddings: EmbeddingRepository(embedder: FakeEmbedder(), cacheDirectory: temp.url.appending(path: "Cache")))
             return ReviewViewModel(
                 review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-                library: environment.library, app: AppModel(environment: environment), onRescan: {})
+                library: environment.library, photoEdits: environment.photoEdits, app: AppModel(environment: environment), onRescan: {})
         }
         #expect(try !model(notSure: 6).canSuggest)
         let seven = try model(notSure: 7)

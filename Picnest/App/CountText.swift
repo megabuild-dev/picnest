@@ -22,6 +22,11 @@ enum CountText {
         String(localized: "Add \(n) Photos", locale: locale)
     }
 
+    /// "N photos in this set", under the filmstrip of the photo editor.
+    static func inSet(_ n: Int, locale: Locale = .current) -> String {
+        String(localized: "\(n) photos in this set", locale: locale)
+    }
+
     static func folders(_ n: Int, locale: Locale = .current) -> String {
         String(localized: "\(n) folders", locale: locale)
     }
