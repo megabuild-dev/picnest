@@ -19,12 +19,15 @@ struct LibraryBar: View {
             }
             Spacer(minLength: 12)
             if model.showsThumbnailSlider(layout: layout) { SizeSlider(model: model) }
-            Picker("Sort Order", selection: Bindable(model).sortOrder) {
-                ForEach(ReviewViewModel.SortOrder.allCases) { Text($0.title).tag($0) }
+            // A category has the sort menu in its header.
+            if !model.showsCategoryHeader {
+                Picker("Sort Order", selection: Bindable(model).sortOrder) {
+                    ForEach(ReviewViewModel.SortOrder.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.menu)
+                .fixedSize()
+                .help("Sort order")
             }
-            .pickerStyle(.menu)
-            .fixedSize()
-            .help("Sort order")
         }
         .padding(.horizontal, 20)
         .padding(.top, 10)

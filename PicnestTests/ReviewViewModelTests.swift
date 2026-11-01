@@ -267,6 +267,72 @@ struct ReviewViewModelTests {
         #expect(chrome(model) { $0.showsThumbnailSlider(layout: .list) } == [false, true, false, false, false, false, false, false])
     }
 
+    // MARK: - Category screen and Edit Category (UI redesign 4.3)
+
+    @Test func testCategoryHeaderShowsForCategoriesOnly() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsCategoryHeader } == [false, false, false, true, false, false, false, false])
+        model.selectedItem = .category(food.id)
+        #expect(model.selectedCategory?.id == food.id)
+        #expect(model.bodyKind == .library)
+    }
+
+    @Test func testEmptyNameIsInvalid() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName("", excluding: nil) == .empty)
+        #expect(model.validateCategoryName("  \n ", excluding: nil) == .empty)
+        #expect(model.validateCategoryName("Pets", excluding: nil) == nil)
+    }
+
+    @Test func testDuplicateNameIsInvalid() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName(" food ", excluding: nil) == .duplicate)
+        #expect(model.validateCategoryName("Food", excluding: documents.id) == .duplicate)
+        // A category does not clash with itself.
+        #expect(model.validateCategoryName("Food", excluding: food.id) == nil)
+    }
+
+    /// The folder rules replace "/" and ":" with "-", so the name is not rejected: it makes a valid, unique folder.
+    @Test func testNameWithSlashIsInvalidFolderName() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName("Trips/2024", excluding: nil) == nil)
+        let folder = SortPlanner.folderName(for: "Trips/2024")
+        #expect(folder == "Trips-2024")
+        #expect(!folder.contains("/"))
+        let unique = SortPlanner.uniqueFolderName(for: "Trips/2024", among: model.categories)
+        #expect(unique == folder)
+        // The rules fall back to "Untitled" only for a name with no characters. That is the empty issue.
+        #expect(model.validateCategoryName("/", excluding: nil) == nil)
+        #expect(SortPlanner.folderName(for: "/") == "-")
+    }
+
+    @Test func testVietnameseNameInNFCAndNFDIsTheSameFolder() throws {
+        let composed = "\u{1EA8}m th\u{1EF1}c".precomposedStringWithCanonicalMapping
+        let decomposed = composed.decomposedStringWithCanonicalMapping
+        let food2 = PicnestCore.Category(id: UUID(), displayName: composed, emoji: "🍜", prompts: [], exampleIDs: [], order: 5)
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.categories.append(food2)
+            return session
+        })
+        #expect(SortPlanner.folderName(for: decomposed).unicodeScalars.elementsEqual(SortPlanner.folderName(for: composed).unicodeScalars))
+        #expect(model.validateCategoryName(decomposed, excluding: nil) == .duplicate)
+        #expect(model.validateCategoryName("am thuc", excluding: nil) == .duplicate)
+    }
+
+    @Test func testSaveCategoryEditRenamesAndSetsIcon() throws {
+        let model = try makeModel()
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Food", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: " ", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Documents", emoji: "🍜"))
+        #expect(model.canSaveCategoryEdit(food.id, name: "Food", emoji: "🍕"))
+        #expect(model.canSaveCategoryEdit(food.id, name: "Meals", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Food", emoji: "ab"))
+        #expect(model.saveCategoryEdit(food.id, name: "Meals", emoji: "🍕"))
+        let saved = model.categories.first { $0.id == food.id }
+        #expect(saved?.emoji == "🍕")
+    }
+
     @Test func testSearchDoesNotChangeSidebarCounts() throws {
         let model = try makeModel()
         let before = model.sidebarCounts

@@ -63,6 +63,11 @@ struct ReviewView: View {
                 model.openSuggest()
             }
         }) { SortSheet(model: $0) }
+        .sheet(isPresented: editingCategoryBinding) {
+            if let category = model.categories.first(where: { $0.id == model.editingCategory }) {
+                EditCategorySheet(model: model, category: category) { model.editingCategory = nil }
+            }
+        }
         .sheet(item: Bindable(model).suggest) { SuggestSheet(model: $0) }
         .alert("Undo Last Sort", isPresented: undoMessageBinding) {
             Button("OK", role: .cancel) { model.undoSortMessage = nil }
@@ -144,6 +149,9 @@ struct ReviewView: View {
             NotSureView(model: model)
         case .library:
             VStack(spacing: 0) {
+                if let category = model.selectedCategory {
+                    CategoryHeaderView(model: model, category: category, photoCount: model.count)
+                }
                 LibraryBar(model: model, layout: layout)
                 switch layout {
                 case .grid: PhotoGridView(model: model)
@@ -224,6 +232,10 @@ struct ReviewView: View {
 
     private var trashMessageBinding: Binding<Bool> {
         Binding(get: { model.trashMessage != nil }, set: { if !$0 { model.trashMessage = nil } })
+    }
+
+    private var editingCategoryBinding: Binding<Bool> {
+        Binding(get: { model.editingCategory != nil }, set: { if !$0 { model.editingCategory = nil } })
     }
 
     private var folderErrorBinding: Binding<Bool> {

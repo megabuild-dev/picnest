@@ -462,6 +462,15 @@ final class ReviewViewModel {
         }
     }
 
+    /// The category that `selectedItem` shows, or nil for any other item.
+    var selectedCategory: PicnestCore.Category? {
+        guard case .category(let id) = selectedItem else { return nil }
+        return categories.first { $0.id == id }
+    }
+
+    /// The category header shows at the top of the library body of a category.
+    var showsCategoryHeader: Bool { selectedCategory != nil }
+
     /// The filter chips show for All Photos and Chosen by you. Needs Review has its own header and filter menus.
     var showsFilterChips: Bool {
         switch selectedItem {
@@ -987,6 +996,75 @@ final class ReviewViewModel {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         review.rename(c, to: name)
+    }
+
+    /// The category that the Edit Category sheet shows, or nil while the sheet is closed.
+    var editingCategory: CategoryID?
+
+    /// The category that waits for the answer of the delete confirmation, or nil.
+    var deletingCategory: CategoryID?
+
+    /// Why a category name cannot be used. `message` is the text under the name field.
+    enum CategoryNameIssue: Equatable {
+        case empty, duplicate, invalidFolderName
+
+        var message: LocalizedStringKey {
+            switch self {
+            case .empty: "Enter a name."
+            case .duplicate: "A category with this name already exists."
+            case .invalidFolderName: "This name cannot make a folder name."
+            }
+        }
+    }
+
+    /// Checks a category name. `excluding` is the category that gets the name, so it does not clash with itself.
+    /// The folder rules are the ones of `SortPlanner`: they replace "/" and ":" and a leading ".", so only a name
+    /// with no usable characters is rejected as a folder name.
+    func validateCategoryName(_ name: String, excluding: CategoryID?) -> CategoryNameIssue? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .empty }
+        let wanted = Self.normalizedName(trimmed)
+        let others = review.session.categories.filter { $0.id != excluding }
+        if others.contains(where: { Self.normalizedName($0.displayName) == wanted }) { return .duplicate }
+        // `folderName(for:)` answers "Untitled" when nothing usable is left of the name.
+        if SortPlanner.folderName(for: trimmed) == Self.untitledFolder, wanted != Self.normalizedName(Self.untitledFolder) {
+            return .invalidFolderName
+        }
+        return nil
+    }
+
+    private static let untitledFolder = "Untitled"
+
+    /// Trimmed, NFC, and without case and diacritics, for the comparison of names.
+    private static func normalizedName(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+            .precomposedStringWithCanonicalMapping
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+    }
+
+    /// The folder of `c` relative to the source folder, for example "Travel".
+    func categoryFolderName(_ c: CategoryID) -> String {
+        SortPlanner.folderNames(for: review.session.categories)[c] ?? categoryName(c)
+    }
+
+    /// Save is on when the name is valid and the name or the icon changed.
+    func canSaveCategoryEdit(_ c: CategoryID, name: String, emoji: String) -> Bool {
+        guard let category = review.session.categories.first(where: { $0.id == c }),
+              validateCategoryName(name, excluding: c) == nil else { return false }
+        let emoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard emoji == category.emoji || Self.isSingleEmoji(emoji) else { return false }
+        return name.trimmingCharacters(in: .whitespacesAndNewlines) != category.displayName || emoji != category.emoji
+    }
+
+    /// The Save button of the Edit Category sheet. Returns false, and does nothing, if `canSaveCategoryEdit` is false.
+    @discardableResult
+    func saveCategoryEdit(_ c: CategoryID, name: String, emoji: String) -> Bool {
+        guard canSaveCategoryEdit(c, name: name, emoji: emoji),
+              let category = review.session.categories.first(where: { $0.id == c }) else { return false }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed != category.displayName { renameCategory(c, to: trimmed) }
+        if emoji.trimmingCharacters(in: .whitespacesAndNewlines) != category.emoji { setEmoji(c, emoji) }
+        return true
     }
 
     /// Sets the icon of `c`. Returns false, and does nothing, unless `emoji` is exactly 1 emoji.

@@ -319,6 +319,16 @@
         }
       }
     },
+    "A category with this name already exists." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã có danh mục trùng tên."
+          }
+        }
+      }
+    },
     "A copy did not match its original. The original was kept." : {
       "localizations" : {
         "vi" : {
@@ -1037,6 +1047,26 @@
         }
       }
     },
+    "Edit Category" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sửa danh mục"
+          }
+        }
+      }
+    },
+    "Emoji" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Emoji"
+          }
+        }
+      }
+    },
     "Enter a name." : {
       "localizations" : {
         "vi" : {
@@ -1083,6 +1113,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tìm thư mục…"
+          }
+        }
+      }
+    },
+    "Folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục"
           }
         }
       }
@@ -1908,16 +1948,6 @@
         }
       }
     },
-    "Rename Category" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đổi tên danh mục"
-          }
-        }
-      }
-    },
     "Rename files to date + category + number" : {
       "localizations" : {
         "vi" : {
@@ -1978,6 +2008,16 @@
         }
       }
     },
+    "Save" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu"
+          }
+        }
+      }
+    },
     "Search" : {
       "localizations" : {
         "vi" : {
@@ -2004,16 +2044,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chọn một ảnh để xem chi tiết."
-          }
-        }
-      }
-    },
-    "Set" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đặt"
           }
         }
       }
@@ -2408,6 +2438,16 @@
         }
       }
     },
+    "The folder follows the category name." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục đổi theo tên danh mục."
+          }
+        }
+      }
+    },
     "The last sort did not finish. Click Undo Last Sort first." : {
       "localizations" : {
         "vi" : {
@@ -2534,6 +2574,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thư mục này đã được sắp xếp vào %@."
+          }
+        }
+      }
+    },
+    "This name cannot make a folder name." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên này không tạo được tên thư mục."
           }
         }
       }

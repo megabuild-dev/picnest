@@ -8,10 +8,6 @@ struct SidebarView: View {
     let model: ReviewViewModel
 
     @State private var dropTarget: CategoryID?
-    @State private var renaming: CategoryID?
-    @State private var nameDraft = ""
-    @State private var editingIcon: CategoryID?
-    @State private var deleting: CategoryID?
 
     private var selection: Binding<ReviewViewModel.SidebarItem?> {
         Binding(get: { model.selectedItem }, set: { if let item = $0 { model.selectedItem = item } })
@@ -47,16 +43,13 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .tint(Theme.accent.color)
-        .alert("Rename Category", isPresented: isPresented($renaming)) {
-            TextField("Name", text: $nameDraft)
-            Button("Rename") { if let renaming { model.renameCategory(renaming, to: nameDraft) } }
-            Button("Cancel", role: .cancel) {}
-        }
-        .confirmationDialog(deletingTitle, isPresented: isPresented($deleting), titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { if let deleting { Task { await model.deleteCategory(deleting) } } }
+        .confirmationDialog(deletingTitle, isPresented: isPresented(Bindable(model).deletingCategory), titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let deleting = model.deletingCategory { Task { await model.deleteCategory(deleting) } }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(deleting.map(model.deleteMessage(for:)) ?? "")
+            Text(model.deletingCategory.map(model.deleteMessage(for:)) ?? "")
         }
     }
 
@@ -65,7 +58,7 @@ struct SidebarView: View {
         Text(title).font(.system(size: 13)).foregroundStyle(Theme.textSecondary.color)
     }
 
-    private var deletingTitle: String { deleting.map(model.deleteConfirmation(for:)) ?? "" }
+    private var deletingTitle: String { model.deletingCategory.map(model.deleteConfirmation(for:)) ?? "" }
 
     private func categoryRow(_ counts: [ReviewViewModel.SidebarItem: Int], _ category: PicnestCore.Category) -> some View {
         let id = category.id
@@ -82,11 +75,8 @@ struct SidebarView: View {
                 if targeted { dropTarget = id } else if dropTarget == id { dropTarget = nil }
             }
             .contextMenu {
-                Button("Rename…") {
-                    nameDraft = category.displayName
-                    renaming = id
-                }
-                Button("Change Icon…") { editingIcon = id }
+                Button("Rename…") { model.editingCategory = id }
+                Button("Change Icon…") { model.editingCategory = id }
                 Menu("Merge Into…") {
                     ForEach(model.mergeTargets(for: id)) { target in
                         Button { model.merge(id, into: target.id) } label: {
@@ -99,15 +89,8 @@ struct SidebarView: View {
                 Button("Reveal in Finder") { model.showCategoryInFinder(id) }
                     .disabled(model.categoryFolder(id) == nil)
                 Divider()
-                Button("Delete…", role: .destructive) { deleting = id }
+                Button("Delete…", role: .destructive) { model.deletingCategory = id }
                     .disabled(!model.canDeleteCategory)
-            }
-            .popover(isPresented: Binding(
-                get: { editingIcon == id }, set: { if !$0, editingIcon == id { editingIcon = nil } }
-            ), arrowEdge: .trailing) {
-                EmojiField(current: category.emoji) { emoji in
-                    if model.setEmoji(id, emoji) { editingIcon = nil }
-                }
             }
     }
 
@@ -129,34 +112,6 @@ struct SidebarView: View {
     /// A Bool binding that is true while `value` is set. Setting it to false clears `value`.
     private func isPresented<T>(_ value: Binding<T?>) -> Binding<Bool> {
         Binding(get: { value.wrappedValue != nil }, set: { if !$0 { value.wrappedValue = nil } })
-    }
-}
-
-/// The Change Icon popover: a field for 1 emoji. Input that is not exactly 1 emoji is ignored.
-private struct EmojiField: View {
-    let current: String
-    let onSubmit: (String) -> Void
-
-    @State private var text = ""
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Type or paste 1 emoji").font(.system(size: 12)).foregroundStyle(.secondary)
-            HStack {
-                TextField(current, text: $text)
-                    .font(.system(size: 22))
-                    .multilineTextAlignment(.center)
-                    .frame(width: 56)
-                    .focused($isFocused)
-                    .onSubmit { onSubmit(text) }
-                Button("Set") { onSubmit(text) }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!ReviewViewModel.isSingleEmoji(text.trimmingCharacters(in: .whitespaces)))
-            }
-        }
-        .padding(12)
-        .onAppear { isFocused = true }
     }
 }
 
