@@ -7,6 +7,7 @@ tags: [picnest, ui, theme, localization, swiftui]
 links:
   - "[[2026-10-21-macos-app-design]]"
   - "[[dictionary]]"
+  - "[[2026-11-01-ui-redesign-plan]]"
   - "[[BUILD]]"
   - "[[CONTRIBUTING]]"
 ---
@@ -135,8 +136,9 @@ Rules for this phase:
 - **Favorite** is a flag on a photo. It does not move a file.
 - **Collection** is a named group of photos. It does not move a file. The UI uses a different icon and word from Category.
 - New types go in `PicnestCore/Domain/` first. `Session` gets 2 new fields. They decode with `decodeIfPresent`, so old `session.json` files still open (same method as `trashed`).
-- A favorite and a collection member must survive these events: a rescan, a Move sort, a change of category that moves the file, and Trash followed by **Put Back**. The builder checks how `MediaID` is made and picks a key that stays the same in these cases. If it cannot, the plan must say which event loses the data.
-- A new repository and a new service own the data. Views and ViewModels never write `session.json` directly.
+- The key is `MediaID`, the path of the file in the source folder. The data is in `Session`.
+- 4 events lose the data: a rename in Finder, a rescan after a Move sort, a rescan while a photo is in the Trash, and **Start Over**. See [[2026-11-01-ui-redesign-plan#Key decision: the photo key]].
+- `CollectionService` owns the rules. `SessionRepository` saves the data. Views and ViewModels never write `session.json` directly.
 - **Recently Deleted** lists the photos in `Session.trashed`. It offers **Put Back**, which uses `TrashService.putBack`.
 - **Create a collection instead** in the Category dialog opens the new-collection flow.
 
