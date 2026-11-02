@@ -9,6 +9,9 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     static let sortRunningMessage = String(localized: "A sort is running. Stop it first, then quit.")
+    static let exportRunningMessage = String(localized: "An export is running. Wait for it to finish, then quit.")
+    static let unexportedEditsMessage = String(localized: "Your edits to a photo are not exported yet.")
+    static let unexportedEditsDetail = String(localized: "If you quit now, the edits are lost. The photo itself does not change.")
 
     /// Nil in the test host: tests make their own environment.
     let environment: AppEnvironment?
@@ -24,6 +27,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Replaces the library check. Tests use it to fake a running sort.
     private let sortRunningCheck: (() -> Bool)?
 
+    /// Replace the editor checks. Tests use them to fake a running export and unexported edits.
+    private let exportRunningCheck: (() -> Bool)?
+    private let unexportedEditsCheck: (() -> Bool)?
+
     /// Shows the "sort is running" alert. Tests replace it.
     var showSortRunningAlert: () -> Void = {
         let alert = NSAlert()
@@ -31,6 +38,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: String(localized: "OK"))
         alert.runModal()
     }
+
+    /// Shows the "export is running" alert. Tests replace it.
+    var showExportRunningAlert: () -> Void = {
+        let alert = NSAlert()
+        alert.messageText = AppDelegate.exportRunningMessage
+        alert.addButton(withTitle: String(localized: "OK"))
+        alert.runModal()
+    }
+
+    /// Asks whether to quit and lose the unexported edits of a photo. Returns true for **Quit**.
+    var confirmQuitWithEdits: () -> Bool = {
+        let alert = NSAlert()
+        alert.messageText = AppDelegate.unexportedEditsMessage
+        alert.informativeText = AppDelegate.unexportedEditsDetail
+        alert.addButton(withTitle: String(localized: "Quit"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    /// Saves the layout draft of an open editor. Tests replace it.
+    lazy var flushEditors: () -> Void = { [weak self] in self?.app?.flushEditors() }
 
     /// The app: the bundled model, Application Support, standard defaults, and the updater.
     /// The test host must not read the real Application Support or standard defaults, or use the
@@ -44,9 +72,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     init(
         environment: AppEnvironment?, makeUpdater: (() -> any AppUpdater)? = nil,
-        relauncher: AppRelauncher = AppRelauncher(), sortRunningCheck: (() -> Bool)? = nil
+        relauncher: AppRelauncher = AppRelauncher(), sortRunningCheck: (() -> Bool)? = nil,
+        exportRunningCheck: (() -> Bool)? = nil, unexportedEditsCheck: (() -> Bool)? = nil
     ) {
         self.sortRunningCheck = sortRunningCheck
+        self.exportRunningCheck = exportRunningCheck
+        self.unexportedEditsCheck = unexportedEditsCheck
         self.environment = environment
         self.relauncher = relauncher
         app = environment.map { AppModel(environment: $0) }
@@ -60,6 +91,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sortRunningCheck?() ?? environment?.library.isSortRunning ?? false
     }
 
+    /// True while an editor writes an export or has its save panel open.
+    func isExportRunning() -> Bool { exportRunningCheck?() ?? app?.isEditorExporting ?? false }
+
+    /// True if a photo editor holds an edit that no export wrote.
+    func hasUnexportedEdits() -> Bool { unexportedEditsCheck?() ?? app?.hasUnexportedEdits ?? false }
+
     /// The answer to a quit: cancel while a sort or an undo runs.
     static func terminateReply(sortIsRunning: Bool) -> NSApplication.TerminateReply {
         sortIsRunning ? .terminateCancel : .terminateNow
@@ -70,13 +107,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         environment?.appearance.applyCurrent()
     }
 
+    /// A quit (also the Restart button) stops while a sort or an export runs, because a quit in the middle of a
+    /// write leaves a temp file or part of a multi-page export (final review I1). Unexported photo edits need a
+    /// yes. The layout draft saves at once.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        let reply = Self.terminateReply(sortIsRunning: isSortRunning())
-        if reply == .terminateCancel {
+        if Self.terminateReply(sortIsRunning: isSortRunning()) == .terminateCancel {
             relauncher.cancel()
             showSortRunningAlert()
+            return .terminateCancel
         }
-        return reply
+        if isExportRunning() {
+            relauncher.cancel()
+            showExportRunningAlert()
+            return .terminateCancel
+        }
+        if hasUnexportedEdits(), !confirmQuitWithEdits() {
+            relauncher.cancel()
+            return .terminateCancel
+        }
+        flushEditors()
+        return .terminateNow
     }
 
     /// Runs only when the quit goes ahead.

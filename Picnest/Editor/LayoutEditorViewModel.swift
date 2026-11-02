@@ -436,11 +436,19 @@ final class LayoutEditorViewModel: EditorSession {
             onCancelClose()
             return
         }
+        flushForQuit()
+        onClose()
+    }
+
+    /// The layout is a draft: nothing is "unexported".
+    var hasUnexportedEdits: Bool { false }
+
+    /// Saves the draft at once, also a change from less than 1 second ago (final review I1).
+    func flushForQuit() {
         finishChange()
         draftTask?.cancel()
         draftTask = nil
         saveDraft(document)
-        onClose()
     }
 
     // MARK: - After a change

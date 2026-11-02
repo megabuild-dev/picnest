@@ -40,6 +40,8 @@ final class PhotoEditorViewModel: EditorSession {
     var exportError: String?
     /// The copy that the last export wrote for the shown photo, or nil.
     private(set) var lastExport: URL?
+    /// The photo and the edit of the last good export. A later edit makes the photo "unexported" again.
+    @ObservationIgnored private var exported: (id: MediaID, edit: PhotoEdit)?
     /// True while the Discard Edits dialog shows.
     var isConfirmingDiscard = false
 
@@ -241,6 +243,16 @@ final class PhotoEditorViewModel: EditorSession {
         guard id != current.id, photos.contains(where: { $0.id == id }) else { return }
         move(to: id)
     }
+
+    /// True if the shown photo has an edit that no export wrote (final review I1).
+    var hasUnexportedEdits: Bool {
+        guard hasChanges else { return false }
+        guard let exported else { return true }
+        return exported.id != current.id || exported.edit != edit
+    }
+
+    /// A photo editor keeps nothing outside memory that a quit could save.
+    func flushForQuit() {}
 
     func requestClose() {
         // The save panel and the write still need this editor and its lock (final review C1).
@@ -446,6 +458,7 @@ final class PhotoEditorViewModel: EditorSession {
         do {
             let written = try await service.exportCopy(
                 of: photo.url, edit: edit, to: destination, format: chosen, protected: protectedFiles())
+            exported = (photo.id, edit)
             if current.id == photo.id { lastExport = written }
         } catch is CancellationError {
             return

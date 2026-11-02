@@ -33,6 +33,25 @@ final class AppModel {
     /// The running scans: folder path → token of `beginScan`.
     @ObservationIgnored private var activeScans: [String: UUID] = [:]
 
+    /// The editors of every window. A closed window drops its editor, so a stale entry never blocks a quit.
+    private struct WeakEditor { weak var session: (any EditorSession)? }
+    @ObservationIgnored private var editors: [WeakEditor] = []
+
+    /// Records an editor that opens, and forgets one that closes (final review I1). The quit guard reads them.
+    func editorChanged(from old: (any EditorSession)?, to new: (any EditorSession)?) {
+        if let old { editors.removeAll { $0.session == nil || $0.session === old } }
+        if let new { editors.append(WeakEditor(session: new)) }
+    }
+
+    private var openEditors: [any EditorSession] { editors.compactMap(\.session) }
+
+    /// True while any editor writes a file or has its save panel open. A quit must wait.
+    var isEditorExporting: Bool { openEditors.contains { $0.isExporting } }
+    /// True if any photo editor holds an edit that no export wrote.
+    var hasUnexportedEdits: Bool { openEditors.contains { $0.hasUnexportedEdits } }
+    /// Saves what an editor keeps only in memory (the layout draft), before the app quits.
+    func flushEditors() { openEditors.forEach { $0.flushForQuit() } }
+
     init(environment: AppEnvironment) {
         library = environment.library
     }

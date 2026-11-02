@@ -12,6 +12,10 @@ protocol EditorSession: AnyObject {
     /// True from the click on **Export** until the write ends, with the save panel open too. The editor refuses
     /// to close then, so the lock on **Done** and **Rescan** stays on and no error is lost.
     var isExporting: Bool { get }
+    /// True if the editor holds an edit that no export wrote. The quit asks first (final review I1).
+    var hasUnexportedEdits: Bool { get }
+    /// Saves what the editor keeps only in memory, before the app quits. The layout editor saves its draft.
+    func flushForQuit()
     /// Asks the editor to close. The editor may ask first, then calls its `onClose`.
     func requestClose()
 }

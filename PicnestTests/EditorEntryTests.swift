@@ -35,7 +35,7 @@ struct EditorEntryTests {
 
     private func makeModel(
         panel: Panel = Panel(), trashOps: FakeTrashFileOps = FakeTrashFileOps(),
-        session: ((URL) -> Session)? = nil, onRescan: @escaping () -> Void = {}
+        session: ((URL) -> Session)? = nil, onRescan: @escaping () -> Void = {}, app: AppModel? = nil
     ) throws -> (model: ReviewViewModel, review: ReviewService) {
         try fx.makeModelAndReview(
             onRescan: onRescan, trashOps: trashOps, session: session,
@@ -50,7 +50,8 @@ struct EditorEntryTests {
                 while panel.holds { await Task.yield() }
                 await panel.whileOpen?()
                 return panel.destination.map { ($0, format) }
-            })
+            },
+            app: app)
     }
 
     // MARK: - Which photos open
@@ -166,6 +167,58 @@ struct EditorEntryTests {
         #expect(error != nil)
         model.activeEditor?.session.requestClose()
         #expect(!model.isEditing)
+    }
+
+    // MARK: - The app sees the editors (final review I1)
+
+    private func appModel() -> AppModel { AppModel(environment: fx.environment) }
+
+    @Test func testAppKnowsAnExportingEditorAndForgetsAClosedOne() async throws {
+        let app = appModel()
+        let panel = Panel()
+        let (model, _) = try makeModel(panel: panel, app: app)
+        #expect(!app.isEditorExporting && !app.hasUnexportedEdits)
+        model.openEditor("a.jpg")
+        let editor = try #require(model.editor)
+        #expect(!app.hasUnexportedEdits)
+        editor.rotate(clockwise: true)
+        #expect(app.hasUnexportedEdits)
+        panel.holds = true
+        let export = Task { @MainActor in await editor.export() }
+        try await waitUntil { app.isEditorExporting }
+        panel.holds = false
+        await export.value
+        #expect(!app.isEditorExporting)
+        model.closeEditor()
+        #expect(!app.hasUnexportedEdits)
+    }
+
+    @Test func testAnExportedEditIsNotUnexportedButANewEditIs() async throws {
+        let panel = Panel()
+        let (model, _) = try makeModel(panel: panel)
+        // The fixture photos are not real images, so write one.
+        try writeTestJPEG(to: source.appending(path: "a.jpg"), red: 0.5, green: 0.5, blue: 0.5, size: 40, height: 20)
+        panel.destination = source.appending(path: "out.jpg")
+        model.openEditor("a.jpg")
+        let editor = try #require(model.editor)
+        editor.rotate(clockwise: true)
+        #expect(editor.hasUnexportedEdits)
+        await editor.export()
+        #expect(editor.exportError == nil && !editor.hasUnexportedEdits)
+        editor.rotate(clockwise: true)
+        #expect(editor.hasUnexportedEdits)
+    }
+
+    @Test func testQuitSavesTheLayoutDraftAtOnce() throws {
+        let app = appModel()
+        let (model, review) = try makeModel(app: app)
+        model.requestLayout(from: .category(fx.food.id))
+        let editor = try #require(model.layoutEditor)
+        editor.setTitle("Quick")
+        #expect(review.session.layoutDraft?.title != "Quick")  // the draft timer has not run
+        app.flushEditors()
+        #expect(review.session.layoutDraft?.title == "Quick")
+        #expect(!editor.hasUnexportedEdits)
     }
 
     // MARK: - Editing state

@@ -221,7 +221,9 @@ final class ReviewViewModel {
     @ObservationIgnored private let chooseExportDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
     @ObservationIgnored private let chooseLayoutDestination: @MainActor (String, URL, LayoutExportFormat) async -> (URL, LayoutExportFormat)?
     /// The editor that fills the window, or nil. It opens with `openEditor` and closes with `closeEditor`.
-    private(set) var activeEditor: ActiveEditor?
+    private(set) var activeEditor: ActiveEditor? {
+        didSet { app.editorChanged(from: oldValue?.session, to: activeEditor?.session) }
+    }
     /// The photo editor, or nil when none or another editor is open.
     var editor: PhotoEditorViewModel? {
         if case .photo(let editor)? = activeEditor { editor } else { nil }
