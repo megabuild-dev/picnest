@@ -58,6 +58,7 @@
 		8BC37175B0038D10E4C56B1A /* PhotoEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0321215776146C6BB5EAD25F /* PhotoEditorViewModel.swift */; };
 		8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501266281830058D97AF399D /* DuplicatesView.swift */; };
 		8E076CDAFBC919D5236CF251 /* SortMessagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6DD9B8F4192F4739C37783 /* SortMessagesTests.swift */; };
+		8E687225E857449629F278A6 /* SearchText.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA84E397B201E202DD44239B /* SearchText.swift */; };
 		8ECE94F910932E67F160BBE5 /* EditorEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD350E0A13EAACDEEF9AC23 /* EditorEntryTests.swift */; };
 		8F7397435B480CED47B11A02 /* LibraryBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70D0A331898AF2010A6CB0B /* LibraryBar.swift */; };
 		8FB4FFE25E754B66E19F6B11 /* LayoutTitles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AFC8CD1B57F899ABA69EC3 /* LayoutTitles.swift */; };
@@ -79,6 +80,7 @@
 		CB4609F6FA2C540D2E417AC6 /* CollectionNameSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55C1B56CA95B0AF237A9EA6 /* CollectionNameSheet.swift */; };
 		CCA6118A59E9A2BB0E3CA841 /* PhotoSetHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD0E3C4D29629FA9218F7B87 /* PhotoSetHeaderView.swift */; };
 		CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */; };
+		CDF92AB35B2CACB4D0351D18 /* PendingCommit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F73323A51D6733DDC0AD8B /* PendingCommit.swift */; };
 		D0B67C143763D6E8B18175D3 /* SortSheetStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC2493E6A3C7CA05FC3F88E /* SortSheetStates.swift */; };
 		D100DAAA6E9733D1CBEEC47C /* CollectionsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A3282C6F3F954018F0612B4 /* CollectionsViewModelTests.swift */; };
 		D107C155337D4DE5FBBF567E /* SortViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0977699F69AB7452B6F56650 /* SortViewModelTests.swift */; };
@@ -164,6 +166,7 @@
 		8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndToEndTests.swift; sourceTree = "<group>"; };
 		920C3114E14A8F5535838C19 /* NotSureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotSureView.swift; sourceTree = "<group>"; };
 		9597E21F66B3D0A193D9FD71 /* EditorSavePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSavePanel.swift; sourceTree = "<group>"; };
+		95F73323A51D6733DDC0AD8B /* PendingCommit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingCommit.swift; sourceTree = "<group>"; };
 		961CAE3FEE059F362C23F8FE /* EditorCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvas.swift; sourceTree = "<group>"; };
 		989FD2A75D20A49C2832027B /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
 		9A31D0E98B158679E420F241 /* RecentFolderCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentFolderCard.swift; sourceTree = "<group>"; };
@@ -192,6 +195,7 @@
 		D61409C47FE261863147401E /* ScanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModelTests.swift; sourceTree = "<group>"; };
 		D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesViewModel.swift; sourceTree = "<group>"; };
 		D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
+		DA84E397B201E202DD44239B /* SearchText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchText.swift; sourceTree = "<group>"; };
 		DE5C538024D2F93601A43E4D /* PicnestApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PicnestApp.swift; sourceTree = "<group>"; };
 		E55C1B56CA95B0AF237A9EA6 /* CollectionNameSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionNameSheet.swift; sourceTree = "<group>"; };
 		E6FF717F28C895BC0150D447 /* AppearanceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceStore.swift; sourceTree = "<group>"; };
@@ -284,6 +288,7 @@
 				3C5A46ABA9A9B9CA6C567ED0 /* EditorToolRail.swift */,
 				C9CDE538A309584D4E5FDC4E /* LayoutEditorViewModel.swift */,
 				89AFC8CD1B57F899ABA69EC3 /* LayoutTitles.swift */,
+				95F73323A51D6733DDC0AD8B /* PendingCommit.swift */,
 				47884A603D7F00A8723A13FB /* PhotoEditorView.swift */,
 				0321215776146C6BB5EAD25F /* PhotoEditorViewModel.swift */,
 			);
@@ -332,6 +337,7 @@
 				6454171A84EC6C4B6543899A /* CountText.swift */,
 				DE5C538024D2F93601A43E4D /* PicnestApp.swift */,
 				A7C2B7BBF113F2DC262B2B68 /* RootView.swift */,
+				DA84E397B201E202DD44239B /* SearchText.swift */,
 				EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */,
 			);
 			path = App;
@@ -619,6 +625,7 @@
 				BA186261E326AC460EA95727 /* NeedsReviewSelectionContent.swift in Sources */,
 				7C3FEECF3D04F855442E1638 /* NotSureGroupHeader.swift in Sources */,
 				F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */,
+				CDF92AB35B2CACB4D0351D18 /* PendingCommit.swift in Sources */,
 				E00DE5E5DDB2281CDC5552CF /* PhotoEditorView.swift in Sources */,
 				8BC37175B0038D10E4C56B1A /* PhotoEditorViewModel.swift in Sources */,
 				0D135A442D6E88198A5A795D /* PhotoGridView.swift in Sources */,
@@ -634,6 +641,7 @@
 				625C90178B01EB2121FB70BE /* RootView.swift in Sources */,
 				21ABC7AB273C92070EBEBE84 /* ScanView.swift in Sources */,
 				FDBFE918B994319F3232C9DC /* ScanViewModel.swift in Sources */,
+				8E687225E857449629F278A6 /* SearchText.swift in Sources */,
 				3701C843F134677B347B048F /* SelectionBar.swift in Sources */,
 				326E89BE84A438C0F07B4475 /* SettingsView.swift in Sources */,
 				EBD22D22D0A41E582D0168CC /* SidebarPreferencesBar.swift in Sources */,

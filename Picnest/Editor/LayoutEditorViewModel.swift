@@ -39,9 +39,10 @@ final class LayoutEditorViewModel: EditorSession {
     private(set) var pageImage: CGImage?
     /// The index of the selected cell in the whole layout, or nil.
     private(set) var selectedCell: Int?
-    /// The scale of the page. 1 is 100%. `fitsPage` is true until the user zooms.
-    private(set) var zoom: Double = 1
+    /// True until the user zooms in or out: the page then shows at `fitScale`.
     private(set) var fitsPage = true
+    /// The scale after a zoom, as a fraction of the actual size (1 is 100%). Used while `fitsPage` is false.
+    private var chosenScale: Double = 1
     private(set) var isPreviewing = false
     private(set) var isExporting = false
     var exportError: String?
@@ -53,15 +54,18 @@ final class LayoutEditorViewModel: EditorSession {
     var canvasWidth: Double = 800 {
         didSet { if canvasWidth != oldValue { refreshPreview() } }
     }
+    /// The height of the page area in points. It changes `fitScale` only.
+    var canvasHeight: Double = 600
 
     private var history: History<LayoutDocument>
-    private var pendingSlider: Slider?
-    private var isDragging = false
-    @ObservationIgnored nonisolated(unsafe) private var idleCommit: Task<Void, Never>?
+    @ObservationIgnored private lazy var pending = PendingCommit<Slider> { [weak self] in self?.history.commit() }
     @ObservationIgnored nonisolated(unsafe) private var draftTask: Task<Void, Never>?
-    @ObservationIgnored nonisolated(unsafe) private var previewTask: Task<Void, Never>?
+    @ObservationIgnored private let previews = PreviewChain()
     /// How long a slider or text change that has no end event waits for the next one before it is 1 undo step.
-    @ObservationIgnored var commitDelay: Duration = .milliseconds(600)
+    @ObservationIgnored var commitDelay: Duration {
+        get { pending.delay }
+        set { pending.delay = newValue }
+    }
     /// How long the draft waits after a change before it saves. A test hook.
     @ObservationIgnored var draftDelay: Duration = .seconds(1)
 
@@ -106,7 +110,7 @@ final class LayoutEditorViewModel: EditorSession {
         refreshPreview()
     }
 
-    deinit { idleCommit?.cancel(); draftTask?.cancel(); previewTask?.cancel() }
+    deinit { draftTask?.cancel() }
 
     // MARK: - State
 
@@ -163,8 +167,8 @@ final class LayoutEditorViewModel: EditorSession {
     /// The photos of the chosen option that match the search text (case and diacritic insensitive).
     var sourcePhotos: [LayoutPhoto] {
         let photos = sources.first { $0.id == sourceID }?.photos ?? []
-        guard let needle = ReviewViewModel.searchNeedle(searchText) else { return photos }
-        return photos.filter { ReviewViewModel.fold($0.fileName).contains(needle) }
+        guard let needle = SearchText.needle(searchText) else { return photos }
+        return photos.filter { SearchText.matches($0.fileName, needle: needle) }
     }
 
     func setSource(_ id: String) {
@@ -196,16 +200,10 @@ final class LayoutEditorViewModel: EditorSession {
     func setMargin(_ points: Double) { slide(.margin) { $0.margin = points } }
 
     /// The start of a drag of a slider with the mouse: no idle commit until `endDrag`.
-    func beginDrag() {
-        isDragging = true
-        idleCommit?.cancel()
-    }
+    func beginDrag() { pending.beginDrag() }
 
     /// The end of a drag: all its changes become 1 undo step.
-    func endDrag() {
-        isDragging = false
-        finishChange()
-    }
+    func endDrag() { pending.endDrag() }
 
     /// A change that is 1 undo step at once.
     private func apply(_ edit: (inout LayoutDocument) -> Void) {
@@ -216,31 +214,16 @@ final class LayoutEditorViewModel: EditorSession {
         changed()
     }
 
-    /// A slider or text change. A mouse drag ends with `endDrag`. A key or VoiceOver change has no end event, so
-    /// it becomes 1 undo step after `commitDelay` with no new change, or when another field changes.
+    /// A slider or text change: see `PendingCommit`.
     private func slide(_ key: Slider, _ edit: (inout LayoutDocument) -> Void) {
-        if let pendingSlider, pendingSlider != key { history.commit() }
-        pendingSlider = key
+        pending.change(key)
         var d = document
         edit(&d)
         history.show(d)
         changed()
-        idleCommit?.cancel()
-        guard !isDragging else { return }
-        let delay = commitDelay
-        idleCommit = Task { [weak self] in
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled else { return }
-            self?.finishChange()
-        }
     }
 
-    private func finishChange() {
-        idleCommit?.cancel()
-        idleCommit = nil
-        pendingSlider = nil
-        history.commit()
-    }
+    private func finishChange() { pending.finish() }
 
     // MARK: - Photos
 
@@ -293,17 +276,30 @@ final class LayoutEditorViewModel: EditorSession {
         refreshPreview()
     }
 
-    func zoomIn() { setZoom(zoom * Self.zoomStep) }
-    func zoomOut() { setZoom(zoom / Self.zoomStep) }
-
-    func zoomToFit() {
-        fitsPage = true
-        zoom = 1
+    /// The scale that makes the whole page fit in the page area, as a fraction of the actual size.
+    var fitScale: Double {
+        let size = pages[pageIndex].size
+        guard size.width > 0, size.height > 0 else { return 1 }
+        return min(canvasWidth / size.width, canvasHeight / size.height)
     }
 
-    private func setZoom(_ value: Double) {
+    /// The scale of the page now, as a fraction of the actual size (1 is 100%).
+    var scale: Double { fitsPage ? fitScale : chosenScale }
+
+    /// The scale as a percent, for the bottom bar.
+    var zoomText: String { "\(Int((scale * 100).rounded()))%" }
+
+    /// Zoom In never makes the page smaller, and Zoom Out never makes it bigger, even at the end of the range.
+    func zoomIn() { setScale(scale * Self.zoomStep, direction: 1) }
+    func zoomOut() { setScale(scale / Self.zoomStep, direction: -1) }
+
+    func zoomToFit() { fitsPage = true }
+
+    private func setScale(_ value: Double, direction: Double) {
+        let now = scale
+        let clamped = min(max(value, Self.zoomRange.lowerBound), Self.zoomRange.upperBound)
+        chosenScale = direction > 0 ? max(clamped, now) : min(clamped, now)
         fitsPage = false
-        zoom = min(max(value, Self.zoomRange.lowerBound), Self.zoomRange.upperBound)
     }
 
     /// **Preview** hides the panels and the cell overlays.
@@ -324,11 +320,7 @@ final class LayoutEditorViewModel: EditorSession {
     }
 
     /// Drops the state of a change that waits for its end, before undo or redo.
-    private func finishPending() {
-        idleCommit?.cancel()
-        idleCommit = nil
-        pendingSlider = nil
-    }
+    private func finishPending() { pending.drop() }
 
     /// Saves the draft at once, then closes. There is no discard dialog: the layout is a draft.
     func requestClose() {
@@ -362,16 +354,12 @@ final class LayoutEditorViewModel: EditorSession {
         }
     }
 
-    /// Cancels the last preview task and starts 1 new task. The new task waits for the old one, so at most 1
-    /// page renders at a time, and a cancelled task skips its render.
+    /// Starts 1 new render of the shown page. `PreviewChain` cancels the last one, so at most 1 page renders
+    /// at a time, and a cancelled render never replaces the image.
     private func refreshPreview() {
-        let previous = previewTask
-        previous?.cancel()
         let page = pages[pageIndex], document = document, names = fileNames, source = source, service = service
         let pixels = min(Int((canvasWidth * 2).rounded()), Self.maxPreviewPixel)
-        previewTask = Task { [weak self] in
-            await previous?.value
-            guard !Task.isCancelled else { return }
+        previews.start { [weak self] in
             let image = await service.previewImage(
                 of: page, document: document, fileNames: names, maxPixel: max(pixels, 1), source: source)
             guard !Task.isCancelled, let self else { return }
@@ -414,13 +402,14 @@ final class LayoutEditorViewModel: EditorSession {
         finishChange()
         let d = exportDocument
         guard !d.photoIDs.isEmpty else { return }
+        // Set before the panel opens, so a second call cannot open a second panel.
+        isExporting = true
+        exportError = nil
+        defer { isExporting = false }
         let folder = exportFolder
         guard let (destination, format) = await chooseDestination(suggestedName(format: .pdf, in: folder), folder, .pdf)
         else { return }
-        isExporting = true
-        exportError = nil
         lastExport = []
-        defer { isExporting = false }
         do {
             lastExport = try await service.export(
                 d, fileNames: fileNames, source: source, to: destination, format: format, protected: protected)

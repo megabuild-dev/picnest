@@ -3932,6 +3932,34 @@
     },
     "Uses %lld of %lld photos" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uses %1$lld of %#@photos@"
+          },
+          "substitutions" : {
+            "photos" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photo"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photos"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",

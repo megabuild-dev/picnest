@@ -49,12 +49,16 @@ final class PhotoEditorViewModel: EditorSession {
     }
 
     private var history = EditHistory()
-    private var pendingSlider: Slider?
     private var dragStartCrop: NormalizedRect?
-    private var isDragging = false
-    @ObservationIgnored nonisolated(unsafe) private var idleCommit: Task<Void, Never>?
+    @ObservationIgnored private lazy var commits = PendingCommit<Slider> { [weak self] in
+        self?.dragStartCrop = nil
+        self?.history.commit()
+    }
     /// How long a slider change that has no end event waits for the next one before it is 1 undo step.
-    @ObservationIgnored var commitDelay: Duration = .milliseconds(600)
+    @ObservationIgnored var commitDelay: Duration {
+        get { commits.delay }
+        set { commits.delay = newValue }
+    }
     private var index: Int
     /// The preview of the shown photo with no edit, and the id it belongs to.
     private var base: (id: MediaID, image: CGImage)?
@@ -74,7 +78,7 @@ final class PhotoEditorViewModel: EditorSession {
     /// True when `setAspect` ran before the base preview loaded, so the crop still needs to fit.
     @ObservationIgnored private var needsFit = false
     @ObservationIgnored private var pending: Pending?
-    @ObservationIgnored nonisolated(unsafe) private var previewTask: Task<Void, Never>?
+    @ObservationIgnored private let previews = PreviewChain()
 
     /// `photos` must not be empty. `start` is the photo to show first (the first one if it is not in `photos`).
     /// `chooseDestination` shows the save panel with a suggested name, a folder, and a format; it returns the
@@ -98,8 +102,6 @@ final class PhotoEditorViewModel: EditorSession {
         refreshPreview()
         loadStoredSize()
     }
-
-    deinit { previewTask?.cancel(); idleCommit?.cancel() }
 
     // MARK: - State
 
@@ -184,38 +186,15 @@ final class PhotoEditorViewModel: EditorSession {
     /// A slider changed. A mouse drag ends with `endDrag`. A key or VoiceOver change has no end event, so it
     /// becomes 1 undo step after `commitDelay` with no new change, or when another slider changes.
     private func slide(_ key: Slider, _ e: PhotoEdit) {
-        if let pendingSlider, pendingSlider != key { history.commit() }
-        pendingSlider = key
+        commits.change(key)
         change(e, commit: false)
-        idleCommit?.cancel()
-        guard !isDragging else { return }
-        let delay = commitDelay
-        idleCommit = Task { [weak self] in
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled else { return }
-            self?.finishChange()
-        }
     }
 
     /// The start of a drag of a slider with the mouse: no idle commit until `endDrag`.
-    func beginDrag() {
-        isDragging = true
-        idleCommit?.cancel()
-    }
+    func beginDrag() { commits.beginDrag() }
 
     /// The end of a drag of a handle or a slider: all its changes become 1 undo step.
-    func endDrag() {
-        isDragging = false
-        finishChange()
-    }
-
-    private func finishChange() {
-        idleCommit?.cancel()
-        idleCommit = nil
-        pendingSlider = nil
-        dragStartCrop = nil
-        history.commit()
-    }
+    func endDrag() { commits.endDrag() }
 
     func reset() {
         finishPending()
@@ -238,9 +217,7 @@ final class PhotoEditorViewModel: EditorSession {
     /// Drops the state of a drag or a slider change that waits for its end, before undo, redo, or reset.
     /// The history itself drops or keeps the shown value.
     private func finishPending() {
-        idleCommit?.cancel()
-        idleCommit = nil
-        pendingSlider = nil
+        commits.drop()
         dragStartCrop = nil
     }
 
@@ -397,14 +374,10 @@ final class PhotoEditorViewModel: EditorSession {
     /// edit renders at a time, and a cancelled task skips its render. The base preview decodes once per photo,
     /// in its own task that an edit does not cancel. The render runs off the main actor.
     private func refreshPreview() {
-        let previous = previewTask
-        previous?.cancel()
         let photo = current, edit = edit, service = service
         let showCropped = tool != .crop, plain = isShowingOriginal || edit.isOriginal
         let decode = baseDecode(for: photo)
-        previewTask = Task { [weak self] in
-            await previous?.value
-            guard !Task.isCancelled else { return }
+        previews.start { [weak self] in
             guard let source = await decode.value else { return }
             guard !Task.isCancelled, let self, current.id == photo.id else { return }
             if base?.id != photo.id {

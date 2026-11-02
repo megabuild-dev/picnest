@@ -13,6 +13,8 @@ struct LayoutEditorViewModelTests {
         var destination: URL?
         var suggestions: [(name: String, folder: URL)] = []
         var revealed: [URL] = []
+        /// While true, the fake save panel waits.
+        var holdsPanel = false
     }
 
     struct Rig {
@@ -49,6 +51,7 @@ struct LayoutEditorViewModelTests {
             saveDraft: { spy.drafts.append($0) },
             chooseDestination: { [spy] name, folder, format in
                 spy.suggestions.append((name, folder))
+                while spy.holdsPanel { await Task.yield() }
                 return spy.destination.map { ($0, format) }
             },
             revealURL: { spy.revealed.append($0) },
@@ -286,17 +289,97 @@ struct LayoutEditorViewModelTests {
         #expect(try #require(model.pageImage).width < landscape)
     }
 
+    @Test func testZoomFollowsTheRealScale() throws {
+        let model = try makeRig().model  // A4 landscape 841.9 × 595.3 pt in an 800 × 600 area
+        model.canvasWidth = 800
+        model.canvasHeight = 600
+        let fit = model.fitScale
+        #expect(abs(fit - 800 / 841.8898) < 1e-6)
+        #expect(model.fitsPage && model.scale == fit && model.zoomText == "95%")
+        model.zoomOut()
+        #expect(!model.fitsPage && model.scale < fit)  // never bigger than fit
+        model.zoomToFit()
+        #expect(model.fitsPage && model.scale == fit)
+        model.zoomIn()
+        #expect(model.scale > fit)
+        #expect(abs(model.scale - fit * 1.25) < 1e-9)
+        model.zoomToFit()
+        model.canvasWidth = 100  // a small area: the fit is under the 25% limit
+        model.canvasHeight = 100
+        let small = model.fitScale
+        #expect(small < 0.25)
+        model.zoomOut()
+        #expect(model.scale <= small)  // the limit never makes Zoom Out bigger
+        model.zoomToFit()
+        model.zoomIn()
+        #expect(model.scale >= small)
+    }
+
     @Test func testZoomStaysInRange() throws {
         let model = try makeRig().model
-        #expect(model.fitsPage)
         for _ in 0..<30 { model.zoomIn() }
-        #expect(model.zoom == 4 && !model.fitsPage)
+        #expect(model.scale == 4 && model.zoomText == "400%")
         for _ in 0..<60 { model.zoomOut() }
-        #expect(model.zoom == 0.25)
-        model.zoomToFit()
-        #expect(model.fitsPage)
+        #expect(model.scale == 0.25 && model.zoomText == "25%")
         model.togglePreview()
         #expect(model.isPreviewing)
+    }
+
+    @Test func testStalePreviewResultIsDropped() async throws {
+        let model = try makeRig().model
+        try await waitUntil { model.pageImage != nil }
+        let landscape = try #require(model.pageImage).width
+        model.setOrientation(.portrait)
+        model.setOrientation(.landscape)  // the portrait render must not replace this one
+        for _ in 0..<50 { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(model.pageImage?.width == landscape)
+    }
+
+    @Test func testSteppingAPageRefreshesTheImage() async throws {
+        let model = try makeRig(count: 7).model
+        try await waitUntil { model.pageImage != nil }
+        let first = try #require(model.pageImage)
+        model.step(page: 1)
+        try await waitUntil { model.pageImage !== first }
+        #expect(model.pageText == "Page 2 of 2")
+    }
+
+    @Test func testInitSavesNothingAndUndoSavesTheDraft() async throws {
+        let rig = try makeRig()
+        rig.model.draftDelay = .milliseconds(10)
+        try await Task.sleep(for: .milliseconds(60))
+        #expect(rig.spy.drafts.isEmpty)
+        rig.model.setPaper(.a3)
+        rig.model.undo()
+        try await waitUntil { rig.spy.drafts.last??.paper == .a4 }
+    }
+
+    @Test func testSecondExportCallDoesNotOpenASecondPanel() async throws {
+        let rig = try makeRig()
+        rig.spy.holdsPanel = true
+        let first = Task { await rig.model.export() }
+        try await waitUntil { rig.model.isExporting }
+        await rig.model.export()
+        #expect(rig.spy.suggestions.count == 1)
+        rig.spy.holdsPanel = false
+        await first.value
+        #expect(!rig.model.isExporting)
+    }
+
+    @Test func testNewExportClearsTheOldError() async throws {
+        let rig = try makeRig()
+        rig.spy.destination = rig.source.appending(path: "p1.jpg")
+        await rig.model.export()
+        #expect(rig.model.exportError != nil)
+        rig.spy.destination = nil  // the user cancels the panel
+        await rig.model.export()
+        #expect(rig.model.exportError == nil)
+    }
+
+    @Test func testUsedTextHasASingularForm() throws {
+        let model = try makeRig(count: 1).model
+        model.setKind(.collage)
+        #expect(model.usedText == "Uses 1 of 1 photo")
     }
 
     @Test func testEveryChoiceHasADistinctTitle() {

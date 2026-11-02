@@ -457,7 +457,7 @@ final class ReviewViewModel {
         } else if item == .recentlyDeleted {
             ids = recentlyDeletedIDs(session: session, search: filter.search)
         } else {
-            let needle = Self.searchNeedle(filter.search)
+            let needle = SearchText.needle(filter.search)
             let members = Self.members(of: item, in: session)
             let files = session.visibleMedia.filter { media in
                 Self.includes(media, state: session.states[media.id], in: item, members: members)
@@ -509,7 +509,7 @@ final class ReviewViewModel {
             if reviewIssue == .similarPhotos { return Self.similarEmptyState(for: duplicates.state) }
             return .noResults
         }
-        if Self.searchNeedle(searchText) != nil { return .noResults }
+        if SearchText.needle(searchText) != nil { return .noResults }
         switch selectedItem {
         case .favorites: return .noFavorites
         case .collection: return .emptyCollection
@@ -648,7 +648,7 @@ final class ReviewViewModel {
         refreshIfSessionChanged()
         let filter = groupFilter
         if let groupsCache, groupsCache.order == order, groupsCache.filter == filter { return groupsCache.groups }
-        let needle = Self.searchNeedle(filter.search)
+        let needle = SearchText.needle(filter.search)
         let files = session.visibleMedia.filter { media in
             let state = session.states[media.id]
             guard Self.includes(media, state: state, in: .notSure) else { return false }
@@ -1361,7 +1361,7 @@ final class ReviewViewModel {
     /// The visible photos that are not in `target` yet, by file name, that match `search`.
     func addPhotosCandidates(for target: AddPhotosTarget, matching search: String = "") -> [MediaID] {
         let session = review.session
-        let needle = Self.searchNeedle(search)
+        let needle = SearchText.needle(search)
         let item: SidebarItem = switch target {
         case .category(let c): .category(c)
         case .collection(let c): .collection(c)
@@ -1504,7 +1504,7 @@ final class ReviewViewModel {
 
     /// The trashed photos, newest first, then by id, that match `search`.
     private func recentlyDeletedIDs(session: Session, search: String) -> [MediaID] {
-        let needle = Self.searchNeedle(search)
+        let needle = SearchText.needle(search)
         let names = mediaByID
         return session.trashed
             .filter { record in
@@ -1580,20 +1580,8 @@ final class ReviewViewModel {
         (media.relativePath as NSString).lastPathComponent
     }
 
-    /// The folded search text, or nil when it is empty or blank.
-    static func searchNeedle(_ text: String) -> String? {
-        let needle = fold(text.trimmingCharacters(in: .whitespacesAndNewlines))
-        return needle.isEmpty ? nil : needle
-    }
-
-    /// Lowercase, no diacritics. `đ` has no decomposition, so it folds to `d` by hand.
-    static func fold(_ text: String) -> String {
-        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
-            .replacingOccurrences(of: "đ", with: "d")
-    }
-
     private static func matches(_ media: MediaFile, needle: String) -> Bool {
-        fold(fileName(media)).contains(needle)
+        SearchText.matches(fileName(media), needle: needle)
     }
 
     /// The photos that `item` lists by membership: the visible favorites or the visible members of a collection.

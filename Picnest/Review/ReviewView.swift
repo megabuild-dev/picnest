@@ -249,7 +249,6 @@ struct ReviewView: View {
         }
     }
 
-    /// Back and Redo only: no avatar, no tab bar, no search (spec 6).
     /// The body of the open editor.
     @ViewBuilder private func editorDetail(_ active: ActiveEditor) -> some View {
         switch active {
@@ -262,6 +261,7 @@ struct ReviewView: View {
         }
     }
 
+    /// Back and Redo only: no avatar, no tab bar, no search (spec 6).
     @ToolbarContentBuilder private func editorToolbar(_ editor: any EditorSession) -> some ToolbarContent {
         ToolbarItem(placement: .navigation) {
             Button("Back to Photos", systemImage: "chevron.left", action: editor.requestClose)
