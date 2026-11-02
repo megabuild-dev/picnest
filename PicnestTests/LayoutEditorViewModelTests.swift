@@ -386,6 +386,20 @@ struct LayoutEditorViewModelTests {
         #expect(model.pages.count == 1 && model.currentPage.cells.count == 3)
     }
 
+    @Test func testCollageMovePastTheLastCellKeepsThePhotoAndClearsTheSelection() throws {
+        let model = try makeRig(count: 6).model
+        model.setKind(.collage)
+        model.setTemplate(.twoByTwo)  // 4 cells for 6 photos
+        let before = model.document.photoIDs
+        model.selectCell(1)
+        model.movePhoto(at: 1, by: 4)  // index 5 has no cell
+        #expect(model.document.photoIDs == [before[0]] + Array(before[2...5]) + [before[1]])
+        #expect(Set(model.document.photoIDs) == Set(before))
+        #expect(model.selectedCell == nil)
+        model.undo()
+        #expect(model.document.photoIDs == before)
+    }
+
     @Test func testCollageSelectionKeepsACellAndDropsOneOutsideTheTemplate() throws {
         let model = try makeRig(count: 6).model
         model.setKind(.collage)
