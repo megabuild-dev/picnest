@@ -256,7 +256,8 @@ final class ReviewViewModel {
         self.defaults = defaults
         self.photoEdits = photoEdits
         self.chooseExportDestination = chooseExportDestination ?? { name, folder, format in
-            await EditorSavePanel.choose(suggestedName: name, folder: folder, format: format)
+            await EditorSavePanel.choose(
+                suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
         }
         let saved = defaults.object(forKey: Self.thumbnailSizeKey) as? Double
         thumbnailSize = Self.clampedThumbnailSize(saved ?? Self.defaultThumbnailSize)

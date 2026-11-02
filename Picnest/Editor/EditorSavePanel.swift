@@ -2,12 +2,14 @@ import AppKit
 import PicnestCore
 import UniformTypeIdentifiers
 
-/// The save panel of **Export edited copy**: a suggested name, the folder of the photo, and a format menu.
+/// The save panel of **Export edited copy** and of the layout export: a suggested name, a folder, and a format menu.
 /// It returns the chosen file and format, or nil on cancel. The panel does not replace a photo by itself:
 /// the export refuses a protected name (`ProtectedFiles`).
 @MainActor
 enum EditorSavePanel {
-    static func choose(suggestedName: String, folder: URL, format: ExportFormat) async -> (URL, ExportFormat)? {
+    static func choose<F: ExportFileFormat>(
+        suggestedName: String, folder: URL, format: F, title: (F) -> String
+    ) async -> (URL, F)? {
         let panel = NSSavePanel()
         panel.directoryURL = folder
         panel.nameFieldStringValue = suggestedName
@@ -15,11 +17,11 @@ enum EditorSavePanel {
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
 
-        let formats = ExportFormat.allCases
+        let formats = Array(F.allCases)
         let popUp = NSPopUpButton(frame: .zero, pullsDown: false)
-        popUp.addItems(withTitles: formats.map(title(of:)))
+        popUp.addItems(withTitles: formats.map(title))
         popUp.selectItem(at: formats.firstIndex(of: format) ?? 0)
-        let target = FormatTarget(panel: panel, popUp: popUp, formats: formats)
+        let target = FormatTarget(panel: panel, popUp: popUp, types: formats.map(\.utType), extensions: formats.map(\.fileExtension))
         popUp.target = target
         popUp.action = #selector(FormatTarget.changed)
         let label = NSTextField(labelWithString: String(localized: "Format"))
@@ -36,7 +38,8 @@ enum EditorSavePanel {
         return (url, formats[max(popUp.indexOfSelectedItem, 0)])
     }
 
-    private static func title(of format: ExportFormat) -> String {
+    /// The menu titles of the photo editor formats.
+    static func title(of format: ExportFormat) -> String {
         switch format {
         case .jpeg: "JPEG"
         case .heic: "HEIC"
@@ -48,19 +51,21 @@ enum EditorSavePanel {
     private final class FormatTarget: NSObject {
         let panel: NSSavePanel
         let popUp: NSPopUpButton
-        let formats: [ExportFormat]
+        let types: [UTType]
+        let extensions: [String]
 
-        init(panel: NSSavePanel, popUp: NSPopUpButton, formats: [ExportFormat]) {
+        init(panel: NSSavePanel, popUp: NSPopUpButton, types: [UTType], extensions: [String]) {
             self.panel = panel
             self.popUp = popUp
-            self.formats = formats
+            self.types = types
+            self.extensions = extensions
         }
 
         @objc func changed() {
-            let format = formats[max(popUp.indexOfSelectedItem, 0)]
+            let index = max(popUp.indexOfSelectedItem, 0)
             let stem = (panel.nameFieldStringValue as NSString).deletingPathExtension
-            panel.allowedContentTypes = [format.utType]
-            panel.nameFieldStringValue = stem + "." + format.fileExtension
+            panel.allowedContentTypes = [types[index]]
+            panel.nameFieldStringValue = stem + "." + extensions[index]
         }
     }
 }
