@@ -17,11 +17,14 @@ public struct Session: Codable, Sendable, Hashable {
     public var favoriteIDs: Set<MediaID>
     /// The collections the user made, in `order`.
     public var collections: [PhotoCollection]
+    /// The layout the user is editing (contact sheet or collage). Nil until the user starts one.
+    public var layoutDraft: LayoutDocument?
 
     public init(
         sourcePath: String, candidateList: CandidateList, categories: [Category], states: [MediaID: PhotoState],
         scan: ScanResult, sortedAt: Date?, trashed: [TrashedPhoto] = [], notDuplicateKeys: Set<String> = [],
-        favoriteIDs: Set<MediaID> = [], collections: [PhotoCollection] = []
+        favoriteIDs: Set<MediaID> = [], collections: [PhotoCollection] = [],
+        layoutDraft: LayoutDocument? = nil
     ) {
         self.sourcePath = sourcePath
         self.candidateList = candidateList
@@ -33,15 +36,17 @@ public struct Session: Codable, Sendable, Hashable {
         self.notDuplicateKeys = notDuplicateKeys
         self.favoriteIDs = favoriteIDs
         self.collections = collections
+        self.layoutDraft = layoutDraft
     }
 
     private enum CodingKeys: String, CodingKey {
-        case sourcePath, candidateList, categories, states, scan, sortedAt, trashed, notDuplicateKeys, favoriteIDs, collections
+        case sourcePath, candidateList, categories, states, scan, sortedAt, trashed, notDuplicateKeys, favoriteIDs, collections, layoutDraft
     }
 
     /// A `session.json` from before Move to Trash has no `trashed` key. It decodes as no trashed photos.
     /// A `session.json` from before the Duplicates view has no `notDuplicateKeys` key. It decodes as none.
     /// A `session.json` from before favorites and collections has neither key. It decodes as none.
+    /// A `session.json` from before the layout editor has no `layoutDraft` key. It decodes as nil.
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         sourcePath = try c.decode(String.self, forKey: .sourcePath)
@@ -54,6 +59,7 @@ public struct Session: Codable, Sendable, Hashable {
         notDuplicateKeys = try c.decodeIfPresent(Set<String>.self, forKey: .notDuplicateKeys) ?? []
         favoriteIDs = try c.decodeIfPresent(Set<MediaID>.self, forKey: .favoriteIDs) ?? []
         collections = try c.decodeIfPresent([PhotoCollection].self, forKey: .collections) ?? []
+        layoutDraft = try c.decodeIfPresent(LayoutDocument.self, forKey: .layoutDraft)
     }
 
     /// Writes `notDuplicateKeys` and `favoriteIDs` sorted, so the same session always gives the same `session.json`.
@@ -69,6 +75,7 @@ public struct Session: Codable, Sendable, Hashable {
         try c.encode(notDuplicateKeys.sorted(), forKey: .notDuplicateKeys)
         try c.encode(favoriteIDs.sorted(), forKey: .favoriteIDs)
         try c.encode(collections, forKey: .collections)
+        try c.encodeIfPresent(layoutDraft, forKey: .layoutDraft)
     }
 
     /// The ids of the trashed photos. The 1 place that says if a photo is trashed.
