@@ -66,7 +66,7 @@ struct NeedsReviewTests {
             embedder: FakeEmbedder(), sessionsRoot: temp.url.appending(path: "Sessions"), defaults: suite.defaults)
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, photoEdits: environment.photoEdits, app: AppModel(environment: environment), onRescan: {},
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: AppModel(environment: environment), onRescan: {},
             defaults: suite.defaults, duplicateSearch: search)
         model.selectedItem = .notSure
         return model
@@ -371,7 +371,7 @@ struct NeedsReviewTests {
             embedder: FakeEmbedder(), sessionsRoot: temp.url.appending(path: "Sessions2"), defaults: suite.defaults)
         let empty = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, photoEdits: environment.photoEdits, app: AppModel(environment: environment), onRescan: {},
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: AppModel(environment: environment), onRescan: {},
             defaults: suite.defaults)
         empty.selectedItem = .notSure
         #expect(empty.emptyState == .nothingToReview)

@@ -183,6 +183,31 @@ struct ReviewServiceTests {
         #expect(try f.sessions.load(source: f.source) == s.session)
     }
 
+    @Test func applyOrganizeReKeysTheLayoutDraft() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.saveLayoutDraft(LayoutDocument.new(photos: ["a2.jpg", "a1.jpg"], title: "T"))
+        await s.applyOrganize([OrganizeMove(mediaID: "a1.jpg", to: "A/001.jpg")])
+        #expect(s.session.layoutDraft?.photoIDs == ["a2.jpg", "A/001.jpg"])
+        #expect(try f.sessions.load(source: f.source) == s.session)
+    }
+
+    @Test func layoutDraftIsSavedAndIsNotAnUndoStep() async throws {
+        let f = try fixture()
+        let s = f.service
+        let d = LayoutDocument.new(photos: ["a1.jpg"], title: "T")
+        s.saveLayoutDraft(d)
+        #expect(s.session.layoutDraft == d)
+        #expect(try f.sessions.load(source: f.source)?.layoutDraft == d)
+        #expect(!s.canUndo)
+        s.dontMove(["a2.jpg"])
+        s.undo()
+        #expect(s.canRedo)
+        s.saveLayoutDraft(nil)
+        #expect(s.canRedo)
+        #expect(try f.sessions.load(source: f.source)?.layoutDraft == nil)
+    }
+
     @Test func favoriteChangeIsSavedAndIsNotAnUndoStep() async throws {
         let f = try fixture()
         let s = f.service

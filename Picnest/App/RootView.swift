@@ -30,7 +30,7 @@ struct RootView: View {
                        afterScan: afterScan,
                        preferences: SidebarPreferences(appearance: environment.appearance, language: environment.language,
                                                        relauncher: relauncher),
-                       photoEdits: environment.photoEdits)
+                       photoEdits: environment.photoEdits, layoutExport: environment.layoutExport)
                 .id(ObjectIdentifier(review))
         }
     }

@@ -37,6 +37,11 @@ enum CollectionEditor: Identifiable, Equatable {
 
 /// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
 /// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
+/// Where a layout takes its photos from.
+enum LayoutOrigin: Hashable {
+    case selection, category(CategoryID), collection(CollectionID)
+}
+
 @MainActor
 @Observable
 final class ReviewViewModel {
@@ -92,14 +97,14 @@ final class ReviewViewModel {
     var selectedItem: SidebarItem = .all {
         didSet {
             guard selectedItem != oldValue, !isRevertingItem else { return }
-            if let editor {
-                // The photo editor holds this item. Keep it until the editor closes (it may ask first).
+            if let activeEditor {
+                // The open editor holds this item. Keep it until the editor closes (it may ask first).
                 let requested = selectedItem
                 isRevertingItem = true
                 selectedItem = oldValue
                 isRevertingItem = false
                 itemAfterClose = requested
-                editor.requestClose()
+                activeEditor.session.requestClose()
                 return
             }
             // The issue filter belongs to the Needs Review view only.
@@ -212,9 +217,14 @@ final class ReviewViewModel {
     @ObservationIgnored private let openURL: @MainActor (URL) -> Void
     @ObservationIgnored private let revealURLs: @MainActor ([URL]) -> Void
     @ObservationIgnored private let photoEdits: PhotoEditService
+    @ObservationIgnored private let layoutExport: LayoutExportService
     @ObservationIgnored private let chooseExportDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
-    /// The photo editor, or nil. It opens with `openEditor` and closes with `closeEditor`.
-    private(set) var editor: PhotoEditorViewModel?
+    /// The editor that fills the window, or nil. It opens with `openEditor` and closes with `closeEditor`.
+    private(set) var activeEditor: ActiveEditor?
+    /// The photo editor, or nil when none or another editor is open.
+    var editor: PhotoEditorViewModel? {
+        if case .photo(let editor)? = activeEditor { editor } else { nil }
+    }
     /// The sidebar item that the user chose while the editor was open. It shows when the editor closes.
     @ObservationIgnored private var itemAfterClose: SidebarItem?
     @ObservationIgnored private var isRevertingItem = false
@@ -247,7 +257,7 @@ final class ReviewViewModel {
     /// `app` holds the undo flag that every window shares, and starts over (`startOver`). `afterScan` is true
     /// when a scan or a rescan opened this review.
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
-         photoEdits: PhotoEditService, app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
+         photoEdits: PhotoEditService, layoutExport: LayoutExportService, app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
@@ -255,8 +265,10 @@ final class ReviewViewModel {
          chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil) {
         self.defaults = defaults
         self.photoEdits = photoEdits
+        self.layoutExport = layoutExport
         self.chooseExportDestination = chooseExportDestination ?? { name, folder, format in
-            await EditorSavePanel.choose(suggestedName: name, folder: folder, format: format)
+            await EditorSavePanel.choose(
+                suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
         }
         let saved = defaults.object(forKey: Self.thumbnailSizeKey) as? Double
         thumbnailSize = Self.clampedThumbnailSize(saved ?? Self.defaultThumbnailSize)
@@ -452,7 +464,7 @@ final class ReviewViewModel {
         } else if item == .recentlyDeleted {
             ids = recentlyDeletedIDs(session: session, search: filter.search)
         } else {
-            let needle = Self.searchNeedle(filter.search)
+            let needle = SearchText.needle(filter.search)
             let members = Self.members(of: item, in: session)
             let files = session.visibleMedia.filter { media in
                 Self.includes(media, state: session.states[media.id], in: item, members: members)
@@ -504,7 +516,7 @@ final class ReviewViewModel {
             if reviewIssue == .similarPhotos { return Self.similarEmptyState(for: duplicates.state) }
             return .noResults
         }
-        if Self.searchNeedle(searchText) != nil { return .noResults }
+        if SearchText.needle(searchText) != nil { return .noResults }
         switch selectedItem {
         case .favorites: return .noFavorites
         case .collection: return .emptyCollection
@@ -643,7 +655,7 @@ final class ReviewViewModel {
         refreshIfSessionChanged()
         let filter = groupFilter
         if let groupsCache, groupsCache.order == order, groupsCache.filter == filter { return groupsCache.groups }
-        let needle = Self.searchNeedle(filter.search)
+        let needle = SearchText.needle(filter.search)
         let files = session.visibleMedia.filter { media in
             let state = session.states[media.id]
             guard Self.includes(media, state: state, in: .notSure) else { return false }
@@ -967,7 +979,7 @@ final class ReviewViewModel {
 
     // MARK: - Photo editor (UI redesign, Phase 4)
 
-    var isEditing: Bool { editor != nil }
+    var isEditing: Bool { activeEditor != nil }
 
     /// True if the photo editor can open `id`: a readable image that is not in the Trash, outside Recently
     /// Deleted, while no files move and no editor is open.
@@ -990,28 +1002,173 @@ final class ReviewViewModel {
             mediaByID[id].map { EditorPhoto(id: id, url: url(of: $0), fileName: Self.fileName($0)) }
         }
         guard !photos.isEmpty else { return }
-        let session = review.session
-        let protected = ProtectedFiles(
-            source: source, mediaIDs: Set(mediaByID.values.map(\.relativePath)),
-            otherPaths: session.trashed.map(\.trashPath))
         itemAfterClose = nil
-        editor = PhotoEditorViewModel(
-            photos: photos, start: start, service: photoEdits, protected: protected,
+        activeEditor = .photo(PhotoEditorViewModel(
+            photos: photos, start: start, service: photoEdits, protected: protectedFiles(),
             chooseDestination: chooseExportDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
             onClose: { [weak self] in self?.closeEditor() },
             onCancelClose: { [weak self] in self?.itemAfterClose = nil },
-            readSize: { [weak self] id in await self?.pixelSize(of: id) })
+            readSize: { [weak self] id in await self?.pixelSize(of: id) }))
     }
 
-    /// Closes the photo editor and drops its edit. The selection stays. A sidebar item that the user chose
+    /// The files that no export may replace: every photo of the folder and every file in the Trash.
+    private func protectedFiles() -> ProtectedFiles {
+        ProtectedFiles(
+            source: source, mediaIDs: Set(mediaByID.values.map(\.relativePath)),
+            otherPaths: review.session.trashed.map(\.trashPath))
+    }
+
+    /// Closes the editor and drops its edit. The selection stays. A sidebar item that the user chose
     /// meanwhile shows now.
     func closeEditor() {
-        editor = nil
+        activeEditor = nil
         if let item = itemAfterClose {
             itemAfterClose = nil
             selectedItem = item
         }
+    }
+
+    // MARK: - Layout editor (UI redesign, Phase 5)
+
+    /// The layout editor, or nil when none or another editor is open.
+    var layoutEditor: LayoutEditorViewModel? {
+        if case .layout(let editor)? = activeEditor { editor } else { nil }
+    }
+
+    /// The origin that the user has not yet decided on: set when a draft with photos exists.
+    var askingToContinueLayout: LayoutOrigin?
+
+    /// True if a layout can start from `origin`: no files move and no editor is open, and the origin has at
+    /// least 1 readable image that is not in the Trash.
+    func canCreateLayout(from origin: LayoutOrigin) -> Bool {
+        canSortOrRescan && !layoutPhotoIDs(of: origin).isEmpty
+    }
+
+    /// The same for a right-click on `id`: the selection if `id` is selected, else `id`.
+    func canCreateLayout(for id: MediaID) -> Bool {
+        canSortOrRescan && contextTargets(for: id).contains(where: isEditable)
+    }
+
+    /// The origin of **Image > Create Layout…**: the selection when it is not empty, else the current category or
+    /// collection. Nil when no origin applies or it has no photo to lay out.
+    var layoutMenuOrigin: LayoutOrigin? {
+        let origin: LayoutOrigin
+        if !selection.isEmpty {
+            origin = .selection
+        } else {
+            switch selectedItem {
+            case .category(let c): origin = .category(c)
+            case .collection(let c): origin = .collection(c)
+            default: return nil
+            }
+        }
+        return canCreateLayout(from: origin) ? origin : nil
+    }
+
+    func requestLayoutFromMenu() {
+        if let origin = layoutMenuOrigin { requestLayout(from: origin) }
+    }
+
+    /// Opens the layout editor on the photos of `origin`. A draft with photos makes the screen ask first.
+    func requestLayout(from origin: LayoutOrigin) {
+        guard canCreateLayout(from: origin) else { return }
+        if let draft = review.session.layoutDraft, !draft.photoIDs.isEmpty {
+            askingToContinueLayout = origin
+        } else {
+            openLayout(.new(photos: layoutPhotoIDs(of: origin), title: layoutTitle(of: origin)), origin: origin)
+        }
+    }
+
+    /// The message of the "Continue your last layout?" alert: how many photos the draft has.
+    var continueLayoutMessage: String { CountText.lastLayout(review.session.layoutDraft?.photoIDs.count ?? 0) }
+
+    /// Answers the question with **Continue Layout**: opens the draft.
+    func continueLayout() {
+        guard let origin = askingToContinueLayout else { return }
+        askingToContinueLayout = nil
+        guard canSortOrRescan, let draft = review.session.layoutDraft else { return }
+        openLayout(draft, origin: origin)
+    }
+
+    /// Answers the question with **Start New**: opens a new layout on the photos of the origin.
+    func startNewLayout() {
+        guard let origin = askingToContinueLayout else { return }
+        askingToContinueLayout = nil
+        guard canCreateLayout(from: origin) else { return }
+        openLayout(.new(photos: layoutPhotoIDs(of: origin), title: layoutTitle(of: origin)), origin: origin)
+    }
+
+    /// Answers the question with **Cancel**. The draft stays.
+    func cancelLayoutRequest() { askingToContinueLayout = nil }
+
+    /// The title of a new layout: the category or collection name, or empty for a selection.
+    private func layoutTitle(of origin: LayoutOrigin) -> String {
+        switch origin {
+        case .selection: ""
+        case .category(let c): review.session.categories.first { $0.id == c }?.displayName ?? ""
+        case .collection(let c): collections.first { $0.id == c }?.name ?? ""
+        }
+    }
+
+    /// The readable images of `origin` that are not in the Trash: the selection in grid order, a category in
+    /// the order of its grid, or a collection in the order of its members.
+    private func layoutPhotoIDs(of origin: LayoutOrigin) -> [MediaID] {
+        switch origin {
+        case .selection: selectedInGridOrder.filter(isEditable)
+        case .category(let c): layoutPhotoIDs(of: .category(c) as SidebarItem)
+        case .collection(let c): layoutPhotoIDs(of: .collection(c) as SidebarItem)
+        }
+    }
+
+    private func layoutPhotoIDs(of item: SidebarItem) -> [MediaID] {
+        let session = review.session
+        if case .collection(let c) = item {
+            return CollectionService.visibleMembers(of: c, in: session).filter(isEditable)
+        }
+        let files = session.visibleMedia.filter {
+            Self.includes($0, state: session.states[$0.id], in: item) && isEditable($0.id)
+        }
+        return sorted(files, session: session)
+    }
+
+    private func sourceID(of origin: LayoutOrigin) -> String {
+        switch origin {
+        case .selection: "all"
+        case .category(let c): "category:\(c.uuidString)"
+        case .collection(let c): "collection:\(c.uuidString)"
+        }
+    }
+
+    private func openLayout(_ document: LayoutDocument, origin: LayoutOrigin) {
+        guard canSortOrRescan else { return }
+        func option(_ id: String, _ title: String, _ item: SidebarItem) -> LayoutSourceOption {
+            LayoutSourceOption(id: id, title: title, photos: layoutPhotoIDs(of: item).compactMap { id in
+                mediaByID[id].map { LayoutPhoto(id: id, fileName: Self.fileName($0)) }
+            })
+        }
+        let sources = [option("all", String(localized: "All Photos"), .all)]
+            + categories.map { option(sourceID(of: .category($0.id)), "\($0.emoji) \($0.displayName)", .category($0.id)) }
+            + collections.map { option(sourceID(of: .collection($0.id)), $0.name, .collection($0.id)) }
+        let fileNames = Dictionary(
+            mediaByID.values.filter { $0.kind == .image }.map { ($0.id, Self.fileName($0)) },
+            uniquingKeysWith: { first, _ in first })
+        itemAfterClose = nil
+        askingToContinueLayout = nil
+        activeEditor = .layout(LayoutEditorViewModel(
+            document: document, sources: sources, startSource: sourceID(of: origin), service: layoutExport,
+            source: source, protected: protectedFiles(), fileNames: fileNames,
+            saveDraft: { [weak self] in self?.review.saveLayoutDraft($0) },
+            chooseDestination: { name, folder, format in
+                await EditorSavePanel.choose(
+                    suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
+            },
+            revealURL: { [weak self] in self?.revealURLs([$0]) },
+            onClose: { [weak self] in self?.closeEditor() },
+            isAvailable: { [weak self] id in
+                guard let self else { return false }
+                return !self.review.session.trashed.contains { $0.mediaID == id }
+            }))
     }
 
     // MARK: - Photo actions
@@ -1356,7 +1513,7 @@ final class ReviewViewModel {
     /// The visible photos that are not in `target` yet, by file name, that match `search`.
     func addPhotosCandidates(for target: AddPhotosTarget, matching search: String = "") -> [MediaID] {
         let session = review.session
-        let needle = Self.searchNeedle(search)
+        let needle = SearchText.needle(search)
         let item: SidebarItem = switch target {
         case .category(let c): .category(c)
         case .collection(let c): .collection(c)
@@ -1499,7 +1656,7 @@ final class ReviewViewModel {
 
     /// The trashed photos, newest first, then by id, that match `search`.
     private func recentlyDeletedIDs(session: Session, search: String) -> [MediaID] {
-        let needle = Self.searchNeedle(search)
+        let needle = SearchText.needle(search)
         let names = mediaByID
         return session.trashed
             .filter { record in
@@ -1575,20 +1732,8 @@ final class ReviewViewModel {
         (media.relativePath as NSString).lastPathComponent
     }
 
-    /// The folded search text, or nil when it is empty or blank.
-    private static func searchNeedle(_ text: String) -> String? {
-        let needle = fold(text.trimmingCharacters(in: .whitespacesAndNewlines))
-        return needle.isEmpty ? nil : needle
-    }
-
-    /// Lowercase, no diacritics. `đ` has no decomposition, so it folds to `d` by hand.
-    private static func fold(_ text: String) -> String {
-        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
-            .replacingOccurrences(of: "đ", with: "d")
-    }
-
     private static func matches(_ media: MediaFile, needle: String) -> Bool {
-        fold(fileName(media)).contains(needle)
+        SearchText.matches(fileName(media), needle: needle)
     }
 
     /// The photos that `item` lists by membership: the visible favorites or the visible members of a collection.

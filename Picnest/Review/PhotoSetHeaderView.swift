@@ -83,6 +83,7 @@ struct CategoryMoreItems: View {
 
     var body: some View {
         Button("Change Icon…") { model.editingCategory = category.id }
+        CreateLayoutButton(model: model, origin: .category(category.id))
         Menu("Merge Into…") {
             ForEach(model.mergeTargets(for: category.id)) { target in
                 Button { model.merge(category.id, into: target.id) } label: {
@@ -106,6 +107,8 @@ struct CollectionMoreItems: View {
     let collection: PhotoCollection
 
     var body: some View {
+        CreateLayoutButton(model: model, origin: .collection(collection.id))
+        Divider()
         Button("Delete…", role: .destructive) { model.deletingCollection = collection.id }
     }
 }

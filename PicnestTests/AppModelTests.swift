@@ -71,7 +71,7 @@ struct AppModelTests {
         guard case .review(let review, _) = app.screen else { throw Failure.notInReview }
         return ReviewViewModel(
             review: review, classify: environment.classifyService, thumbnails: environment.thumbnails,
-            library: environment.library, photoEdits: environment.photoEdits, app: app, onRescan: app.rescan)
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: app, onRescan: app.rescan)
     }
 
     /// `afterScan` of the review screen, or nil on another screen.

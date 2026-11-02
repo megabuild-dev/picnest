@@ -32,6 +32,14 @@ public struct ProtectedFiles: Sendable {
         return linksToSessionPhoto(url)
     }
 
+    /// True if an export to `destination` must be refused: it names a protected file, or the same file as
+    /// `original` (by name, symlink, or hard link).
+    public func refuses(_ destination: URL, original: URL?) -> Bool {
+        if contains(destination) { return true }
+        guard let original else { return false }
+        return Self.isSameFile(destination, original)
+    }
+
     private func matches(_ url: URL) -> Bool {
         let full = Self.path(of: url)
         if others.contains(full) { return true }
@@ -65,5 +73,13 @@ public struct ProtectedFiles: Sendable {
     /// NFC and lowercase, as the default volume (APFS) compares names.
     private static func key(_ s: String) -> String {
         s.precomposedStringWithCanonicalMapping.lowercased()
+    }
+
+    /// True when both URLs name the same file: by folder and name (NFC, ignoring case), through a symlink, or
+    /// as a hard link.
+    private static func isSameFile(_ a: URL, _ b: URL) -> Bool {
+        if path(of: a) == path(of: b) { return true }
+        guard let x = identity(a), let y = identity(b) else { return false }
+        return x.id == y.id
     }
 }

@@ -165,7 +165,9 @@ public final class ScanService: Sendable {
         session.scan = scan
         // Favorites and collection members are kept when the file is in the new scan, even if the old
         // session listed it as trashed: the file is back at its path. Others are dropped.
-        CollectionService.prune(keeping: Set(scan.media.map(\.id)), in: &session)
+        let present = Set(scan.media.map(\.id))
+        CollectionService.prune(keeping: present, in: &session)
+        LayoutService.prune(keeping: present, in: &session)
         // A trashed photo found at its original path was classified above as new. One not found is not
         // in `scan`. Either way, it is no longer trashed.
         session.trashed = []

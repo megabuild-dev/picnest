@@ -285,6 +285,21 @@ struct ScanServiceTests {
         #expect(after.collections.first?.name == "Trip")
     }
 
+    @Test func rescanDropsDraftPhotosOfRemovedFiles() async throws {
+        let src = try TempDir(), root = try TempDir()
+        try writePhotos(["food1.jpg", "pet1.jpg"], in: src.url)
+        let embedder = FakeEmbedder(dimension: 4, images: ["food1.jpg": Self.food, "pet1.jpg": Self.pets], texts: Self.texts)
+        let service = service(embedder, sessions: root.url)
+        var (_, session) = try await run(service, source: src.url)
+        session.layoutDraft = LayoutDocument.new(photos: ["pet1.jpg", "food1.jpg"], title: "T")
+        try FileManager.default.removeItem(at: src.url.appending(path: "pet1.jpg"))
+
+        let (_, after) = try await rescan(service, session, source: src.url)
+
+        #expect(after.layoutDraft?.photoIDs == ["food1.jpg"])
+        #expect(after.layoutDraft?.title == "T")
+    }
+
     /// A photo put back with Finder keeps its favorite, although the old session lists it as trashed.
     @Test func rescanKeepsFavoriteOfAFileThatIsBackAtItsPath() async throws {
         let src = try TempDir(), root = try TempDir()

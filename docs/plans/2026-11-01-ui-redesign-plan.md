@@ -3,7 +3,7 @@ id: picnest-ui-redesign-plan
 title: Picnest UI Redesign Implementation Plan
 type: plan
 status: active
-tags: [picnest, ui, theme, localization, swiftui, plan, collections, photo-editor]
+tags: [picnest, ui, theme, localization, swiftui, plan, collections, photo-editor, layout-editor]
 links:
   - "[[2026-11-01-ui-redesign-design]]"
   - "[[2026-10-21-macos-app-design]]"
@@ -31,7 +31,7 @@ links:
 - [x] Phase 2: Screens (tasks 2.1 to 2.8). Merged into `ui-redesign`. Owner steps open: manual checklist, mockup comparison, native-speaker review of the Vietnamese text.
 - [x] Phase 3: Favorites, Collections, Recently Deleted (tasks 3.1 to 3.10). Merged into `ui-redesign`. Manual checks F, G, H and the sidebar comparison with mockups 01 to 03 wait for the owner.
 - [x] Phase 4: Photo Editor (tasks 4.1 to 4.8). Merged into `ui-redesign`. Manual checks I, J, K wait for the owner.
-- [ ] Phase 5: Layout Editor. Same rule.
+- [x] Phase 5: Layout Editor (tasks 5.1 to 5.11). Merged into `ui-redesign`. Manual checks L, M, N wait for the owner.
 
 ## Branches
 
@@ -877,8 +877,383 @@ Each has a default in the tasks above. Change a default before its task starts.
 
 ---
 
-## Later phases
+## Phase 5: Layout Editor
 
-Write a detailed plan for each phase after the phase before it is merged. Reason: each phase depends on facts that the earlier phases and code reading give.
+Sub-branch: `feature/ui-redesign/phase-5-layout-editor`. Spec: section 4.6, sections 2.2 (Moodboard is a non-goal), 3, 6, 7 (call 4). Mockup: `design/picnest-ui-05-layout-editor.png`. Design text: section 9.
+Core tests use Swift Testing (`@Test func name()`). App tests use Swift Testing too (`@Test func testName()`, as in `PicnestTests/EditorEntryTests.swift`). Read `PhotoEdit.swift` (`EditHistory`), `PhotoExport.swift` (`ProtectedFiles`), `ImageExportRepository.swift`, `ImageRepository.swift`, `PhotoEditService.swift`, `Picnest/Editor/*.swift`, `ReviewViewModel.swift` (section "Photo editor"), `ReviewView.swift`, and `ReviewCommands.swift` before you start.
 
-- **Phase 5 (Layout Editor).** Contact sheet first, then Collage. Export PNG and PDF. Test the output size for A4 landscape.
+### Facts from the code
+
+- The photo editor opens as the detail of `ReviewView`. `ReviewViewModel.editor: PhotoEditorViewModel?` drives it. `isEditing` turns off Sort, Rescan, **Done**, and **Start Over…** through `canSortOrRescan`.
+- While `isEditing`, `ReviewView` sets the split view to `.detailOnly` and removes the sidebar toggle. A sidebar change calls `editor.requestClose()` and keeps the old item (`itemAfterClose`).
+- `UndoRouting.route(firstResponderIsText:editorCanAct:reviewCanAct:)` sends ⌘Z to a text field, then the editor, then the review. `ReviewCommands` reads `review?.editor`.
+- `EditHistory` is typed to `PhotoEdit`. Its rules (`show`, `commit`, `undo` drops a value that is not committed, limit 100) fit any value.
+- `ImageExportRepository.write` writes a temp file in the destination folder, then moves it into place. Only an `CGImageDestination` can encode the temp file today. A PDF needs the same temp-and-move rule.
+- `ProtectedFiles.contains` refuses session photos, Trash files, and links to them. `PhotoEditService.isSameFile` is private.
+- `EditorSavePanel.choose` is typed to `ExportFormat` (JPEG, HEIC, PNG).
+- `ImageRepository.thumbnail(for:maxPixel:)` downsamples with ImageIO and caches in an `NSCache` of 200 MB. `fullImage(at:)` decodes the full size. A layout export must not decode full size.
+- `Session` holds favorites and collections. `ReviewService` is its only writer. `CollectionService.rekey` and `prune` keep ids correct at **Done**, folder rename, and rescan.
+- No menu item uses ⌘L today (`grep -rn 'keyboardShortcut("l"' Picnest` is empty).
+
+### Key decisions
+
+**Scope.**
+
+| In this phase | Out of this phase |
+|---------------|-------------------|
+| Contact sheet (task 5.2), then Collage (task 5.10) | Moodboard (spec 2.2). The Layout picker shows 2 items |
+| Paper size, orientation, presets, spacing, background, captions | Free placement, rotation of a photo in a cell, text styles |
+| Undo, Redo, 1 draft per session that saves by itself | Many named layout projects |
+| Export PNG (1 file per page) and PDF (1 file, all pages) | Print dialog, JPEG export, Share button |
+| Preview mode, zoom, page steps | Photo edits inside a cell (crop, filters) |
+
+**Units.** The layout works in PDF points (1/72 inch), origin top left. `PaperSize` stores millimetres. Convert with `mm × 72 / 25.4`. A4 landscape is 841.8898 × 595.2756 pt. PNG pixels are `round(pt / 72 × dpi)`. A4 landscape at 300 dpi is 3508 × 2480 px. At 150 dpi it is 1754 × 1240 px.
+
+**The document.** `LayoutDocument` is 1 value type in Core. It holds the kind, the paper, the orientation, the preset or template, margin, spacing, background, captions, title, note, and the ordered photo ids. Undo uses the generic history (task 5.1). The engine (`LayoutEngine`) is pure: document plus photo sizes in, page and cell rects out. The renderer draws only what the engine returns. The on-screen page and the export use the same renderer, so the preview is the export.
+
+**Contact sheet and collage.** A contact sheet shows each photo whole (aspect fit). It has a grid preset (columns × rows) and makes as many pages as the photos need. A collage fills each cell (aspect fill, centered crop). It has 1 page and 1 template. Photos past the template's cell count are not drawn. The panel says how many are used.
+
+**Captions.** **Include captions** shows the footer: title at the left, note at the right (mockup 05: "Coastline", "Weekend away"). A contact sheet also has **File names under photos**. Caption text is user data, so the renderer draws it as given. The text color comes from the background (dark text on light, light text on dark).
+
+**Page colors are data, not theme.** The page, its background swatches, and its text never follow Light or Dark. `LayoutBackground` holds 5 fixed sRGB colors (mockup 05: white, cream, light gray, blush, charcoal). The editor chrome around the page uses `Theme`.
+
+**Draft.** `Session.layoutDraft: LayoutDocument?` (decodes with `decodeIfPresent`). Reason: phase 3 rule, 1 writer of `session.json`, and `rekey` and `prune` already run there. The ViewModel saves the draft 1 second after the last change, and at close. Saving the draft is not a review undo step. **Start Over** loses the draft, as for collections.
+
+**Where it opens.** The layout editor uses the photo editor host: the detail column, `.detailOnly`, no sidebar toggle, Sort and Rescan off, ⌘Z to the editor. Task 5.6 turns `editor: PhotoEditorViewModel?` into `activeEditor: ActiveEditor?` with 2 cases. Nothing in the host is copied.
+
+**Leaving.** The draft saves by itself, so **Back** and Esc close with no Discard dialog. A sidebar change while the layout editor is open closes it and then selects the item.
+
+**Entry points.** **Create Layout…** in: the photo context menu (the selection), the sidebar context menu of a category and of a collection, the more menu of `PhotoSetHeaderView`, and the menu **Image > Create Layout…** (⌘L, the selection, or the current category or collection when nothing is selected). When a draft with photos exists, an alert asks: **Continue Layout**, **Start New**, **Cancel**. **Start New** replaces the draft.
+
+**Export.**
+- Formats: PNG and PDF. The save panel is `EditorSavePanel`, made generic (task 5.5). The panel opens in the last layout folder, else `~/Pictures`. Reason: a layout in the source folder shows as a new photo after the next rescan.
+- Suggested name: the layout title, else "Contact Sheet" or "Collage", then `PhotoEditService.uniqueName`.
+- PNG with more than 1 page writes `<stem> 1.png`, `<stem> 2.png`, and so on. If any of these names exists, except the name the user confirmed in the panel, the export stops before it writes and shows the name.
+- Every destination goes through `ProtectedFiles.contains`. A protected name fails with `PhotoExportError.wouldReplaceOriginal`, and nothing is written.
+- Resolution: **Standard** (150 dpi) or **High** (300 dpi, default) in the panel section **Export**. PNG uses it for pixels. PDF uses it to cap the pixels of each embedded photo.
+- A photo file that is gone at export time fails the export with `originalMissing`. Nothing is written.
+
+**Memory.** The renderer asks an image provider for 1 photo at a time, at the pixel size its cell needs (`LayoutEngine.neededPixels`), never full size. The export provider decodes without the shared cache (new `ImageRepository.downsampled(at:maxPixel:)`). The preview provider uses `ThumbnailService` (cached, `steps`). Each page draws inside its own `autoreleasepool`. The PDF writes page by page to the temp file.
+
+### Phase 5 Review Focus
+
+Each line has a test or a check in the named task.
+
+1. A4 landscape: the page is 841.8898 × 595.2756 pt, the PDF media box matches within 0.01 pt, and the 300 dpi PNG is 3508 × 2480 px. Tasks 5.2 and 5.5.
+2. The user types the name of a session photo (for example `IMG_0001.PNG` for `img_0001.png`) in the save panel and clicks **Replace**. The export fails with a message, and the photo keeps its SHA-256, size, and modification date. Task 5.5.
+3. A contact sheet of 1,000 photos at 300 dpi exports with no full-size decode. The provider never gets a `maxPixel` larger than the cell needs. Tasks 5.4 and 5.5.
+4. The layout editor is open. ⌘Z undoes a layout step, not a category move. ⇧⌘R and **Done** are off. Task 5.6.
+5. A draft survives **Done** (files renamed) and a rescan: ids follow `rekey`, and removed files drop out. Task 5.3.
+6. The page looks the same in Light and Dark mode. Only the chrome changes. Task 5.9 (check M).
+
+### Task 5.1: Layout types and the generic history
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Domain/Layout.swift`
+- Modify: `PicnestCore/Sources/PicnestCore/Domain/PhotoEdit.swift` (`EditHistory`)
+- Create: `PicnestCore/Tests/PicnestCoreTests/LayoutTypesTests.swift`
+- Test: `PicnestCore/Tests/PicnestCoreTests/PhotoEditTests.swift` (unchanged, must stay green)
+
+**Interfaces:**
+- Produces: `public struct History<Value: Hashable & Sendable>: Sendable` with `init(_ original: Value, limit: Int = 100)` and the members of today's `EditHistory` (`current`, `show`, `commit`, `set`, `undo`, `redo`, `canUndo`, `canRedo`, `hasPendingChange`). `reset()` sets the `original` of the init. `public typealias EditHistory = History<PhotoEdit>` plus `extension History where Value == PhotoEdit { init(limit: Int = 100) }`, so phase 4 code does not change.
+- Produces: `public struct LayoutRect: Sendable, Hashable { var x, y, width, height: Double }` (points, top-left origin) with `maxX`, `maxY`.
+- Produces: `public struct PageSize: Sendable, Hashable { var width, height: Double }` (points).
+- Produces: `public enum PaperSize: String, CaseIterable, Sendable, Codable { case a4, a3, a5, letter }` with `millimetres: (width: Double, height: Double)` (portrait: A4 210 × 297, A3 297 × 420, A5 148 × 210, Letter 215.9 × 279.4) and `func pageSize(_ o: PageOrientation) -> PageSize`.
+- Produces: `public enum PageOrientation: String, CaseIterable, Sendable, Codable { case landscape, portrait }`.
+- Produces: `public enum LayoutKind: String, CaseIterable, Sendable, Codable { case contactSheet, collage }`.
+- Produces: `public struct GridPreset: Sendable, Hashable, Codable { var columns, rows: Int }` with `static let presets: [GridPreset]` = 3 × 2, 2 × 3, 4 × 2, 4 × 3, 5 × 4 (the first 3 are mockup 05). `var perPage: Int`.
+- Produces: `public enum CollageTemplate: String, CaseIterable, Sendable, Codable` (cases in task 5.10; this task adds only `case twoByTwo`, so the type exists).
+- Produces: `public enum LayoutBackground: String, CaseIterable, Sendable, Codable { case white, cream, gray, blush, charcoal }` with `var rgb: (r: Double, g: Double, b: Double)` and `var textRGB` (sRGB). Read the 5 swatch colors from mockup 05.
+- Produces: `public enum ExportResolution: Int, CaseIterable, Sendable, Codable { case standard = 150, high = 300 }`.
+- Produces: `public struct LayoutDocument: Sendable, Hashable, Codable` with `kind`, `paper`, `orientation`, `grid: GridPreset`, `template: CollageTemplate`, `margin: Double` (default 36, clamped 0…72), `spacing: Double` (default 24, clamped 0…72), `background`, `showsCaptions: Bool` (default `true`), `showsFileNames: Bool` (default `false`), `title: String`, `note: String`, `photoIDs: [MediaID]`, `resolution: ExportResolution` (default `.high`). `static func new(photos: [MediaID], title: String) -> LayoutDocument` gives a contact sheet, A4, landscape, 3 × 2. Decode with `decodeIfPresent` and the defaults, so a later field does not break an old draft.
+- Produces: `public enum LayoutExportFormat: String, CaseIterable, Sendable { case png, pdf }` with `utType`, `fileExtension`.
+- Produces: `public protocol ExportFileFormat: CaseIterable, Hashable, Sendable { var utType: UTType { get }; var fileExtension: String { get } }`. `ExportFormat` and `LayoutExportFormat` conform.
+
+- [ ] **Step 1: Write the failing tests:** `a4LandscapeIsExactInPoints` (841.8898 × 595.2756 within 1e-4), `a4PortraitSwapsTheSides`, `letterIsSixHundredTwelveBySevenNinetyTwo`, `marginAndSpacingAreClamped` (`-5` reads 0, `100` reads 72), `newDocumentIsAContactSheetOnA4Landscape`, `documentRoundTripsThroughJSON`, `oldDraftWithoutResolutionDecodes` (JSON without `resolution` gives `.high`), `presetsStartWithTheMockupGrids` (`3×2`, `2×3`, `4×2`), `genericHistoryUndoesAnyValue` (`History<Int>`: `set(1)`, `set(2)`, `undo` gives 1, `reset` gives 0 and is undoable).
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter LayoutTypesTests`. Expected: build fails (`LayoutDocument` not defined).
+- [ ] **Step 3: Implement** `Layout.swift`. Change `EditHistory` into `History<Value>` and the typealias. Do not copy the history code.
+- [ ] **Step 4: Run all core tests.** Expected: PASS, with `PhotoEditTests` unchanged.
+- [ ] **Step 5: Commit** `feat(core): add layout types and a generic history`.
+
+### Task 5.2: Contact sheet geometry
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Services/LayoutEngine.swift`
+- Create: `PicnestCore/Tests/PicnestCoreTests/LayoutEngineTests.swift`
+
+**Interfaces:**
+- Consumes: task 5.1.
+- Produces: `public enum ImageFit: Sendable { case fit, fill }`.
+- Produces: `public struct LayoutCell: Sendable, Hashable { var frame: LayoutRect; var imageArea: LayoutRect; var caption: LayoutRect?; var mediaID: MediaID?; var index: Int; var fit: ImageFit }`. `imageArea` is `frame` less the caption band. `mediaID` is nil for an empty cell.
+- Produces: `public struct LayoutPage: Sendable, Hashable { var size: PageSize; var cells: [LayoutCell]; var footer: LayoutRect? }`.
+- Produces: `public enum LayoutEngine` with pure static functions and constants `footerHeight = 40`, `captionHeight = 14`:
+  - `pages(for d: LayoutDocument) -> [LayoutPage]`. Contact sheet: `ceil(photoIDs.count / perPage)` pages, at least 1. The last page keeps its empty cells (the screen shows them; the renderer skips them).
+  - `gridCells(in content: LayoutRect, columns: Int, rows: Int, spacing: Double) -> [LayoutRect]` (row by row).
+  - `contentRect(page: PageSize, margin: Double, footer: Bool, spacing: Double) -> (grid: LayoutRect, footer: LayoutRect?)`. With a footer, the grid ends `spacing` above it.
+  - `imageRect(source: PixelSize, in area: LayoutRect, fit: ImageFit) -> LayoutRect`. Fit centers inside. Fill covers and centers (the renderer clips to `area`).
+  - `pixelSize(of page: PageSize, dpi: Int) -> PixelSize` (`round(pt / 72 × dpi)`).
+  - `neededPixels(for area: LayoutRect, source: PixelSize, fit: ImageFit, dpi: Int) -> Int`. The longest side, in source pixels, that the drawn rect needs at `dpi`. Never above the longest source side.
+- Rule: a spacing or margin that leaves a cell under 1 pt makes the engine use spacing 0 for that page. It never returns a negative size.
+
+- [ ] **Step 1: Write the failing tests.** Use A4 landscape, margin 36, spacing 24, 3 × 2, tolerance 1e-3 (Review Focus 1).
+  - `a4LandscapeThreeByTwoCellSize` (each frame is 240.6299 × 249.6378).
+  - `a4LandscapeCellOrigins` (cell 0 at 36, 36; cell 4 at 300.6299, 309.6378; cell 5 `maxX` is 805.8898, `maxY` is 559.2756).
+  - `gapsEqualTheSpacing` (each horizontal and vertical gap is 24).
+  - `footerTakesItsBandAndOneGap` (captions on: cell height 217.6378; footer at y 519.2756, height 40, width 769.8898).
+  - `fileNameBandShrinksTheImageArea` (image area height = frame height - 14).
+  - `sevenPhotosOnThreeByTwoMakeTwoPages` (page 2 has 1 filled cell and 5 empty cells), `noPhotosMakeOneEmptyPage`.
+  - `fitLandscapePhotoInACell` (4000 × 3000 in cell 0: 240.6299 × 180.4724 at y 36 + 34.5827).
+  - `fillCoversTheArea` (the rect contains the area and keeps 4:3).
+  - `a4LandscapePixelsAt300And150` (3508 × 2480, 1754 × 1240), `letterLandscapeAt300` (3300 × 2550).
+  - `neededPixelsIsCappedBySource` (a 640 × 480 photo in a 3508-px-wide cell gives 640), `neededPixelsForAFitCell` (4000 × 3000 in cell 0 at 300 dpi: 240.6299 / 72 × 300 = 1002.6, rounded up to 1003).
+  - `hugeSpacingNeverGivesANegativeSize` (spacing 72, margin 72, 5 × 4 on A5).
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter LayoutEngineTests`. Expected: build fails.
+- [ ] **Step 3: Implement** `LayoutEngine` for `.contactSheet`. `.collage` returns 1 page with no cells until task 5.10.
+- [ ] **Step 4: Run.** Expected: PASS.
+- [ ] **Step 5: Commit** `feat(core): add contact sheet geometry`.
+
+### Task 5.3: The draft in the session
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Services/LayoutService.swift`
+- Create: `PicnestCore/Tests/PicnestCoreTests/LayoutServiceTests.swift`
+- Modify: `Domain/Session.swift`, `Services/ReviewService.swift` (`rekey`, new method), `Services/ScanService.swift` (`runRescan`)
+- Test: `SessionRepositoryTests.swift`, `ReviewServiceTests.swift`, `ScanServiceTests.swift`
+
+**Interfaces:**
+- Produces: `Session.layoutDraft: LayoutDocument?` (new `init` parameter, default `nil`; `decodeIfPresent`).
+- Produces: `public enum LayoutService` with pure static functions on `LayoutDocument`:
+  - `add(_ ids: [MediaID], to d: inout LayoutDocument, at index: Int? = nil) -> Bool` (no repeats, keeps order).
+  - `remove(_ ids: [MediaID], from d: inout LayoutDocument) -> Bool`.
+  - `move(_ id: MediaID, to index: Int, in d: inout LayoutDocument) -> Bool` and `swap(_ a: MediaID, _ b: MediaID, in d: inout LayoutDocument) -> Bool`.
+  - `rekey(_ map: [MediaID: String], in s: inout Session)` and `prune(keeping ids: Set<MediaID>, in s: inout Session)`.
+- Produces on `ReviewService`: `saveLayoutDraft(_ d: LayoutDocument?)`. It saves when the value changed. It pushes no undo step. `rekey(_:)` calls `LayoutService.rekey`. `runRescan` calls `LayoutService.prune` next to `CollectionService.prune`.
+
+- [ ] **Step 1: Write the failing tests:** `addKeepsOrderWithoutRepeats`, `addAtIndexInserts`, `moveAndSwapReorder`, `removeDropsIDs`, `rekeyMovesDraftPhotos`, `pruneDropsMissingDraftPhotos`. In `SessionRepositoryTests`: `oldSessionWithoutLayoutDraftDecodes`, add a draft to `sessionWithEveryFieldRoundTrips`. In `ReviewServiceTests`: `layoutDraftIsSavedAndIsNotAnUndoStep`, `applyOrganizeReKeysTheLayoutDraft` (Review Focus 5). In `ScanServiceTests`: `rescanDropsDraftPhotosOfRemovedFiles`.
+- [ ] **Step 2: Run** them. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run all core tests.** Expected: PASS.
+- [ ] **Step 5: Commit** `feat(core): keep a layout draft in the session`.
+
+### Task 5.4: The page renderer
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Services/LayoutRenderer.swift`
+- Modify: `PicnestCore/Sources/PicnestCore/Repositories/ImageRepository.swift`
+- Create: `PicnestCore/Tests/PicnestCoreTests/LayoutRendererTests.swift`
+- Modify: `PicnestCore/Tests/PicnestCoreTests/Support/TestImages.swift` (only if a solid-color helper is missing; reuse `writeQuadrants` and `color(at:in:)`)
+
+**Interfaces:**
+- Consumes: tasks 5.1 and 5.2.
+- Produces on `ImageRepository`: `func downsampled(at url: URL, maxPixel: Int) -> CGImage?`. Upright, not cached. It calls the private `decode`. Do not copy it.
+- Produces: `public typealias LayoutImageProvider = @Sendable (MediaID, Int) async -> CGImage?` (id, max pixel).
+- Produces: `public struct LayoutRenderer: Sendable` with `init(sizes: @Sendable (MediaID) async -> PixelSize?)` and:
+  - `func draw(_ page: LayoutPage, document d: LayoutDocument, fileNames: [MediaID: String], in ctx: CGContext, dpi: Int, images: LayoutImageProvider) async`. It fills the background, then for each cell with a photo asks `images` for `neededPixels`, draws in `imageRect` clipped to `imageArea`, and releases the image. Then the file-name captions and the footer text with Core Text (system font, 9 pt and 14/10 pt, color `background.textRGB`, 1 line, tail truncation).
+  - `func image(of page: LayoutPage, document d: LayoutDocument, fileNames: [MediaID: String], dpi: Int, images: LayoutImageProvider) async -> CGImage?`. A bitmap in sRGB, 8 bits, pixel size `LayoutEngine.pixelSize`. The preview and the PNG export use it.
+- Rule: the context uses a top-left transform once (`translateBy(0, height)`, `scaleBy(1, -1)`) in 1 private helper. Images draw through a second flip, so they are upright.
+- Rule: a cell whose provider returns nil draws nothing (background shows). The export decides about missing files (task 5.5).
+
+- [ ] **Step 1: Write the failing tests.** Render at 72 dpi (1 pt = 1 px). Read pixels with `TestImages.color(at:in:)`, tolerance 8.
+  - `pageImageHasThePixelSizeOfThePaper` (A4 landscape at 72 dpi: 842 × 595).
+  - `backgroundFillsTheGapsAndMargins` (charcoal at (10, 10) and at the center of the first vertical gap).
+  - `photoFillsItsFitRect` (a red 400 × 300 image: red at the center of cell 0; background 5 px above its fit rect).
+  - `fillModeClipsToTheArea` (a red image with `.fill`: red at each corner of the area, background 2 px outside).
+  - `quadrantImageIsUpright` (`writeQuadrants`: the top-left of the drawn rect is red; Core Graphics flips are a known trap).
+  - `emptyCellsDrawNothing`.
+  - `missingImageLeavesTheBackground`.
+  - `providerGetsOnlyTheNeededPixels` (records each `maxPixel`; none is above `neededPixels`; Review Focus 3).
+  - `pageLooksTheSameInEachAppearance` (render with `NSAppearance` `.aqua` and `.darkAqua` current; the 2 bitmaps are equal; Review Focus 6).
+  - `downsampledIsUprightAndNotCached` (orientation 6 JPEG is upright; a second call returns a new object).
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter LayoutRendererTests`. Expected: build fails.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run.** Expected: PASS.
+- [ ] **Step 5: Commit** `feat(core): render layout pages`.
+
+### Task 5.5: Export PNG and PDF
+
+**Files:**
+- Create: `PicnestCore/Sources/PicnestCore/Services/LayoutExportService.swift`
+- Modify: `Repositories/ImageExportRepository.swift`, `Domain/PhotoExport.swift`, `Services/PhotoEditService.swift` (move `isSameFile` into `ProtectedFiles`)
+- Create: `PicnestCore/Tests/PicnestCoreTests/LayoutExportTests.swift`
+- Modify: `Picnest/Editor/EditorSavePanel.swift` (generic), `Picnest/Review/ReviewViewModel.swift` (call site)
+
+**Interfaces:**
+- Produces on `ImageExportRepository`: `func writeFile(to url: URL, replacing: Bool, encode: (URL) throws -> Void) throws`. It owns the temp name, the move or `replaceItemAt`, and the clean-up. `write(_:to:format:…)` calls it. Do not copy the temp logic.
+- Produces on `ProtectedFiles`: `func refuses(_ destination: URL, original: URL?) -> Bool` (`contains`, or the same file as `original`). `PhotoEditService.exportCopy` calls it. The private `isSameFile` moves here.
+- Produces: `public final class LayoutExportService: Sendable` with `init(thumbnails: ThumbnailService, images: ImageRepository, writer: ImageExportRepository = ImageExportRepository())` and:
+  - `func previewImage(of page: LayoutPage, document: LayoutDocument, fileNames: [MediaID: String], maxPixel: Int, source: URL) async -> CGImage?` (thumbnail provider; dpi from `maxPixel` and the page width).
+  - `func export(_ d: LayoutDocument, fileNames: [MediaID: String], source: URL, to url: URL, format: LayoutExportFormat, protected: ProtectedFiles) async throws -> [URL]`. Runs off the caller's actor, and passes cancellation on (same pattern as `exportCopy`).
+  - `static func pageURLs(for url: URL, pageCount: Int, format: LayoutExportFormat) -> [URL]` (1 URL for PDF or 1 page; else `<stem> 1.png` …).
+- Rule: before any write, check every photo file exists (`originalMissing`), every page URL against `protected.refuses` (`wouldReplaceOriginal`), and every page URL except `url` for an existing file (`cannotWrite` with the name).
+- Rule: PDF uses `CGContext(consumer:mediaBox:)` on the temp URL in `writeFile`, 1 `beginPDFPage` per page, media box = page size in points. Photos draw at `document.resolution`.
+- Produces in the app: `EditorSavePanel.choose<F: ExportFileFormat>(suggestedName: String, folder: URL, format: F, title: (F) -> String) async -> (URL, F)?`. The photo editor passes its 3 formats. The layout passes PNG and PDF.
+
+- [ ] **Step 1: Write the failing tests.** Each test that has a session photo records its SHA-256, size, and modification date (`FileFingerprint`) before and checks all 3 after.
+  - `a4LandscapePNGIs3508By2480` (`CGImageSourceCopyPropertiesAtIndex` width and height; Review Focus 1).
+  - `a4LandscapePDFMediaBoxIsExact` (`CGPDFDocument` page 1 `.mediaBox` is 841.8898 × 595.2756 within 0.01).
+  - `pdfHasOnePagePerSheet` (7 photos on 3 × 2: 2 pages).
+  - `multiPagePNGWritesNumberedFiles` (`Sheet 1.png`, `Sheet 2.png`).
+  - `multiPagePNGStopsWhenAPageNameExists` (`Sheet 2.png` exists: throws, and no file is new).
+  - `exportOverASessionPhotoIsRefused` (`IMG_0001.PNG` for `img_0001.png`; Review Focus 2). Also a symlink to a session photo.
+  - `exportWithAMissingPhotoWritesNothing` (`originalMissing`).
+  - `failedPDFWriteLeavesNoTempFile` (a `FileOps` whose `move` throws).
+  - `thousandPhotosExportWithoutFullDecode` (1,000 photo ids that point to 4 fixture files of 4000 × 3000; a spy provider records each `maxPixel`; no value is above the `neededPixels` of its cell; Review Focus 3). Mark it `.timeLimit(.minutes(2))`.
+  - In `PhotoExportTests`: all old tests stay green after the `writeFile` and `refuses` moves.
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter LayoutExportTests`. Expected: build fails.
+- [ ] **Step 3: Implement** the core part. Then make `EditorSavePanel` generic and update its 1 call site.
+- [ ] **Step 4: Run all core tests and the full app tests.** Expected: PASS.
+- [ ] **Step 5: Commit** `feat(core): export layouts to PNG and PDF and never replace a photo`.
+
+### Task 5.6: One host for both editors
+
+**Files:**
+- Create: `Picnest/Editor/ActiveEditor.swift`
+- Modify: `Picnest/Review/ReviewViewModel.swift`, `Picnest/Review/ReviewCommands.swift`, `Picnest/Review/ReviewView.swift`, `Picnest/Editor/PhotoEditorViewModel.swift` (conformance only)
+- Test: `PicnestTests/EditorEntryTests.swift`
+
+**Interfaces:**
+- Produces: `@MainActor protocol EditorSession: AnyObject { var canUndo: Bool { get }; var canRedo: Bool { get }; func undo(); func redo(); func requestClose() }`. `PhotoEditorViewModel` conforms with no change of behavior.
+- Produces: `enum ActiveEditor { case photo(PhotoEditorViewModel), layout(LayoutEditorViewModel) }` with `var session: any EditorSession`. Task 5.7 adds the type `LayoutEditorViewModel`. In this task, add only the `.photo` case.
+- Produces on `ReviewViewModel`: `private(set) var activeEditor: ActiveEditor?`. `editor: PhotoEditorViewModel?` becomes a computed property, so phase 4 tests do not change. `isEditing` is `activeEditor != nil`. `closeEditor()` clears `activeEditor`. The `selectedItem` guard calls `activeEditor?.session.requestClose()`.
+- Produces: `ReviewCommands` routes undo with `editorCanAct: review?.activeEditor?.session.canUndo` and acts on `session`.
+- Produces: `ReviewView.detail` switches on `activeEditor`. `.detailOnly` and the removed sidebar toggle follow `isEditing`.
+
+- [ ] **Step 1: Write the failing test** `testActiveEditorDrivesIsEditing` (open the photo editor: `activeEditor` is `.photo`, `canSortOrRescan` is false; close: nil).
+- [ ] **Step 2: Run** `xcodebuild test … -only-testing:PicnestTests/EditorEntryTests`. Expected: build fails.
+- [ ] **Step 3: Implement** the refactor. Run `xcodegen generate`.
+- [ ] **Step 4: Run the full app tests.** Expected: PASS, with every phase 4 test unchanged.
+- [ ] **Step 5: Commit** `refactor(editor): one host for the editors`.
+
+### Task 5.7: Layout editor ViewModel
+
+**Files:**
+- Create: `Picnest/Editor/LayoutEditorViewModel.swift`
+- Create: `PicnestTests/LayoutEditorViewModelTests.swift`
+- Modify: `Picnest/Editor/ActiveEditor.swift` (add `.layout`), `Picnest/App/AppEnvironment.swift` (1 `LayoutExportService` from the shared `ImageRepository` and `ThumbnailService`), `Picnest/App/CountText.swift`, `Picnest/Localizable.xcstrings`
+
+**Interfaces:**
+- Consumes: tasks 5.1 to 5.6.
+- Produces: `struct LayoutPhoto: Identifiable, Hashable { let id: MediaID; let fileName: String }`.
+- Produces: `struct LayoutSourceOption: Identifiable, Hashable { let id: String; let title: String; let photos: [LayoutPhoto] }`. The left panel lists **All Photos**, each category, and each collection. The ViewModel gets them from `ReviewViewModel`; it does not read the session.
+- Produces: `@MainActor @Observable final class LayoutEditorViewModel: EditorSession` with `init(document: LayoutDocument, sources: [LayoutSourceOption], startSource: String, service: LayoutExportService, source: URL, protected: ProtectedFiles, fileNames: [MediaID: String], saveDraft: @escaping @MainActor (LayoutDocument?) -> Void, chooseDestination: @escaping @MainActor (_ name: String, _ folder: URL, _ format: LayoutExportFormat) async -> (URL, LayoutExportFormat)?, revealURL: @escaping @MainActor (URL) -> Void, onClose: @escaping @MainActor () -> Void, defaults: UserDefaults = .standard)`.
+  - State: `document` (from `History<LayoutDocument>`), `pages: [LayoutPage]`, `pageIndex`, `pageImage: CGImage?`, `selectedCell: Int?`, `zoom: Double` (0.25…4, default "fit"), `isPreviewing`, `isExporting`, `exportError: String?`, `lastExport: [URL]`, `sourceID`, `searchText`, `canUndo`, `canRedo`.
+  - Text: `pageText` ("Page 1 of 3"), `countText` ("6 photos", plural), `usedText` (collage: "Uses 4 of 6 photos"), `paperText` ("A4 (297 × 210 mm)", follows the orientation), `spacingText` ("24 pt").
+  - Actions: `setKind`, `setPaper`, `setOrientation`, `setGrid`, `setTemplate`, `setBackground`, `setCaptions(_:)`, `setFileNames(_:)`, `setTitle`, `setNote`, `setResolution`, `setSpacing` and `setMargin` (slider pattern of the photo editor: `beginDrag`, `endDrag`, idle commit), `add(_ ids: [MediaID], at: Int?)`, `remove(_ ids:)`, `removeSelected()`, `move(_ id:, to:)`, `swap`, `selectCell`, `step(page:)`, `zoomIn`, `zoomOut`, `zoomToFit`, `togglePreview`, `undo`, `redo`, `requestClose`, `export() async`, `revealLastExport()`.
+- Rule: each committed change saves the draft after 1 second (`draftDelay`, a test hook), and `requestClose` saves at once, then calls `onClose`. No discard dialog.
+- Rule: each change recomputes `pages` and starts 1 new preview task that cancels the last one, as in `PhotoEditorViewModel.refreshPreview`. The preview size is the canvas width × 2, capped at 2400 px.
+- Rule: a text field change (title, note) is 1 undo step after the idle delay, as a slider.
+- Rule: the export folder is `UserDefaults` key `"layoutExportFolder"`, else `~/Pictures`. A good export saves the folder.
+- Copy (en / vi draft): **Create Layout** / Tạo bố cục; **Layout** / Bố cục; **Contact sheet** / Bảng ảnh thu nhỏ; **Collage** / Ghép ảnh; **Paper size** / Khổ giấy; "%1$@ (%2$@ × %3$@ mm)" / "%1$@ (%2$@ × %3$@ mm)" (paper name, width, height); **Orientation** / Hướng giấy; **Landscape** / Ngang; **Portrait** / Dọc; **Layout presets** / Mẫu bố cục; **Spacing** / Khoảng cách; **Margin** / Lề; "%@ pt" / "%@ pt"; **Background** / Nền; **White** / Trắng; **Cream** / Kem; **Gray** / Xám; **Blush** / Hồng nhạt; **Charcoal** / Than chì; **Include captions** / Thêm chú thích; **File names under photos** / Tên tệp dưới ảnh; **Title** / Tiêu đề; **Note** / Ghi chú; **Photos** / Ảnh; "Search photos" / "Tìm ảnh"; "Drag to add to layout" / "Kéo để thêm vào bố cục"; "%lld photos" (reuse the existing plural key); "Page %1$lld of %2$lld" / "Trang %1$lld / %2$lld"; "Uses %1$lld of %2$lld photos" / "Dùng %1$lld trên %2$lld ảnh"; **Preview** / Xem trước; **Export** / Xuất; **Export** section **Resolution** / Độ phân giải; **Standard (150 dpi)** / Tiêu chuẩn (150 dpi); **High (300 dpi)** / Cao (300 dpi); **Remove from Layout** / Xóa khỏi bố cục; **Zoom In** / Phóng to; **Zoom Out** / Thu nhỏ; **Fit Page** / Vừa trang; "Saved %lld files." (plural) / "Đã lưu %lld tệp."; "A file named “%@” already exists. Choose another name." / "Đã có tệp tên “%@”. Hãy chọn tên khác."; **Continue Layout** / Tiếp tục bố cục; **Start New** / Tạo mới; "Continue your last layout?" / "Tiếp tục bố cục trước?"; "Your last layout has %lld photos." (plural) / "Bố cục trước có %lld ảnh."; **Create Layout…** / Tạo bố cục…; "The layout saves by itself. Export makes a PNG or PDF file. Your photos do not change." / "Bố cục tự lưu. Xuất tạo tệp PNG hoặc PDF. Ảnh của bạn không thay đổi.". Reuse **Undo**, **Redo**, **Cancel**, **Show in Finder**, "Back to Photos", and the export error texts of task 4.5. The names **PNG** and **PDF** are `shouldTranslate: false`.
+
+- [ ] **Step 1: Write the failing tests.** Use `writeTestJPEG` from `PicnestTests/Support.swift`, a fake `chooseDestination`, and a fake `saveDraft` that records values.
+  - `testSettingChangeIsOneUndoStep` (orientation, then undo), `testSpacingDragIsOneUndoStepAfterEndDrag`, `testTitleTypingIsOneUndoStep`.
+  - `testPagesFollowPhotoCount` (7 photos on 3 × 2: `pageText` "Page 1 of 2").
+  - `testAddDropsRepeatsAndRemoveSelectedRemoves`, `testMoveReorders`.
+  - `testPaperTextFollowsOrientation` ("A4 (297 × 210 mm)" then "A4 (210 × 297 mm)").
+  - `testCollageUsedText` (template of 4 cells, 6 photos: "Uses 4 of 6 photos").
+  - `testDraftSavesAfterTheDelayAndOnClose` (`draftDelay` 10 ms; `requestClose` saves at once and calls `onClose`; no confirm).
+  - `testSourceSearchFiltersTheLeftPanel` (case and diacritic insensitive, as task 1.1).
+  - `testExportSuggestsTheTitleAndAUniqueName` (`Summer trip.pdf` exists, so the panel gets `Summer trip 2.pdf`).
+  - `testExportOverAPhotoShowsTheMessage` (`exportError` is the catalog text; the photo keeps its bytes).
+  - `testExportRemembersTheFolder`, `testCancelledPanelExportsNothing`.
+  - `testPreviewUpdatesAfterAChange` (`waitUntil` the page image width changes after `setOrientation`).
+- [ ] **Step 2: Run** `xcodebuild test … -only-testing:PicnestTests/LayoutEditorViewModelTests`. Expected: build fails.
+- [ ] **Step 3: Implement.** Run `xcodegen generate`. Add every string above with `en` and `vi`.
+- [ ] **Step 4: Run the full app tests** and `python3 -I scripts/sync-string-catalog.py --check`. Expected: PASS, exit 0.
+- [ ] **Step 5: Commit** `feat(layout): add the layout editor view model`.
+
+### Task 5.8: Open the layout editor
+
+**Files:**
+- Modify: `Picnest/Review/ReviewViewModel.swift`, `ReviewCommands.swift`, `SelectionBar.swift` (`PhotoContextMenu`), `SidebarView.swift`, `PhotoSetHeaderView.swift` (more menu items), `ReviewView.swift` (the continue alert), `Picnest/Localizable.xcstrings`
+- Create: `PicnestTests/LayoutEntryTests.swift`
+
+**Interfaces:**
+- Consumes: tasks 5.3, 5.6, 5.7.
+- Produces: `enum LayoutOrigin: Hashable { case selection, category(CategoryID), collection(CollectionID) }`.
+- Produces on `ReviewViewModel`: `canCreateLayout(from: LayoutOrigin) -> Bool`, `requestLayout(from: LayoutOrigin)`, `askingToContinueLayout: LayoutOrigin?`, `continueLayout()`, `startNewLayout()`, `var layoutEditor: LayoutEditorViewModel?` (computed from `activeEditor`).
+- Rule: the photos are the readable images of the origin, not trashed, in grid order (selection), category order, or collection member order. `canCreateLayout` needs `canSortOrRescan` and at least 1 such photo.
+- Rule: when `session.layoutDraft` has 1 or more photos, `requestLayout` sets `askingToContinueLayout`. **Continue Layout** opens the draft. **Start New** opens `LayoutDocument.new(photos:title:)`. The title is the category display name, the collection name, or empty for a selection.
+- Rule: `protected` is built as in `openEditor`. Extract 1 private helper `protectedFiles()` and call it from both.
+- Produces: menu **Image > Create Layout…** (⌘L). The origin is the selection when it is not empty, else the current category or collection. Off for other items with no selection. Context menu **Create Layout…** after **Edit Photo…**. Sidebar context menu **Create Layout…** on categories and collections. The same item in the more menu of `PhotoSetHeaderView`.
+
+- [ ] **Step 1: Write the failing tests:** `testLayoutFromSelectionUsesGridOrder`, `testLayoutFromCategoryLeavesOutVideoAndTrashed`, `testLayoutFromCollectionUsesMemberOrder`, `testCreateLayoutIsOffWhileFilesMove`, `testDraftAsksToContinue`, `testStartNewReplacesTheDraft`, `testOpeningLayoutTurnsOffSortAndDone`, `testUndoGoesToTheLayoutEditor` (`UndoRouting` with an open layout editor that cannot act gives `.nothing`; Review Focus 4), `testSidebarChangeClosesTheLayoutAndSelects` (no dialog; draft saved; the new item shows).
+- [ ] **Step 2: Run** `xcodebuild test … -only-testing:PicnestTests/LayoutEntryTests`. Expected: build fails.
+- [ ] **Step 3: Implement** the ViewModel part, then the menus and the alert. Add strings with `vi`.
+- [ ] **Step 4: Run the full app tests** and the catalog check. Expected: PASS, exit 0.
+- [ ] **Step 5: Commit** `feat(layout): open the layout editor from a selection, category, or collection`.
+
+### Task 5.9: The layout editor screen
+
+**Files:**
+- Create: `Picnest/Layout/LayoutEditorView.swift` (header, layout, keys), `Picnest/Layout/LayoutPhotoPanel.swift` (left), `Picnest/Layout/LayoutCanvas.swift` (page, cell overlays, drop targets), `Picnest/Layout/LayoutSettingsPanel.swift` (right), `Picnest/Layout/LayoutBottomBar.swift`, `Picnest/Layout/LayoutBackground+Color.swift` (`LayoutBackground` to `Color` for the swatches)
+- Modify: `Picnest/Review/ReviewView.swift`, `Picnest/Design/Theme.swift`, `PicnestTests/ThemeTests.swift`, `Picnest/Localizable.xcstrings`
+
+**Interfaces:**
+- Consumes: tasks 5.7 and 5.8.
+- Produces in `Theme`: `pageShadow` (`0x000000` in both, alpha `Theme.pageShadowAlpha = 0.12`), `cellOutline` = `accent`. Reuse `canvasBackground` (task 4.7) for the area around the page. In `Theme.Metrics`: `layoutPhotoPanel: CGFloat = 240`, `layoutSettingsPanel: CGFloat = 300` (reuse `editorPanel` if the value is the same; do not add a second constant with the same value).
+- Produces: `LayoutEditorView(model: LayoutEditorViewModel, library: ReviewViewModel)`. `ReviewView.detail` shows it for `.layout`.
+- Layout (mockup 05):
+  - Header: **Create Layout**, the title under it (click to edit), **Undo**, **Redo**, **Preview** (`eye`), **Export** (`.borderedProminent`, a menu with **PNG…** and **PDF…**, ⇧⌘E).
+  - Left panel: **Photos**, search field, source menu, grid of `ThumbnailImage` (reuse), "N photos", "Drag to add to layout". Each tile drags `MediaID`s (reuse the transfer type of the grid). Double-click adds.
+  - Center: the page image on `canvasBackground` with `pageShadow`. Overlays: cell outlines, the selected cell in `cellOutline`, empty cells with a dashed outline. Overlays hide in **Preview**.
+  - Right panel: **Layout** (2 buttons; no Moodboard), **Paper size** menu, **Orientation**, **Layout presets** (3 drawn previews per row; grid for a contact sheet, template for a collage), **Spacing** slider (0…72, step 1, value at the right), **Margin** slider, **Background** (5 round swatches with a ring on the chosen one), **Include captions** with **Title** and **Note** fields, **File names under photos** (contact sheet only), **Export** with **Resolution**.
+  - Bottom bar: "N photos", ‹ "Page 1 of 3" ›, zoom −, value, +, **Fit Page**, and the right panel toggle.
+- The left panel and the right panel hide in **Preview**. Esc leaves Preview first, then closes.
+- Drag and drop: a drop on a cell inserts at that index. A drop on the page with no cell appends. A drag of a cell onto another cell swaps the 2 photos.
+- Keys: ⌘Z, ⇧⌘Z through task 5.6. ← → move the selected cell. ⌥← ⌥→ move the photo 1 place. ⌫ removes the selected photo from the layout. ⌘+ ⌘- ⌘0 zoom. Page Up and Page Down step pages. Keys work only when no text field has focus.
+- Accessibility: each cell is 1 element, label "Photo 3 of 6, IMG_2048.jpg", or "Empty cell 4". Actions: **Move Earlier**, **Move Later**, **Remove from Layout**. Each swatch has its color name as label and the selected trait. Sliders have a value text ("24 pt"). With **Reduce Motion** on, zoom and panel changes do not animate.
+
+- [ ] **Step 1: Add the tokens.** Add `testPageCaptionContrastOnEachBackground` to `ThemeTests`: for each `LayoutBackground`, `textRGB` on `rgb` has a contrast of at least 4.5 (use `RGB.contrast`; do not copy the formula into Core).
+- [ ] **Step 2: Build** the 5 views. Convert drop points to cells with `LayoutPage.cells` and the zoom. Do not compute layout geometry in a view.
+- [ ] **Step 3: Hook** the view into `ReviewView`, the export error alert, and the "Saved" note with **Show in Finder**.
+- [ ] **Step 4: Manual check L (output).** Make a contact sheet of 7 photos, A4 landscape, 3 × 2, captions on. Export PDF and PNG at High. Open them in Preview: 2 PDF pages; 2 PNG files of 3508 × 2480 (`sips -g pixelWidth -g pixelHeight`). Run `shasum -a 256` on 3 source photos before and after. The hashes are the same.
+- [ ] **Step 5: Manual check M (layout and themes).** In `en` and `vi`, Light and Dark, at 1000 × 680, no text is cut, and the right panel scrolls. The page is the same in Light and Dark (Review Focus 6). Compare with mockup 05. Write the differences in a list.
+- [ ] **Step 6: Manual check N (keys, drag, VoiceOver).** Drag 2 photos in from the left panel. Swap 2 cells. Press ⌘Z after a category move in the library: only the layout step undoes. ⇧⌘R does nothing. VoiceOver reads each cell, swatch, and slider.
+- [ ] **Step 7: Run the full app tests** and the catalog check. Expected: PASS, exit 0. Commit `feat(layout): add the layout editor screen`.
+
+### Task 5.10: Collage
+
+**Files:**
+- Modify: `PicnestCore/Sources/PicnestCore/Domain/Layout.swift`, `Services/LayoutEngine.swift`, `Picnest/Layout/LayoutSettingsPanel.swift`, `Picnest/Localizable.xcstrings`
+- Test: `LayoutEngineTests.swift`, `LayoutRendererTests.swift`, `LayoutExportTests.swift`
+
+**Interfaces:**
+- Produces: `public indirect enum SplitNode: Sendable, Hashable { case cell; case row([SplitNode]); case column([SplitNode]) }`. Children share the space equally, with `spacing` between them.
+- Produces: `CollageTemplate` cases `twoByTwo`, `heroLeft` (`row([cell, column([cell, cell])])`), `heroTop` (`column([cell, row([cell, cell, cell])])`), `twoOverThree` (`column([row([cell, cell]), row([cell, cell, cell])])`), with `var root: SplitNode` and `var cellCount: Int`.
+- Produces: `LayoutEngine.split(_ node: SplitNode, in rect: LayoutRect, spacing: Double) -> [LayoutRect]` (depth first, left to right, top to bottom). `pages(for:)` for `.collage`: 1 page, cells from `template.root`, `fit: .fill`, no file-name band.
+- Copy (en / vi draft): **Two by two** / Hai nhân hai; **Large left** / Ảnh lớn bên trái; **Large top** / Ảnh lớn phía trên; **Two over three** / Hai trên ba.
+
+- [ ] **Step 1: Write the failing tests.** A4 landscape, margin 36, spacing 24, tolerance 1e-3.
+  - `heroLeftGeometry` (left cell 36, 36, 372.9449 × 523.2756; right cells at x 432.9449, height 249.6378 each).
+  - `twoOverThreeGapsEqualTheSpacing`, `cellCountMatchesTheTemplate`.
+  - `collageHasOnePageAndIgnoresExtraPhotos` (6 photos on `twoByTwo`: 4 cells with ids, 1 page).
+  - `collageCellsUseFill` and, in `LayoutRendererTests`, `collageFillHasNoBackgroundInsideACell`.
+  - In `LayoutExportTests`: `collagePDFHasOnePage`.
+- [ ] **Step 2: Run** `swift test --package-path PicnestCore --filter "LayoutEngineTests|LayoutRendererTests|LayoutExportTests"`. Expected: FAIL.
+- [ ] **Step 3: Implement** the templates and the split. Show the templates in **Layout presets** for a collage. Add the strings with `vi`.
+- [ ] **Step 4: Run all core tests, the full app tests, and the catalog check.** Expected: PASS, exit 0.
+- [ ] **Step 5: Commit** `feat(layout): add collage templates`.
+
+### Task 5.11: Docs and final pass
+
+**Files:** `docs/dictionary.md`, `docs/specs/2026-11-01-ui-redesign-design.md`, `BUILD.md` (only if a new check needs a step), this plan.
+
+- [ ] **Step 1: Dictionary.** Add Layout Editor, Layout, Contact sheet, Collage, Layout draft, Paper size. Each says that it changes no photo. Example: "Contact sheet: a page of photos in a grid, each shown whole. Export makes a PNG or PDF file. No photo changes."
+- [ ] **Step 2: Spec 4.6.** Write the entry points (context menu, sidebar, header, ⌘L), the draft rule (1 draft in `Session`), the formats and resolutions, the default folder, and the rule that protects session photos. Link to this plan section.
+- [ ] **Step 3: Search for color literals** as in task 2.8 step 1. Expected: nothing in `Picnest/Layout` outside `LayoutBackground+Color.swift`, which reads Core data.
+- [ ] **Step 4: Run both test suites and the catalog check.** Expected: PASS, exit 0.
+- [ ] **Step 5: Merge phase 5** into `ui-redesign`. Tick the Status line. Ask the owner before any merge into `main`.
+
+### Open questions for the owner (phase 5)
+
+Each has a default in the tasks above. Change a default before its task starts.
+
+1. Layout storage (task 5.3). Default: 1 draft per folder session, in `session.json`. **Start Over** loses it. Other choice: named layout projects (design text 9 "save as project").
+2. Default export folder (task 5.7). Default: the last layout folder, else `~/Pictures`. Reason: a file in the source folder shows as a photo after a rescan. Other choice: the source folder.
+3. PNG for more than 1 page (task 5.5). Default: 1 file per page, `<name> 1.png`. Other choice: only the current page.
+4. Captions (task 5.1). Default: **Include captions** shows a footer with title and note. File names under photos are a separate switch, off. Other choice: 1 switch for both.
+5. Resolution (task 5.5). Default: High, 300 dpi. A4 landscape PNG is 3508 × 2480 px. Other choice: 600 dpi for print shops.
+6. Spacing unit (task 5.9). Default: points ("24 pt"), as for print. The mockup shows "24 px".
+7. Margin control (task 5.9). Default: a **Margin** slider, 36 pt. The mockup has no margin control. Other choice: a fixed margin.
+8. Collage templates (task 5.10). Default: 4 templates. Other choice: more templates, or a free grid.

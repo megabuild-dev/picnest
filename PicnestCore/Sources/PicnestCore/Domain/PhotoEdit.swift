@@ -101,7 +101,7 @@ public struct PhotoEdit: Sendable, Hashable {
     }
 }
 
-public enum ExportFormat: String, CaseIterable, Sendable {
+public enum ExportFormat: String, ExportFileFormat {
     case jpeg, heic, png
 
     public var utType: UTType {
@@ -130,16 +130,20 @@ public enum ExportFormat: String, CaseIterable, Sendable {
     }
 }
 
-/// Undo and redo for a `PhotoEdit`. `show` changes `current` with no step,
+/// Undo and redo for any value. `show` changes `current` with no step,
 /// so a drag can show many values and `commit` them as 1 step.
-public struct EditHistory: Sendable {
-    public private(set) var current: PhotoEdit = .original
-    private var committed: PhotoEdit = .original
-    private var past: [PhotoEdit] = []
-    private var future: [PhotoEdit] = []
+public struct History<Value: Hashable & Sendable>: Sendable {
+    public private(set) var current: Value
+    private var committed: Value
+    private let original: Value
+    private var past: [Value] = []
+    private var future: [Value] = []
     private let limit: Int
 
-    public init(limit: Int = 100) {
+    public init(_ original: Value, limit: Int = 100) {
+        self.original = original
+        self.current = original
+        self.committed = original
         self.limit = max(limit, 1)
     }
 
@@ -148,7 +152,7 @@ public struct EditHistory: Sendable {
     /// True when `show` changed `current` and no `commit` followed. `undo` drops that value.
     public var hasPendingChange: Bool { current != committed }
 
-    public mutating func show(_ e: PhotoEdit) { current = e }
+    public mutating func show(_ e: Value) { current = e }
 
     public mutating func commit() {
         guard current != committed else { return }
@@ -158,12 +162,13 @@ public struct EditHistory: Sendable {
         future.removeAll()
     }
 
-    public mutating func set(_ e: PhotoEdit) {
+    public mutating func set(_ e: Value) {
         show(e)
         commit()
     }
 
-    public mutating func reset() { set(.original) }
+    /// Sets the value given to `init`, as 1 undoable step.
+    public mutating func reset() { set(original) }
 
     public mutating func undo() {
         if current != committed {  // drop a value that was shown but not committed
@@ -182,4 +187,11 @@ public struct EditHistory: Sendable {
         committed = next
         current = next
     }
+}
+
+/// Undo and redo for a `PhotoEdit`.
+public typealias EditHistory = History<PhotoEdit>
+
+extension History where Value == PhotoEdit {
+    public init(limit: Int = 100) { self.init(.original, limit: limit) }
 }

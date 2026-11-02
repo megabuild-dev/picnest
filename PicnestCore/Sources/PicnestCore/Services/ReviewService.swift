@@ -174,7 +174,7 @@ public final class ReviewService {
     }
 
     /// Gives photos new paths: `map` holds the new path of each moved photo. Re-keys `scan.media` (id and
-    /// relativePath), `dates`, `states`, `trashed`, `favoriteIDs`, the collection members, every `exampleIDs`, the image vectors, and the embedding
+    /// relativePath), `dates`, `states`, `trashed`, `favoriteIDs`, the collection members, the layout draft, every `exampleIDs`, the image vectors, and the embedding
     /// cache. Drops the duplicate state, because a moved group is a new group. Then saves the session.
     private func rekey(_ map: [MediaID: String]) async {
         var media: [MediaFile] = []
@@ -203,6 +203,7 @@ public final class ReviewService {
             return moved
         }
         CollectionService.rekey(map, in: &session)
+        LayoutService.rekey(map, in: &session)
         session.notDuplicateKeys = []
         lastDuplicates = []
         pixelSizes = [:]
@@ -773,6 +774,13 @@ public final class ReviewService {
 
     public func removeFromCollection(_ ids: [MediaID], _ c: CollectionID) {
         saveIfChanged(CollectionService.remove(ids, from: c, in: &session))
+    }
+
+    /// Saves the layout the user is editing. Not a review step: it pushes no undo step and does not clear redo.
+    public func saveLayoutDraft(_ d: LayoutDocument?) {
+        guard session.layoutDraft != d else { return }
+        session.layoutDraft = d
+        save()
     }
 
     private func saveIfChanged(_ changed: Bool) {

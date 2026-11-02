@@ -92,6 +92,7 @@ struct SidebarView: View {
             .sidebarDropTarget(id, current: $dropTarget) { model.dropOnCollection($0, id) }
             .contextMenu {
                 Button("Rename…") { model.requestRenameCollection(id) }
+                CreateLayoutButton(model: model, origin: .collection(id))
                 Divider()
                 Button("Delete…", role: .destructive) { model.deletingCollection = id }
             }
@@ -112,6 +113,7 @@ struct SidebarView: View {
                     }
                 }
                 .disabled(model.mergeTargets(for: id).isEmpty)
+                CreateLayoutButton(model: model, origin: .category(id))
                 Divider()
                 Button("Reveal in Finder") { model.showCategoryInFinder(id) }
                     .disabled(model.categoryFolder(id) == nil)

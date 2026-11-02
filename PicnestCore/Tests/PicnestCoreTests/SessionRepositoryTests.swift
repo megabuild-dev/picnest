@@ -226,7 +226,8 @@ private func makeSession(source: String) -> Session {
         trashed: [TrashedPhoto(mediaID: "g.jpg", trashPath: "/Users/x/.Trash/g.jpg", time: date.addingTimeInterval(5))],
         notDuplicateKeys: [DuplicateGroup.key(for: ["a.jpg", "b.jpg"]), DuplicateGroup.key(for: ["c.jpg", "d.jpg"])],
         favoriteIDs: ["a.jpg", "b.jpg"],
-        collections: [PhotoCollection(name: "Trip", memberIDs: ["b.jpg", "a.jpg"], order: 0)])
+        collections: [PhotoCollection(name: "Trip", memberIDs: ["b.jpg", "a.jpg"], order: 0)],
+        layoutDraft: LayoutDocument.new(photos: ["b.jpg", "a.jpg"], title: "Trip"))
 
     try repo.save(s)
     #expect(try repo.load(source: source) == s)
@@ -234,7 +235,7 @@ private func makeSession(source: String) -> Session {
     let file = repo.directory(for: source).appending(path: "session.json")
     let json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
     let fields = Set(Mirror(reflecting: s).children.compactMap(\.label))
-    #expect(fields.count == 10)
+    #expect(fields.count == 11)
     #expect(Set(json.keys) == fields)
 
     // A `session.json` from before Move to Trash and the Duplicates view has neither new key.
@@ -243,8 +244,10 @@ private func makeSession(source: String) -> Session {
     old.removeValue(forKey: "notDuplicateKeys")
     old.removeValue(forKey: "favoriteIDs")
     old.removeValue(forKey: "collections")
+    old.removeValue(forKey: "layoutDraft")
     try JSONSerialization.data(withJSONObject: old).write(to: file)
     var expected = s
+    expected.layoutDraft = nil
     expected.trashed = []
     expected.notDuplicateKeys = []
     expected.favoriteIDs = []
@@ -276,4 +279,24 @@ private func makeSession(source: String) -> Session {
     let cat = UUID()
     let with = TrashedPhoto(mediaID: "a.jpg", trashPath: "/Trash/a.jpg", time: Date(timeIntervalSince1970: 1), stateBeforeTrash: .manual(cat))
     #expect(try JSONDecoder().decode(TrashedPhoto.self, from: JSONEncoder().encode(with)) == with)
+}
+
+/// A `session.json` from before the layout editor has no `layoutDraft` key. It must open.
+@Test func oldSessionWithoutLayoutDraftDecodes() throws {
+    let dir = try TempDir()
+    let repo = SessionRepository(root: dir.url)
+    let source = URL(filePath: "/x/src")
+    var s = makeSession(source: source.path)
+    s.layoutDraft = LayoutDocument.new(photos: ["a.jpg"], title: "T")
+    try repo.save(s)
+    let file = repo.directory(for: source).appending(path: "session.json")
+    var json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
+    #expect(json["layoutDraft"] != nil)
+    json.removeValue(forKey: "layoutDraft")
+    try JSONSerialization.data(withJSONObject: json).write(to: file)
+
+    let loaded = try #require(try repo.load(source: source))
+    #expect(loaded.layoutDraft == nil)
+    s.layoutDraft = nil
+    #expect(loaded == s)
 }

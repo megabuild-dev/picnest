@@ -149,7 +149,7 @@ public final class PhotoEditService: Sendable {
     public func exportCopy(
         of original: URL, edit: PhotoEdit, to destination: URL, format: ExportFormat, protected: ProtectedFiles
     ) async throws -> URL {
-        guard !Self.isSameFile(destination, original), !protected.contains(destination) else {
+        guard !protected.refuses(destination, original: original) else {
             throw PhotoExportError.wouldReplaceOriginal
         }
         guard FileManager.default.fileExists(atPath: original.path) else { throw PhotoExportError.originalMissing }
@@ -162,7 +162,7 @@ public final class PhotoEditService: Sendable {
             }
             try Task.checkCancellation()
             let replacing = FileManager.default.fileExists(atPath: destination.path)
-            try writer.write(
+            try await writer.write(
                 edited, to: destination, format: format, quality: Self.exportQuality,
                 properties: Self.exportProperties(from: full.properties, width: edited.width, height: edited.height),
                 replacing: replacing)
@@ -193,23 +193,5 @@ public final class PhotoEditService: Sendable {
             props[kCGImagePropertyIPTCDictionary] = iptc
         }
         return props
-    }
-
-    /// True when both URLs name the same file: by folder and name (NFC, ignoring case), through a symlink, or
-    /// as a hard link.
-    private static func isSameFile(_ a: URL, _ b: URL) -> Bool {
-        func key(_ u: URL) -> String {
-            (u.deletingLastPathComponent().canonicalKeyPath + "/" + u.lastPathComponent)
-                .precomposedStringWithCanonicalMapping.lowercased()
-        }
-        if key(a) == key(b) { return true }
-        func id(_ u: URL) -> [Int]? {
-            guard let attrs = try? FileManager.default.attributesOfItem(atPath: u.resolvingSymlinksInPath().path),
-                  let dev = (attrs[.systemNumber] as? NSNumber)?.intValue,
-                  let ino = (attrs[.systemFileNumber] as? NSNumber)?.intValue else { return nil }
-            return [dev, ino]
-        }
-        guard let x = id(a), let y = id(b) else { return false }
-        return x == y
     }
 }

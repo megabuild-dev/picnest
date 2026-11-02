@@ -159,11 +159,16 @@ Rules for this phase:
 
 ### 4.6 Phase 5: Layout Editor
 
-- Opens from a category, a collection, or a selection.
+- **Entry points:** **Create Layout…** is in 4 places. They are the photo context menu, the sidebar context menu, the header menu, and the menu **Image**. The sidebar and header menus work for a category or a collection. The shortcut ⌘L uses the selection. If nothing is selected, ⌘L uses the current category or collection.
 - First output: **Contact sheet**. Second output: **Collage**. Mockup 05 shows Contact sheet selected. This order is a decision of the builder (section 7).
-- Controls: paper size, orientation, presets, spacing, background, captions.
-- Export to PNG and PDF. The app does not change source photos.
-- Undo, Redo, and a draft that saves by itself.
+- Controls: paper size (A3, A4, A5, Letter), orientation, presets, spacing, margin, background, captions.
+- **Draft rule:** `Session` holds 1 layout draft for each source folder, in `session.json`. The app saves it 1 second after the last change and when the editor closes. **Start Over** deletes it. If a draft with photos exists, a dialog shows **Continue Layout**, **Start New**, and **Cancel**.
+- **Formats:** PNG and PDF. A PNG file holds 1 page, so a layout with 3 pages makes 3 PNG files. A PDF file holds all pages.
+- **Resolutions:** **Standard** is 150 dpi. **High** is 300 dpi, and it is the default. An A4 landscape PNG at 300 dpi is 3508 × 2480 px. The PDF uses the resolution to cap the pixels of each embedded photo.
+- **Default folder:** the save panel opens in the last layout folder, or in `~/Pictures` if none exists. Reason: a file in the source folder shows as a new photo after the next rescan.
+- **Protected files:** an export never replaces a photo of the session or a file in the Trash. This includes a symlink or hard link to such a file. If the user picks such a name, the app shows a message and writes nothing.
+- Undo and Redo work on layout steps. A collage uses only the photos that fit its template cells. The panel shows how many photos it uses.
+- Details are in [[2026-11-01-ui-redesign-plan#Phase 5: Layout Editor]].
 
 ## 5. Constraints
 

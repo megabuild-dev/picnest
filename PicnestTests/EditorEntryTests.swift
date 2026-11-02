@@ -122,6 +122,20 @@ struct EditorEntryTests {
         #expect(!model.isEditing && model.canSortOrRescan && model.canDone && model.canStartOver)
     }
 
+    @Test func testActiveEditorDrivesIsEditing() throws {
+        let (model, _) = try makeModel()
+        #expect(model.activeEditor == nil && !model.isEditing)
+        model.openEditor("a.jpg")
+        guard case .photo(let editor)? = model.activeEditor else {
+            Issue.record("The active editor must be the photo editor.")
+            return
+        }
+        #expect(model.isEditing && !model.canSortOrRescan)
+        #expect(model.editor === editor)
+        model.closeEditor()
+        #expect(model.activeEditor == nil && !model.isEditing && model.canSortOrRescan)
+    }
+
     @Test func testCloseEditorKeepsTheSelection() throws {
         let (model, _) = try makeModel()
         model.click("a.jpg", modifiers: [])

@@ -92,7 +92,14 @@ enum Theme {
     static let cropShade = ThemeColor(light: 0x000000, dark: 0x000000)
     static let cropShadeAlpha = 0.45
 
+    /// The shadow of the page in the layout editor, used at `pageShadowAlpha`. The same in light and dark.
+    static let pageShadow = ThemeColor(light: 0x000000, dark: 0x000000)
+    static let pageShadowAlpha = 0.12
+    /// The outline of the selected cell on the page of the layout editor.
+    static let cellOutline = accent
+
     enum Metrics {
+        static let layoutPhotoPanel: CGFloat = 240
         static let editorToolRail: CGFloat = 220
         static let editorPanel: CGFloat = 300
         static let filmstripHeight: CGFloat = 96

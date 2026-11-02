@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D09EB861992549A46FE8800 /* LayoutPhotoPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687443847887196CC78375C9 /* LayoutPhotoPanel.swift */; };
 		0D135A442D6E88198A5A795D /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */; };
+		0D971ECCCF4E67602E32F79D /* LayoutEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA8A631538D38BA7AF046EA /* LayoutEntryTests.swift */; };
 		16DC62252371603DC3D9DD17 /* SuggestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */; };
 		17B6C890FD0E7560878A2EC6 /* CatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47958C12A51561B635AA7868 /* CatalogTests.swift */; };
 		20386BCE23B82A1E7C242D8D /* DuplicateGroupCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79CA12F607E49B987E75890F /* DuplicateGroupCard.swift */; };
@@ -17,6 +19,7 @@
 		264EBA9BD31D7B33B1891056 /* CountText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6454171A84EC6C4B6543899A /* CountText.swift */; };
 		279E946A62579A1175690B0D /* RecentFolderCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A31D0E98B158679E420F241 /* RecentFolderCard.swift */; };
 		2AA7F661CDC1E5AF2268CA06 /* DuplicatesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */; };
+		2DF139AA5A8B30027BF716D7 /* LayoutBottomBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE6F9ABCA41EBB48B379829 /* LayoutBottomBar.swift */; };
 		326E89BE84A438C0F07B4475 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1900A1C0BD2CD847B38FB9F9 /* SettingsView.swift */; };
 		3326E5A71671FEF75E42A951 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE520B57AC25EFFC86499E5 /* Sparkle */; };
 		34AEB212ECCF9B63227B48A3 /* AppRelauncherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DEC527A795B9CF26731CCEF /* AppRelauncherTests.swift */; };
@@ -29,9 +32,12 @@
 		45D05A0645B36215E4861488 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F58180671D305DA5D5D04A /* SidebarView.swift */; };
 		46ACE4979DEE77644A8B5CF6 /* UpdaterCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */; };
 		48453A60B6CD8431AAFF9078 /* NeedsReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 413D1ED4265E0D34E102A090 /* NeedsReviewTests.swift */; };
+		488D4916C01F3465BE4E8D9F /* LayoutEditorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC776AFAF5BFDED19A73B809 /* LayoutEditorViewModelTests.swift */; };
+		4D8F281B95805B8FA5A8D315 /* EditorValueSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F54281686D42AFB455A1C79 /* EditorValueSlider.swift */; };
 		510178F063618B4815D601A9 /* ThumbnailImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23DB888F2709AE427CB9F2E /* ThumbnailImage.swift */; };
 		53CF106630506EEC712F8678 /* EditorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1FB599B0E5FD01A2E7F38E1 /* EditorPanel.swift */; };
 		556D4B5EA4DD80A6FE2C8D07 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A23A226DCC3C8650C439A15E /* ReviewView.swift */; };
+		56067F4458F43CD584D3A786 /* LayoutCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED70A2C139F0A1E0C13733CD /* LayoutCanvas.swift */; };
 		5E5EBEB4613086D0FD6C9433 /* ReviewViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */; };
 		5EC0A2D59907C15FB0D2604A /* ScanViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D61409C47FE261863147401E /* ScanViewModelTests.swift */; };
 		61B83CA7F230CB6792E22FBC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D594434602636BD2EEEFF69E /* Assets.xcassets */; };
@@ -57,8 +63,10 @@
 		8BC37175B0038D10E4C56B1A /* PhotoEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0321215776146C6BB5EAD25F /* PhotoEditorViewModel.swift */; };
 		8CF4B586E69522C94C2E264D /* DuplicatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501266281830058D97AF399D /* DuplicatesView.swift */; };
 		8E076CDAFBC919D5236CF251 /* SortMessagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6DD9B8F4192F4739C37783 /* SortMessagesTests.swift */; };
+		8E687225E857449629F278A6 /* SearchText.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA84E397B201E202DD44239B /* SearchText.swift */; };
 		8ECE94F910932E67F160BBE5 /* EditorEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD350E0A13EAACDEEF9AC23 /* EditorEntryTests.swift */; };
 		8F7397435B480CED47B11A02 /* LibraryBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70D0A331898AF2010A6CB0B /* LibraryBar.swift */; };
+		8FB4FFE25E754B66E19F6B11 /* LayoutTitles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AFC8CD1B57F899ABA69EC3 /* LayoutTitles.swift */; };
 		9395AF3BEDCC01FED02365BC /* AppDelegateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */; };
 		97486C098A9BF55A6CD6EB3C /* QuickLookPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A582EB3063F6C786DBEDF4B /* QuickLookPreview.swift */; };
 		A2B8F21A266E8D94C47B06F0 /* LibraryLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7A9999230CB4C082D8A01E /* LibraryLayout.swift */; };
@@ -67,7 +75,9 @@
 		AF49AC18E55A4B1C228BCC6E /* EditorToolRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5A46ABA9A9B9CA6C567ED0 /* EditorToolRail.swift */; };
 		B7E179E77B6BDE70A861EA2E /* SortSheetParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B16AA15BDC3E8BD4C0603E /* SortSheetParts.swift */; };
 		BA186261E326AC460EA95727 /* NeedsReviewSelectionContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7734199ABA90DCEDB87440D /* NeedsReviewSelectionContent.swift */; };
+		BAB4CB7E2732E09588A201E2 /* ActiveEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0275D6F2C224E6884D2173F /* ActiveEditor.swift */; };
 		BC3A30688044029B80F5A1C1 /* FavoriteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58751FAD1F66B9053F1E52FE /* FavoriteButton.swift */; };
+		BCC4D6CE4B81A8583E5989A5 /* LayoutSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA2BA4D28CCE15F7BF2434F0 /* LayoutSettingsPanel.swift */; };
 		BF5984936F5251EDFE074BE8 /* AppearanceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6113378D0D5A7B5F61A2407 /* AppearanceStoreTests.swift */; };
 		C0C910198431EECC707F81BE /* PicnestCore in Frameworks */ = {isa = PBXBuildFile; productRef = 30B03628CE17F8732AD5C557 /* PicnestCore */; };
 		C0D6276346C37C0D994D1657 /* ReviewCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */; };
@@ -75,7 +85,9 @@
 		C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0629FE80B349DDD9DC93B874 /* AppDelegate.swift */; };
 		CB4609F6FA2C540D2E417AC6 /* CollectionNameSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55C1B56CA95B0AF237A9EA6 /* CollectionNameSheet.swift */; };
 		CCA6118A59E9A2BB0E3CA841 /* PhotoSetHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD0E3C4D29629FA9218F7B87 /* PhotoSetHeaderView.swift */; };
+		CD13F0C37998ADC9120ACD87 /* LayoutEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCE254442586FBE685BA1E1 /* LayoutEditorView.swift */; };
 		CD3F3888933C31BF5904B13F /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */; };
+		CDF92AB35B2CACB4D0351D18 /* PendingCommit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F73323A51D6733DDC0AD8B /* PendingCommit.swift */; };
 		D0B67C143763D6E8B18175D3 /* SortSheetStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC2493E6A3C7CA05FC3F88E /* SortSheetStates.swift */; };
 		D100DAAA6E9733D1CBEEC47C /* CollectionsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A3282C6F3F954018F0612B4 /* CollectionsViewModelTests.swift */; };
 		D107C155337D4DE5FBBF567E /* SortViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0977699F69AB7452B6F56650 /* SortViewModelTests.swift */; };
@@ -85,9 +97,11 @@
 		DDCF3F7C99463801A1349EB6 /* EditorSavePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9597E21F66B3D0A193D9FD71 /* EditorSavePanel.swift */; };
 		E00DE5E5DDB2281CDC5552CF /* PhotoEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47884A603D7F00A8723A13FB /* PhotoEditorView.swift */; };
 		E3CBD322C27A8077774D9E12 /* PhotoTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35166FEF0689ABA60577363E /* PhotoTile.swift */; };
+		E8B494BF8E5909D21CF9A7BD /* LayoutBackground+Color.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4F8DA9C91D1FEFDD97FB97 /* LayoutBackground+Color.swift */; };
 		EA36A8DE47D86EFB35CB4388 /* LibraryEmptyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA4DF53998705918C42D33E /* LibraryEmptyView.swift */; };
 		EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */; };
 		EBD22D22D0A41E582D0168CC /* SidebarPreferencesBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB45CFBAAB8E36763E581EF2 /* SidebarPreferencesBar.swift */; };
+		F0AC86F27B5F9B82806BF0C8 /* LayoutEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CDE538A309584D4E5FDC4E /* LayoutEditorViewModel.swift */; };
 		F23B8FDED3D74BE03246FEE3 /* WelcomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7837F5D2EA305002CCD7BAE0 /* WelcomeViewModelTests.swift */; };
 		F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920C3114E14A8F5535838C19 /* NotSureView.swift */; };
 		F7EB95F8545801C871F2248C /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B22D4C3F95177E0A17BBD52D /* Localizable.xcstrings */; };
@@ -125,6 +139,8 @@
 		2BB1CB2C97F8E1CAEA1D7731 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		2CBD09A25D73165A758EBE26 /* SuggestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestViewModel.swift; sourceTree = "<group>"; };
 		2E5E4C53FC5AF6C8686C67A5 /* SuggestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestSheet.swift; sourceTree = "<group>"; };
+		2F54281686D42AFB455A1C79 /* EditorValueSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorValueSlider.swift; sourceTree = "<group>"; };
+		2FA8A631538D38BA7AF046EA /* LayoutEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutEntryTests.swift; sourceTree = "<group>"; };
 		3495D1B7D2EC7FD63A699C4A /* CoreErrorMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreErrorMessages.swift; sourceTree = "<group>"; };
 		35166FEF0689ABA60577363E /* PhotoTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoTile.swift; sourceTree = "<group>"; };
 		363018BD1F7C6D262FEBDEA5 /* EditorFilmstrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorFilmstrip.swift; sourceTree = "<group>"; };
@@ -139,10 +155,12 @@
 		501266281830058D97AF399D /* DuplicatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesView.swift; sourceTree = "<group>"; };
 		57D74193AE5CCDEA74C74B46 /* Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support.swift; sourceTree = "<group>"; };
 		58751FAD1F66B9053F1E52FE /* FavoriteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteButton.swift; sourceTree = "<group>"; };
+		5DE6F9ABCA41EBB48B379829 /* LayoutBottomBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutBottomBar.swift; sourceTree = "<group>"; };
 		5F311E0938B11ACD22E634D4 /* AppDelegateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTests.swift; sourceTree = "<group>"; };
 		61D2AE119E80A1489AD6B28D /* PhotoEditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoEditorViewModelTests.swift; sourceTree = "<group>"; };
 		6454171A84EC6C4B6543899A /* CountText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountText.swift; sourceTree = "<group>"; };
 		65043FDF2E3D7F22128AA68E /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		687443847887196CC78375C9 /* LayoutPhotoPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutPhotoPanel.swift; sourceTree = "<group>"; };
 		6AD350E0A13EAACDEEF9AC23 /* EditorEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorEntryTests.swift; sourceTree = "<group>"; };
 		6F2D9F900CB1D1EE3B6762AD /* LanguageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageStore.swift; sourceTree = "<group>"; };
 		70654CE25C0D4A3AEB26F66C /* SortMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMessages.swift; sourceTree = "<group>"; };
@@ -150,15 +168,18 @@
 		79CA12F607E49B987E75890F /* DuplicateGroupCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateGroupCard.swift; sourceTree = "<group>"; };
 		7A59DEB649794DC24646B1F0 /* SortViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortViewModel.swift; sourceTree = "<group>"; };
 		7D2B96D82F0EB454AE50B464 /* NeedsReviewHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeedsReviewHeader.swift; sourceTree = "<group>"; };
+		7F4F8DA9C91D1FEFDD97FB97 /* LayoutBackground+Color.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LayoutBackground+Color.swift"; sourceTree = "<group>"; };
 		7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModelTests.swift; sourceTree = "<group>"; };
 		7F98EFFC146A79BCEADE0D28 /* DuplicatesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesViewModelTests.swift; sourceTree = "<group>"; };
 		845387F7A11FB74846F778E8 /* WelcomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeViewModel.swift; sourceTree = "<group>"; };
 		846D57BE2AAE0D6DF1A4A5B8 /* NotSureGroupHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotSureGroupHeader.swift; sourceTree = "<group>"; };
 		8720DD050E7DEC881184656B /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
+		89AFC8CD1B57F899ABA69EC3 /* LayoutTitles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutTitles.swift; sourceTree = "<group>"; };
 		8A3282C6F3F954018F0612B4 /* CollectionsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsViewModelTests.swift; sourceTree = "<group>"; };
 		8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndToEndTests.swift; sourceTree = "<group>"; };
 		920C3114E14A8F5535838C19 /* NotSureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotSureView.swift; sourceTree = "<group>"; };
 		9597E21F66B3D0A193D9FD71 /* EditorSavePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSavePanel.swift; sourceTree = "<group>"; };
+		95F73323A51D6733DDC0AD8B /* PendingCommit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingCommit.swift; sourceTree = "<group>"; };
 		961CAE3FEE059F362C23F8FE /* EditorCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvas.swift; sourceTree = "<group>"; };
 		989FD2A75D20A49C2832027B /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
 		9A31D0E98B158679E420F241 /* RecentFolderCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentFolderCard.swift; sourceTree = "<group>"; };
@@ -167,15 +188,20 @@
 		A156C5AD239F23A8E95FF6F8 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
 		A23A226DCC3C8650C439A15E /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		A7C2B7BBF113F2DC262B2B68 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		ABCE254442586FBE685BA1E1 /* LayoutEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutEditorView.swift; sourceTree = "<group>"; };
+		B0275D6F2C224E6884D2173F /* ActiveEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveEditor.swift; sourceTree = "<group>"; };
 		B22D4C3F95177E0A17BBD52D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		BB45CFBAAB8E36763E581EF2 /* SidebarPreferencesBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarPreferencesBar.swift; sourceTree = "<group>"; };
 		BC73950B912E76D04662E063 /* PicnestCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PicnestCore; path = PicnestCore; sourceTree = SOURCE_ROOT; };
+		BC776AFAF5BFDED19A73B809 /* LayoutEditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutEditorViewModelTests.swift; sourceTree = "<group>"; };
 		BD0E3C4D29629FA9218F7B87 /* PhotoSetHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSetHeaderView.swift; sourceTree = "<group>"; };
 		C23DB888F2709AE427CB9F2E /* ThumbnailImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailImage.swift; sourceTree = "<group>"; };
 		C28C2A5F8FA8B521A245CE4A /* ReviewCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCommands.swift; sourceTree = "<group>"; };
 		C5040C0826039EBEC8EDE68A /* ReviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModel.swift; sourceTree = "<group>"; };
 		C7734199ABA90DCEDB87440D /* NeedsReviewSelectionContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeedsReviewSelectionContent.swift; sourceTree = "<group>"; };
+		C9CDE538A309584D4E5FDC4E /* LayoutEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutEditorViewModel.swift; sourceTree = "<group>"; };
+		CA2BA4D28CCE15F7BF2434F0 /* LayoutSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutSettingsPanel.swift; sourceTree = "<group>"; };
 		CE7A9999230CB4C082D8A01E /* LibraryLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryLayout.swift; sourceTree = "<group>"; };
 		CEAEAC390E4763884A2BB148 /* ThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeTests.swift; sourceTree = "<group>"; };
 		CFA4DF53998705918C42D33E /* LibraryEmptyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryEmptyView.swift; sourceTree = "<group>"; };
@@ -184,12 +210,14 @@
 		D61409C47FE261863147401E /* ScanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModelTests.swift; sourceTree = "<group>"; };
 		D9BFE534E6787F10148ACE5D /* DuplicatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatesViewModel.swift; sourceTree = "<group>"; };
 		D9FF9F3F20EDFE1CD34F5EAA /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
+		DA84E397B201E202DD44239B /* SearchText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchText.swift; sourceTree = "<group>"; };
 		DE5C538024D2F93601A43E4D /* PicnestApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PicnestApp.swift; sourceTree = "<group>"; };
 		E55C1B56CA95B0AF237A9EA6 /* CollectionNameSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionNameSheet.swift; sourceTree = "<group>"; };
 		E6FF717F28C895BC0150D447 /* AppearanceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceStore.swift; sourceTree = "<group>"; };
 		E7ED133DBF6E046A2482EF23 /* InspectorFacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorFacts.swift; sourceTree = "<group>"; };
 		EAC2493E6A3C7CA05FC3F88E /* SortSheetStates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortSheetStates.swift; sourceTree = "<group>"; };
 		EC9F57247BA22021E463784C /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		ED70A2C139F0A1E0C13733CD /* LayoutCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutCanvas.swift; sourceTree = "<group>"; };
 		EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterCommands.swift; sourceTree = "<group>"; };
 		F1FB599B0E5FD01A2E7F38E1 /* EditorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorPanel.swift; sourceTree = "<group>"; };
 		F70D0A331898AF2010A6CB0B /* LibraryBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBar.swift; sourceTree = "<group>"; };
@@ -250,6 +278,8 @@
 				6AD350E0A13EAACDEEF9AC23 /* EditorEntryTests.swift */,
 				8B86E77B907FA0AFBD0B701E /* EndToEndTests.swift */,
 				1A5060CB5489B7E0B2EDC4F9 /* LanguageStoreTests.swift */,
+				BC776AFAF5BFDED19A73B809 /* LayoutEditorViewModelTests.swift */,
+				2FA8A631538D38BA7AF046EA /* LayoutEntryTests.swift */,
 				413D1ED4265E0D34E102A090 /* NeedsReviewTests.swift */,
 				61D2AE119E80A1489AD6B28D /* PhotoEditorViewModelTests.swift */,
 				7F671E009DA3C98C5CBA286A /* ReviewViewModelTests.swift */,
@@ -264,14 +294,32 @@
 			path = PicnestTests;
 			sourceTree = "<group>";
 		};
+		63C1DD15442683A0279B5EDE /* Layout */ = {
+			isa = PBXGroup;
+			children = (
+				7F4F8DA9C91D1FEFDD97FB97 /* LayoutBackground+Color.swift */,
+				5DE6F9ABCA41EBB48B379829 /* LayoutBottomBar.swift */,
+				ED70A2C139F0A1E0C13733CD /* LayoutCanvas.swift */,
+				ABCE254442586FBE685BA1E1 /* LayoutEditorView.swift */,
+				687443847887196CC78375C9 /* LayoutPhotoPanel.swift */,
+				CA2BA4D28CCE15F7BF2434F0 /* LayoutSettingsPanel.swift */,
+			);
+			path = Layout;
+			sourceTree = "<group>";
+		};
 		64F0574028015946FD0C568C /* Editor */ = {
 			isa = PBXGroup;
 			children = (
+				B0275D6F2C224E6884D2173F /* ActiveEditor.swift */,
 				961CAE3FEE059F362C23F8FE /* EditorCanvas.swift */,
 				363018BD1F7C6D262FEBDEA5 /* EditorFilmstrip.swift */,
 				F1FB599B0E5FD01A2E7F38E1 /* EditorPanel.swift */,
 				9597E21F66B3D0A193D9FD71 /* EditorSavePanel.swift */,
 				3C5A46ABA9A9B9CA6C567ED0 /* EditorToolRail.swift */,
+				2F54281686D42AFB455A1C79 /* EditorValueSlider.swift */,
+				C9CDE538A309584D4E5FDC4E /* LayoutEditorViewModel.swift */,
+				89AFC8CD1B57F899ABA69EC3 /* LayoutTitles.swift */,
+				95F73323A51D6733DDC0AD8B /* PendingCommit.swift */,
 				47884A603D7F00A8723A13FB /* PhotoEditorView.swift */,
 				0321215776146C6BB5EAD25F /* PhotoEditorViewModel.swift */,
 			);
@@ -289,6 +337,7 @@
 				900ACE24C78A981403F67AD7 /* App */,
 				DE964C42558D8542F02236FC /* Design */,
 				64F0574028015946FD0C568C /* Editor */,
+				63C1DD15442683A0279B5EDE /* Layout */,
 				A48ADFC30BF399456D9B75AE /* Review */,
 				0DF81434DB1AA03046151114 /* Scan */,
 				D80D06EDE97443F7768E2723 /* Settings */,
@@ -320,6 +369,7 @@
 				6454171A84EC6C4B6543899A /* CountText.swift */,
 				DE5C538024D2F93601A43E4D /* PicnestApp.swift */,
 				A7C2B7BBF113F2DC262B2B68 /* RootView.swift */,
+				DA84E397B201E202DD44239B /* SearchText.swift */,
 				EE8771A6B9F7DCA4B852F0DB /* UpdaterCommands.swift */,
 			);
 			path = App;
@@ -556,6 +606,8 @@
 				8ECE94F910932E67F160BBE5 /* EditorEntryTests.swift in Sources */,
 				EACBC9B8B83BEB94AD298D4D /* EndToEndTests.swift in Sources */,
 				70AEC711BE310E3279C3D9F9 /* LanguageStoreTests.swift in Sources */,
+				488D4916C01F3465BE4E8D9F /* LayoutEditorViewModelTests.swift in Sources */,
+				0D971ECCCF4E67602E32F79D /* LayoutEntryTests.swift in Sources */,
 				48453A60B6CD8431AAFF9078 /* NeedsReviewTests.swift in Sources */,
 				8A46333B0AAC361143A632CE /* PhotoEditorViewModelTests.swift in Sources */,
 				5E5EBEB4613086D0FD6C9433 /* ReviewViewModelTests.swift in Sources */,
@@ -573,6 +625,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BAB4CB7E2732E09588A201E2 /* ActiveEditor.swift in Sources */,
 				ADC1EA164596F3754346FF53 /* AddPhotosSheet.swift in Sources */,
 				C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */,
 				78EC7D52544D30719D020C2A /* AppEnvironment.swift in Sources */,
@@ -592,10 +645,19 @@
 				53CF106630506EEC712F8678 /* EditorPanel.swift in Sources */,
 				DDCF3F7C99463801A1349EB6 /* EditorSavePanel.swift in Sources */,
 				AF49AC18E55A4B1C228BCC6E /* EditorToolRail.swift in Sources */,
+				4D8F281B95805B8FA5A8D315 /* EditorValueSlider.swift in Sources */,
 				BC3A30688044029B80F5A1C1 /* FavoriteButton.swift in Sources */,
 				6AF4AD4BF74A2CD8197249D3 /* InspectorFacts.swift in Sources */,
 				65F6FE0F9538CBEEA30D9721 /* InspectorView.swift in Sources */,
 				D7D1CF7EE65EA3EDABBF7499 /* LanguageStore.swift in Sources */,
+				E8B494BF8E5909D21CF9A7BD /* LayoutBackground+Color.swift in Sources */,
+				2DF139AA5A8B30027BF716D7 /* LayoutBottomBar.swift in Sources */,
+				56067F4458F43CD584D3A786 /* LayoutCanvas.swift in Sources */,
+				CD13F0C37998ADC9120ACD87 /* LayoutEditorView.swift in Sources */,
+				F0AC86F27B5F9B82806BF0C8 /* LayoutEditorViewModel.swift in Sources */,
+				0D09EB861992549A46FE8800 /* LayoutPhotoPanel.swift in Sources */,
+				BCC4D6CE4B81A8583E5989A5 /* LayoutSettingsPanel.swift in Sources */,
+				8FB4FFE25E754B66E19F6B11 /* LayoutTitles.swift in Sources */,
 				8F7397435B480CED47B11A02 /* LibraryBar.swift in Sources */,
 				EA36A8DE47D86EFB35CB4388 /* LibraryEmptyView.swift in Sources */,
 				A2B8F21A266E8D94C47B06F0 /* LibraryLayout.swift in Sources */,
@@ -603,6 +665,7 @@
 				BA186261E326AC460EA95727 /* NeedsReviewSelectionContent.swift in Sources */,
 				7C3FEECF3D04F855442E1638 /* NotSureGroupHeader.swift in Sources */,
 				F5DD9E7C033C8EBF266AB26D /* NotSureView.swift in Sources */,
+				CDF92AB35B2CACB4D0351D18 /* PendingCommit.swift in Sources */,
 				E00DE5E5DDB2281CDC5552CF /* PhotoEditorView.swift in Sources */,
 				8BC37175B0038D10E4C56B1A /* PhotoEditorViewModel.swift in Sources */,
 				0D135A442D6E88198A5A795D /* PhotoGridView.swift in Sources */,
@@ -618,6 +681,7 @@
 				625C90178B01EB2121FB70BE /* RootView.swift in Sources */,
 				21ABC7AB273C92070EBEBE84 /* ScanView.swift in Sources */,
 				FDBFE918B994319F3232C9DC /* ScanViewModel.swift in Sources */,
+				8E687225E857449629F278A6 /* SearchText.swift in Sources */,
 				3701C843F134677B347B048F /* SelectionBar.swift in Sources */,
 				326E89BE84A438C0F07B4475 /* SettingsView.swift in Sources */,
 				EBD22D22D0A41E582D0168CC /* SidebarPreferencesBar.swift in Sources */,

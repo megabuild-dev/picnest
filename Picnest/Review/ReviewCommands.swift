@@ -45,15 +45,18 @@ struct ReviewCommands: Commands {
             Button("Edit Photo") { review?.openEditor() }
                 .keyboardShortcut("e", modifiers: .command)
                 .disabled(review?.anchor.map { review?.canEdit($0) == true } != true)
+            Button("Create Layout…") { review?.requestLayoutFromMenu() }
+                .keyboardShortcut("l", modifiers: .command)
+                .disabled(review?.layoutMenuOrigin == nil)
         }
         CommandGroup(replacing: .undoRedo) {
             Button("Undo") {
-                perform(Selector(("undo:")), editorCanAct: review?.editor?.canUndo, reviewCanAct: review?.canUndo == true,
+                perform(Selector(("undo:")), editorCanAct: review?.activeEditor?.session.canUndo, reviewCanAct: review?.canUndo == true,
                         editor: { $0.undo() }) { $0.undo() }
             }
             .keyboardShortcut("z", modifiers: .command)
             Button("Redo") {
-                perform(Selector(("redo:")), editorCanAct: review?.editor?.canRedo, reviewCanAct: review?.canRedo == true,
+                perform(Selector(("redo:")), editorCanAct: review?.activeEditor?.session.canRedo, reviewCanAct: review?.canRedo == true,
                         editor: { $0.redo() }) { $0.redo() }
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
@@ -62,14 +65,14 @@ struct ReviewCommands: Commands {
 
     @MainActor private func perform(
         _ textAction: Selector, editorCanAct: Bool?, reviewCanAct: Bool,
-        editor editorAction: (PhotoEditorViewModel) -> Void, review action: (ReviewViewModel) -> Void
+        editor editorAction: (any EditorSession) -> Void, review action: (ReviewViewModel) -> Void
     ) {
         switch UndoRouting.route(
             firstResponderIsText: UndoRouting.firstResponderIsText, editorCanAct: editorCanAct,
             reviewCanAct: reviewCanAct)
         {
         case .text: NSApp.sendAction(textAction, to: nil, from: nil)
-        case .editor: if let editor = review?.editor { editorAction(editor) }
+        case .editor: if let session = review?.activeEditor?.session { editorAction(session) }
         case .review: if let review { action(review) }
         case .nothing: break
         }
