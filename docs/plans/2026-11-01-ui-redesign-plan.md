@@ -31,7 +31,7 @@ links:
 - [x] Phase 2: Screens (tasks 2.1 to 2.8). Merged into `ui-redesign`. Owner steps open: manual checklist, mockup comparison, native-speaker review of the Vietnamese text.
 - [x] Phase 3: Favorites, Collections, Recently Deleted (tasks 3.1 to 3.10). Merged into `ui-redesign`. Manual checks F, G, H and the sidebar comparison with mockups 01 to 03 wait for the owner.
 - [x] Phase 4: Photo Editor (tasks 4.1 to 4.8). Merged into `ui-redesign`. Manual checks I, J, K wait for the owner.
-- [ ] Phase 5: Layout Editor (tasks 5.1 to 5.11). Planned, not started.
+- [x] Phase 5: Layout Editor (tasks 5.1 to 5.11). Merged into `ui-redesign`. Manual checks L, M, N wait for the owner.
 
 ## Branches
 
