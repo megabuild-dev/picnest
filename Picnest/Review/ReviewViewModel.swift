@@ -435,8 +435,8 @@ final class ReviewViewModel {
     /// The text of the Start Over confirmation.
     var startOverMessage: String {
         canUndoLastSort
-            ? String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too. The last sort can no longer be undone.")
-            : String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too.")
+            ? String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites, collections, and layout draft are lost too. The last sort can no longer be undone.")
+            : String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites, collections, and layout draft are lost too.")
     }
 
     /// File > **Start Over…**: shows the confirmation.
