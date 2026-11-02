@@ -16,10 +16,12 @@ protocol EditorSession: AnyObject {
 /// The editor that fills the window, or none.
 enum ActiveEditor {
     case photo(PhotoEditorViewModel)
+    case layout(LayoutEditorViewModel)
 
     var session: any EditorSession {
         switch self {
         case .photo(let editor): editor
+        case .layout(let editor): editor
         }
     }
 }

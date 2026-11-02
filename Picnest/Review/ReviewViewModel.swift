@@ -1581,13 +1581,13 @@ final class ReviewViewModel {
     }
 
     /// The folded search text, or nil when it is empty or blank.
-    private static func searchNeedle(_ text: String) -> String? {
+    static func searchNeedle(_ text: String) -> String? {
         let needle = fold(text.trimmingCharacters(in: .whitespacesAndNewlines))
         return needle.isEmpty ? nil : needle
     }
 
     /// Lowercase, no diacritics. `đ` has no decomposition, so it folds to `d` by hand.
-    private static func fold(_ text: String) -> String {
+    static func fold(_ text: String) -> String {
         text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
             .replacingOccurrences(of: "đ", with: "d")
     }

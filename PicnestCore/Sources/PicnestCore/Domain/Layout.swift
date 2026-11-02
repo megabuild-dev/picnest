@@ -92,6 +92,13 @@ public struct GridPreset: Sendable, Hashable, Codable {
 /// The collage templates. Task 5.10 adds the other cases.
 public enum CollageTemplate: String, CaseIterable, Sendable, Codable {
     case twoByTwo
+
+    /// How many photos the template shows.
+    public var cellCount: Int {
+        switch self {
+        case .twoByTwo: return 4
+        }
+    }
 }
 
 /// The page colors. They are fixed sRGB values and never follow Light or Dark. Sampled from mockup 05.

@@ -80,4 +80,9 @@ import Testing
         h.undo()
         #expect(h.current == 1)
     }
+
+    @Test func everyCollageTemplateHasCells() {
+        #expect(CollageTemplate.twoByTwo.cellCount == 4)
+        #expect(CollageTemplate.allCases.allSatisfy { $0.cellCount > 0 })
+    }
 }

@@ -47,6 +47,14 @@ enum EditorSavePanel {
         }
     }
 
+    /// The menu titles of the layout formats.
+    static func title(of format: LayoutExportFormat) -> String {
+        switch format {
+        case .png: "PNG"
+        case .pdf: "PDF"
+        }
+    }
+
     /// Changes the extension of the name and the allowed type when the user picks another format.
     private final class FormatTarget: NSObject {
         let panel: NSSavePanel
