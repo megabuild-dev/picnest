@@ -16,8 +16,8 @@ public struct ImageExportRepository: Sendable {
     public func write(
         _ image: CGImage, to url: URL, format: ExportFormat, quality: Double,
         properties: [CFString: Any], replacing: Bool
-    ) throws {
-        try writeFile(to: url, replacing: replacing) { temp in
+    ) async throws {
+        try await writeFile(to: url, replacing: replacing) { temp in
             try encode(image, to: temp, format: format, quality: quality, properties: properties)
         }
     }
@@ -26,11 +26,11 @@ public struct ImageExportRepository: Sendable {
     /// temp name, the move or replace, and the clean-up: when `encode` throws, the task is cancelled, or the
     /// move fails, the temp file is removed and `url` is unchanged. Errors other than `CancellationError` and
     /// `PhotoExportError` become `cannotWrite`.
-    public func writeFile(to url: URL, replacing: Bool, encode: (URL) throws -> Void) throws {
+    public func writeFile(to url: URL, replacing: Bool, encode: (URL) async throws -> Void) async throws {
         let temp = url.deletingLastPathComponent()
             .appending(path: ".\(url.lastPathComponent).\(UUID().uuidString).tmp", directoryHint: .notDirectory)
         do {
-            try encode(temp)
+            try await encode(temp)
             try Task.checkCancellation()
             if replacing {
                 _ = try FileManager.default.replaceItemAt(url, withItemAt: temp)

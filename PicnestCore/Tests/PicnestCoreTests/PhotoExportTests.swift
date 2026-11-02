@@ -173,7 +173,7 @@ struct PhotoExportTests {
         let dir = try TempDir()
         let image = try TestImages.quadrantImage(width: 20, height: 10)
         let task = Task {
-            try ImageExportRepository().write(
+            try await ImageExportRepository().write(
                 image, to: dir.url.appending(path: "x.jpg"), format: .jpeg, quality: 0.9, properties: [:], replacing: false)
         }
         task.cancel()

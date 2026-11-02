@@ -162,7 +162,7 @@ public final class PhotoEditService: Sendable {
             }
             try Task.checkCancellation()
             let replacing = FileManager.default.fileExists(atPath: destination.path)
-            try writer.write(
+            try await writer.write(
                 edited, to: destination, format: format, quality: Self.exportQuality,
                 properties: Self.exportProperties(from: full.properties, width: edited.width, height: edited.height),
                 replacing: replacing)

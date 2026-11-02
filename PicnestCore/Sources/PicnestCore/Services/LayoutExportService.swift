@@ -73,11 +73,10 @@ public final class LayoutExportService: Sendable {
             let dpi = d.resolution.rawValue
             switch format {
             case .png:
-                try await writePNG(pages, d, fileNames, renderer, dpi, urls, images)
+                try await writePNG(pages, d, fileNames, renderer, dpi, urls, images, unreadable)
             case .pdf:
-                try writePDF(pages, d, fileNames, renderer, dpi, url, images)
+                try await writePDF(pages, d, fileNames, renderer, dpi, url, images, unreadable)
             }
-            if unreadable.isSet { throw PhotoExportError.cannotRead }
             return urls
         }
         return try await withTaskCancellationHandler { try await work.value } onCancel: { work.cancel() }
@@ -111,7 +110,7 @@ public final class LayoutExportService: Sendable {
     /// 1 bitmap at a time. A page that fails removes the files this export made.
     private func writePNG(
         _ pages: [LayoutPage], _ d: LayoutDocument, _ fileNames: [MediaID: String], _ renderer: LayoutRenderer,
-        _ dpi: Int, _ urls: [URL], _ images: LayoutImageProvider
+        _ dpi: Int, _ urls: [URL], _ images: LayoutImageProvider, _ unreadable: Flag
     ) async throws {
         var created: [URL] = []
         do {
@@ -120,8 +119,11 @@ public final class LayoutExportService: Sendable {
                 guard let bitmap = await renderer.image(of: page, document: d, fileNames: fileNames, dpi: dpi, images: images)
                 else { throw PhotoExportError.cannotWrite("The page cannot be drawn.") }
                 try Task.checkCancellation()
-                let replacing = FileManager.default.fileExists(atPath: url.path)
-                try writer.write(
+                // A photo that cannot be read throws here, before a file moves into place.
+                if unreadable.isSet { throw PhotoExportError.cannotRead }
+                // Only the 1 name that the user confirmed may replace a file. A numbered page never does.
+                let replacing = urls.count == 1 && FileManager.default.fileExists(atPath: url.path)
+                try await writer.write(
                     bitmap, to: url, format: .png, quality: 1,
                     properties: [kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi], replacing: replacing)
                 if !replacing { created.append(url) }
@@ -136,10 +138,10 @@ public final class LayoutExportService: Sendable {
     /// All pages go to 1 temp file, page by page. The media box is the page size in points.
     private func writePDF(
         _ pages: [LayoutPage], _ d: LayoutDocument, _ fileNames: [MediaID: String], _ renderer: LayoutRenderer,
-        _ dpi: Int, _ url: URL, _ images: @escaping LayoutImageProvider
-    ) throws {
+        _ dpi: Int, _ url: URL, _ images: LayoutImageProvider, _ unreadable: Flag
+    ) async throws {
         let size = d.pageSize
-        try writer.writeFile(to: url, replacing: FileManager.default.fileExists(atPath: url.path)) { temp in
+        try await writer.writeFile(to: url, replacing: FileManager.default.fileExists(atPath: url.path)) { temp in
             var box = CGRect(x: 0, y: 0, width: size.width, height: size.height)
             guard let consumer = CGDataConsumer(url: temp as CFURL),
                   let ctx = CGContext(consumer: consumer, mediaBox: &box, nil)
@@ -147,20 +149,13 @@ public final class LayoutExportService: Sendable {
             for page in pages {
                 try Task.checkCancellation()
                 ctx.beginPDFPage(nil)
-                // `writeFile` takes a synchronous closure and the renderer is asynchronous. This runs on a
-                // detached task, so waiting here blocks no actor, and the inner task runs on another thread.
-                let target = ContextBox(ctx)
-                Self.wait { await renderer.draw(page, document: d, fileNames: fileNames, in: target.ctx, dpi: dpi, images: images) }
+                await renderer.draw(page, document: d, fileNames: fileNames, in: ctx, dpi: dpi, images: images)
                 ctx.endPDFPage()
             }
             ctx.closePDF()
+            // Thrown here, the temp file is removed and the destination is unchanged.
+            if unreadable.isSet { throw PhotoExportError.cannotRead }
         }
-    }
-
-    private nonisolated static func wait(_ work: @escaping @Sendable () async -> Void) {
-        let done = DispatchSemaphore(value: 0)
-        Task.detached { await work(); done.signal() }
-        done.wait()
     }
 }
 
@@ -170,10 +165,4 @@ private final class Flag: @unchecked Sendable {
     private var value = false
     func set() { lock.withLock { value = true } }
     var isSet: Bool { lock.withLock { value } }
-}
-
-/// Hands the PDF context to the inner task. Only 1 task uses it at a time: the caller waits until it is done.
-private struct ContextBox: @unchecked Sendable {
-    let ctx: CGContext
-    init(_ ctx: CGContext) { self.ctx = ctx }
 }
