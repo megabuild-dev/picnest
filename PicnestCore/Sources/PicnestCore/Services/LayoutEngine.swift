@@ -41,12 +41,17 @@ public enum LayoutEngine {
     private static let minimumCell: Double = 1
 
     /// A contact sheet has a footer (title and note) when `showsCaptions` is on.
-    /// A collage has 1 page with no cells until task 5.10.
+    /// A collage has 1 page. Its cells come from the template, fill their frame, and have no file-name band.
     public static func pages(for d: LayoutDocument) -> [LayoutPage] {
         let size = d.pageSize
         switch d.kind {
         case .collage:
-            return [LayoutPage(size: size, cells: [], footer: nil)]
+            let frames = frames(for: d, size: size)
+            let cells = frames.grid.enumerated().map { i, frame in
+                LayoutCell(frame: frame, imageArea: frame, caption: nil,
+                           mediaID: i < d.photoIDs.count ? d.photoIDs[i] : nil, index: i, fit: .fill)
+            }
+            return [LayoutPage(size: size, cells: cells, footer: frames.footer)]
         case .contactSheet:
             let perPage = max(d.grid.perPage, 1)
             let count = max((d.photoIDs.count + perPage - 1) / perPage, 1)
@@ -73,7 +78,10 @@ public enum LayoutEngine {
     private static func frames(for d: LayoutDocument, size: PageSize) -> (grid: [LayoutRect], footer: LayoutRect?) {
         func build(_ spacing: Double) -> (grid: [LayoutRect], footer: LayoutRect?) {
             let c = contentRect(page: size, margin: d.margin, footer: d.showsCaptions, spacing: spacing)
-            return (gridCells(in: c.grid, columns: d.grid.columns, rows: d.grid.rows, spacing: spacing), c.footer)
+            let rects = d.kind == .collage
+                ? split(d.template.root, in: c.grid, spacing: spacing)
+                : gridCells(in: c.grid, columns: d.grid.columns, rows: d.grid.rows, spacing: spacing)
+            return (rects, c.footer)
         }
         let first = build(d.spacing)
         let fits = first.grid.allSatisfy { $0.width >= minimumCell && $0.height >= minimumCell }
@@ -89,6 +97,28 @@ public enum LayoutEngine {
             (0..<columns).map { c in
                 LayoutRect(x: content.x + Double(c) * (w + spacing), y: content.y + Double(r) * (h + spacing),
                            width: w, height: h)
+            }
+        }
+    }
+
+    /// The leaf rectangles of `node`, depth first, left to right, top to bottom. A negative size becomes 0.
+    public static func split(_ node: SplitNode, in rect: LayoutRect, spacing: Double) -> [LayoutRect] {
+        switch node {
+        case .cell:
+            return [rect]
+        case .row(let children):
+            guard !children.isEmpty else { return [] }
+            let w = max((rect.width - spacing * Double(children.count - 1)) / Double(children.count), 0)
+            return children.enumerated().flatMap { i, child in
+                split(child, in: LayoutRect(x: rect.x + Double(i) * (w + spacing), y: rect.y, width: w, height: rect.height),
+                      spacing: spacing)
+            }
+        case .column(let children):
+            guard !children.isEmpty else { return [] }
+            let h = max((rect.height - spacing * Double(children.count - 1)) / Double(children.count), 0)
+            return children.enumerated().flatMap { i, child in
+                split(child, in: LayoutRect(x: rect.x, y: rect.y + Double(i) * (h + spacing), width: rect.width, height: h),
+                      spacing: spacing)
             }
         }
     }

@@ -89,14 +89,35 @@ public struct GridPreset: Sendable, Hashable, Codable {
     public var perPage: Int { columns * rows }
 }
 
-/// The collage templates. Task 5.10 adds the other cases.
+/// How a collage divides a rectangle. Children share the space equally, with `spacing` between them.
+public indirect enum SplitNode: Sendable, Hashable {
+    case cell
+    case row([SplitNode])
+    case column([SplitNode])
+}
+
+/// The collage templates.
 public enum CollageTemplate: String, CaseIterable, Sendable, Codable {
-    case twoByTwo
+    case twoByTwo, heroLeft, heroTop, twoOverThree
+
+    public var root: SplitNode {
+        switch self {
+        case .twoByTwo: return .column([.row([.cell, .cell]), .row([.cell, .cell])])
+        case .heroLeft: return .row([.cell, .column([.cell, .cell])])
+        case .heroTop: return .column([.cell, .row([.cell, .cell, .cell])])
+        case .twoOverThree: return .column([.row([.cell, .cell]), .row([.cell, .cell, .cell])])
+        }
+    }
 
     /// How many photos the template shows.
-    public var cellCount: Int {
+    public var cellCount: Int { root.cellCount }
+}
+
+extension SplitNode {
+    var cellCount: Int {
         switch self {
-        case .twoByTwo: return 4
+        case .cell: return 1
+        case .row(let c), .column(let c): return c.reduce(0) { $0 + $1.cellCount }
         }
     }
 }

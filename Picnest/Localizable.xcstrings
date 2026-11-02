@@ -2173,6 +2173,26 @@
         }
       }
     },
+    "Large left" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh lớn bên trái"
+          }
+        }
+      }
+    },
+    "Large top" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh lớn phía trên"
+          }
+        }
+      }
+    },
     "Layout" : {
       "localizations" : {
         "vi" : {
@@ -4248,6 +4268,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xoay ảnh"
+          }
+        }
+      }
+    },
+    "Two by two" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hai nhân hai"
+          }
+        }
+      }
+    },
+    "Two over three" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hai trên ba"
           }
         }
       }

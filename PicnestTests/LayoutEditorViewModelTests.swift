@@ -158,7 +158,7 @@ struct LayoutEditorViewModelTests {
         #expect(model.selectedCell == 8)
         model.setGrid(GridPreset(columns: 2, rows: 3))
         #expect(model.selectedCell == 8)
-        model.setKind(.collage)  // a collage has no cell yet
+        model.setKind(.collage)  // cell 8 is not in the 4 cells of the template
         #expect(model.selectedCell == nil)
     }
 
@@ -374,6 +374,38 @@ struct LayoutEditorViewModelTests {
         rig.spy.destination = nil  // the user cancels the panel
         await rig.model.export()
         #expect(rig.model.exportError == nil)
+    }
+
+    @Test func testCollageUsedTextFollowsTheTemplate() throws {
+        let model = try makeRig(count: 6).model
+        model.setKind(.collage)
+        model.setTemplate(.twoOverThree)
+        #expect(model.usedText == "Uses 5 of 6 photos")
+        model.setTemplate(.heroLeft)
+        #expect(model.usedText == "Uses 3 of 6 photos")
+        #expect(model.pages.count == 1 && model.currentPage.cells.count == 3)
+    }
+
+    @Test func testCollageSelectionKeepsACellAndDropsOneOutsideTheTemplate() throws {
+        let model = try makeRig(count: 6).model
+        model.setKind(.collage)
+        model.setTemplate(.heroLeft)
+        model.selectCell(2)
+        model.setTemplate(.twoByTwo)
+        #expect(model.selectedCell == 2)
+        model.setTemplate(.heroLeft)
+        model.selectCell(3)  // photo 3 is not in a cell of the template
+        #expect(model.selectedCell == nil)
+        model.selectCell(2)
+        model.setTemplate(.heroTop)
+        model.selectCell(3)
+        model.moveSelection(by: 5)  // stays at the last cell
+        #expect(model.selectedCell == 3)
+    }
+
+    @Test func testEveryTemplateHasADistinctTitle() {
+        #expect(Set(CollageTemplate.allCases.map(\.title)).count == CollageTemplate.allCases.count)
+        #expect(CollageTemplate.allCases.map(\.title) == ["Two by two", "Large left", "Large top", "Two over three"])
     }
 
     @Test func testUsedTextHasASingularForm() throws {

@@ -99,6 +99,16 @@ struct LayoutExportTests {
         #expect(try fingerprints(f.source, f.ids) == before)
     }
 
+    @Test func collagePDFHasOnePage() async throws {
+        let f = try fixture(photos: 7)
+        let d = LayoutDocument(kind: .collage, template: .twoOverThree, photoIDs: f.ids, resolution: .standard)
+        let url = f.out.appending(path: "Collage.pdf")
+        let written = try await service().export(
+            d, fileNames: [:], source: f.source, to: url, format: .pdf, protected: protected(f.source, f.ids))
+        #expect(written == [url])
+        #expect(try #require(CGPDFDocument(url as CFURL)).numberOfPages == 1)
+    }
+
     @Test func multiPagePNGWritesNumberedFiles() async throws {
         let f = try fixture(photos: 7)
         let before = try fingerprints(f.source, f.ids)

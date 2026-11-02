@@ -45,13 +45,20 @@ extension GridPreset {
     var title: String { "\(columns) × \(rows)" }
 }
 
+extension GridPreset {
+    /// The grid as a split, for the drawn preview.
+    var previewNode: SplitNode {
+        .column(Array(repeating: .row(Array(repeating: .cell, count: columns)), count: rows))
+    }
+}
+
 extension CollageTemplate {
-    /// The cells of the template as columns and rows, for the drawn preview.
-    var previewGrid: GridPreset {
+    var title: String {
         switch self {
-        case .twoByTwo: GridPreset(columns: 2, rows: 2)
+        case .twoByTwo: String(localized: "Two by two")
+        case .heroLeft: String(localized: "Large left")
+        case .heroTop: String(localized: "Large top")
+        case .twoOverThree: String(localized: "Two over three")
         }
     }
-
-    var title: String { previewGrid.title }
 }

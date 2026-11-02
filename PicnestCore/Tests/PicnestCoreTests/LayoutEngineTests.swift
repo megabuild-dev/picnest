@@ -119,4 +119,90 @@ import Testing
             }
         }
     }
+
+    // MARK: - Collage
+
+    private func collage(_ template: CollageTemplate, photos: Int = 6, captions: Bool = false) -> LayoutDocument {
+        var d = doc(photos: photos, captions: captions)
+        d.kind = .collage
+        d.template = template
+        return d
+    }
+
+    @Test func heroLeftGeometry() {
+        let c = LayoutEngine.pages(for: collage(.heroLeft))[0].cells
+        #expect(c.count == 3)
+        #expect(near(c[0].frame.x, 36) && near(c[0].frame.y, 36))
+        #expect(near(c[0].frame.width, 372.9449) && near(c[0].frame.height, 523.2756))
+        for i in 1...2 {
+            #expect(near(c[i].frame.x, 432.9449) && near(c[i].frame.width, 372.9449))
+            #expect(near(c[i].frame.height, 249.6378))
+        }
+        #expect(near(c[1].frame.y, 36) && near(c[2].frame.y, 309.6378))
+    }
+
+    @Test func heroTopGeometry() {
+        let c = LayoutEngine.pages(for: collage(.heroTop))[0].cells
+        #expect(c.count == 4)
+        #expect(near(c[0].frame.width, 769.8898) && near(c[0].frame.height, 249.6378))
+        #expect(near(c[1].frame.y, 309.6378) && near(c[1].frame.width, 240.6299))
+        #expect(near(c[3].frame.maxX, 805.8898))
+    }
+
+    @Test func twoOverThreeGapsEqualTheSpacing() {
+        let c = LayoutEngine.pages(for: collage(.twoOverThree))[0].cells
+        #expect(c.count == 5)
+        #expect(near(c[1].frame.x - c[0].frame.maxX, 24))
+        #expect(near(c[3].frame.x - c[2].frame.maxX, 24))
+        #expect(near(c[4].frame.x - c[3].frame.maxX, 24))
+        #expect(near(c[2].frame.y - c[0].frame.maxY, 24))
+        #expect(near(c[0].frame.width, 372.9449) && near(c[2].frame.width, 240.6299))
+    }
+
+    @Test func cellCountMatchesTheTemplate() {
+        for t in CollageTemplate.allCases {
+            #expect(LayoutEngine.pages(for: collage(t))[0].cells.count == t.cellCount)
+            #expect(LayoutEngine.split(t.root, in: LayoutRect(x: 0, y: 0, width: 100, height: 100), spacing: 0).count
+                == t.cellCount)
+        }
+        #expect(CollageTemplate.allCases.map(\.cellCount) == [4, 3, 4, 5])
+    }
+
+    @Test func collageHasOnePageAndIgnoresExtraPhotos() {
+        let pages = LayoutEngine.pages(for: collage(.twoByTwo, photos: 6))
+        #expect(pages.count == 1)
+        #expect(pages[0].cells.map(\.mediaID) == ["p0", "p1", "p2", "p3"])
+        #expect(pages[0].cells.map(\.index) == [0, 1, 2, 3])
+    }
+
+    @Test func collageWithFewPhotosLeavesEmptyCells() {
+        let cells = LayoutEngine.pages(for: collage(.twoOverThree, photos: 2))[0].cells
+        #expect(cells.map(\.mediaID) == ["p0", "p1", nil, nil, nil])
+    }
+
+    @Test func collageCellsUseFill() {
+        for c in LayoutEngine.pages(for: collage(.heroLeft))[0].cells {
+            #expect(c.fit == .fill && c.caption == nil && c.imageArea == c.frame)
+        }
+        var d = collage(.twoByTwo)
+        d.showsFileNames = true
+        #expect(LayoutEngine.pages(for: d)[0].cells.allSatisfy { $0.caption == nil })
+    }
+
+    @Test func collageFooterFollowsCaptions() {
+        let p = LayoutEngine.pages(for: collage(.twoByTwo, captions: true))[0]
+        #expect(p.footer != nil)
+        #expect(near(p.cells[2].frame.maxY, 519.2756 - 24))
+        #expect(LayoutEngine.pages(for: collage(.twoByTwo))[0].footer == nil)
+    }
+
+    @Test func splitIsDepthFirstAndSpacingTooLargeBecomesZero() {
+        let r = LayoutRect(x: 0, y: 0, width: 100, height: 100)
+        let cells = LayoutEngine.split(.row([.cell, .column([.cell, .cell])]), in: r, spacing: 0)
+        #expect(cells.map(\.x) == [0, 50, 50] && cells.map(\.y) == [0, 0, 50])
+        #expect(LayoutEngine.split(.cell, in: r, spacing: 10) == [r])
+        #expect(LayoutEngine.split(.row([]), in: r, spacing: 10).isEmpty)
+        let tight = LayoutEngine.split(.row([.cell, .cell]), in: r, spacing: 200)
+        #expect(tight.allSatisfy { $0.width == 0 })
+    }
 }

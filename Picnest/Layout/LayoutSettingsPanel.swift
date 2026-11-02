@@ -74,11 +74,11 @@ struct LayoutSettingsPanel: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
             if model.document.kind == .contactSheet {
                 ForEach(GridPreset.presets, id: \.self) { preset in
-                    presetTile(preset, title: preset.title, selected: model.document.grid == preset) { model.setGrid(preset) }
+                    presetTile(preset.previewNode, title: preset.title, selected: model.document.grid == preset) { model.setGrid(preset) }
                 }
             } else {
                 ForEach(CollageTemplate.allCases, id: \.self) { template in
-                    presetTile(template.previewGrid, title: template.title, selected: model.document.template == template) {
+                    presetTile(template.root, title: template.title, selected: model.document.template == template) {
                         model.setTemplate(template)
                     }
                 }
@@ -86,9 +86,9 @@ struct LayoutSettingsPanel: View {
         }
     }
 
-    private func presetTile(_ grid: GridPreset, title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func presetTile(_ node: SplitNode, title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         LayoutChoiceTile(selected: selected, label: Text(verbatim: title), action: action) {
-            PresetPreview(columns: grid.columns, rows: grid.rows).frame(height: 36)
+            PresetPreview(node: node).frame(height: 36)
         }
     }
 
@@ -165,21 +165,22 @@ private struct LayoutChoiceTile<Content: View>: View {
     }
 }
 
-/// A grid of gray rectangles that shows a preset.
+/// Gray rectangles that show a preset. The cells share the space like the layout engine does.
 private struct PresetPreview: View {
-    let columns: Int
-    let rows: Int
+    let node: SplitNode
 
     var body: some View {
-        Grid(horizontalSpacing: 2, verticalSpacing: 2) {
-            ForEach(0..<rows, id: \.self) { _ in
-                GridRow {
-                    ForEach(0..<columns, id: \.self) { _ in
-                        Rectangle().fill(Theme.placeholderGlyph.color.opacity(0.6))
-                    }
-                }
-            }
+        Self.view(node).padding(.horizontal, 6)
+    }
+
+    private static func view(_ node: SplitNode) -> AnyView {
+        switch node {
+        case .cell:
+            AnyView(Rectangle().fill(Theme.placeholderGlyph.color.opacity(0.6)))
+        case .row(let children):
+            AnyView(HStack(spacing: 2) { ForEach(children.indices, id: \.self) { view(children[$0]) } })
+        case .column(let children):
+            AnyView(VStack(spacing: 2) { ForEach(children.indices, id: \.self) { view(children[$0]) } })
         }
-        .padding(.horizontal, 6)
     }
 }

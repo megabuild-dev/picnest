@@ -94,6 +94,23 @@ struct LayoutRendererTests {
         }
     }
 
+    @Test func collageFillHasNoBackgroundInsideACell() async throws {
+        var d = document()
+        d.kind = .collage
+        d.template = .heroLeft
+        let page = LayoutEngine.pages(for: d)[0]
+        let image = try await render(page, d, images: try solidRed())
+        for cell in page.cells {
+            let f = cell.frame
+            for (x, y) in [(f.x + 2, f.y + 2), (f.maxX - 3, f.y + 2), (f.x + 2, f.maxY - 3), (f.maxX - 3, f.maxY - 3),
+                           (f.x + f.width / 2, f.y + f.height / 2)] {
+                #expect(near(pixel(image, x, y), red), "inside \(x),\(y)")
+            }
+        }
+        let a = page.cells[0].frame, b = page.cells[1].frame
+        #expect(near(pixel(image, (a.maxX + b.x) / 2, a.y + a.height / 2), charcoal))
+    }
+
     @Test func quadrantImageIsUpright() async throws {
         let d = document()
         let page = LayoutEngine.pages(for: d)[0]
