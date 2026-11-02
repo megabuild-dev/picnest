@@ -107,26 +107,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         environment?.appearance.applyCurrent()
     }
 
-    /// A quit (also the Restart button) stops while a sort or an export runs, because a quit in the middle of a
-    /// write leaves a temp file or part of a multi-page export (final review I1). Unexported photo edits need a
-    /// yes. The layout draft saves at once.
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+    /// A quit (also the Restart button) and the close of the window stop while a sort or an export runs, because
+    /// leaving in the middle of a write leaves a temp file or part of a multi-page export (final review I1).
+    /// Unexported photo edits need a yes. The layout draft saves at once. 1 place for both ways out.
+    func confirmLeaving() -> Bool {
         if Self.terminateReply(sortIsRunning: isSortRunning()) == .terminateCancel {
             relauncher.cancel()
             showSortRunningAlert()
-            return .terminateCancel
+            return false
         }
         if isExportRunning() {
             relauncher.cancel()
             showExportRunningAlert()
-            return .terminateCancel
+            return false
         }
         if hasUnexportedEdits(), !confirmQuitWithEdits() {
             relauncher.cancel()
-            return .terminateCancel
+            return false
         }
         flushEditors()
-        return .terminateNow
+        return true
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        confirmLeaving() ? .terminateNow : .terminateCancel
     }
 
     /// Runs only when the quit goes ahead.

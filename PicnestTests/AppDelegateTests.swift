@@ -66,6 +66,42 @@ struct AppDelegateTests {
         #expect(alerts.flushed == 1 && alerts.asked == 0)
     }
 
+    // MARK: - Window close (re-review I-A)
+
+    @Test func closingTheWindowRunsTheQuitChecks() {
+        let (busy, alerts) = delegate(export: true)
+        #expect(!busy.confirmLeaving())
+        #expect(alerts.export == 1 && alerts.flushed == 0)
+        let (declined, other) = delegate(edits: true, confirm: false)
+        #expect(!declined.confirmLeaving() && other.asked == 1 && other.flushed == 0)
+        let (idle, third) = delegate()
+        #expect(idle.confirmLeaving() && third.flushed == 1)
+    }
+
+    @MainActor final class OriginalDelegate: NSObject, NSWindowDelegate {
+        var asked = 0
+        var answer = true
+        func windowShouldClose(_ sender: NSWindow) -> Bool { asked += 1; return answer }
+    }
+
+    @Test func windowDelegateAsksTheGuardThenTheOriginal() {
+        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: true)
+        let original = OriginalDelegate()
+        window.delegate = original
+        var allowed = false
+        let guardDelegate = WindowCloseDelegate(allow: { allowed })
+        guardDelegate.install(on: window)
+        #expect(window.delegate === guardDelegate)
+        #expect(!guardDelegate.windowShouldClose(window) && original.asked == 0)
+        allowed = true
+        #expect(guardDelegate.windowShouldClose(window) && original.asked == 1)
+        original.answer = false
+        #expect(!guardDelegate.windowShouldClose(window))
+        #expect(guardDelegate.responds(to: #selector(NSWindowDelegate.windowShouldClose(_:))))
+        guardDelegate.install(on: window)  // twice: still wraps the original only
+        #expect(guardDelegate.original === original)
+    }
+
     @Test func delegateAsksTheLibrary() throws {
         let temp = try TempDir()
         let suite = TestDefaults()
