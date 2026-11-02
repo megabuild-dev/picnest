@@ -3976,28 +3976,6 @@
         }
       }
     },
-    "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Mục ưa thích và bộ sưu tập của bạn cũng sẽ mất."
-          }
-        }
-      },
-      "extractionState" : "stale"
-    },
-    "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too. The last sort can no longer be undone." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Mục ưa thích và bộ sưu tập của bạn cũng sẽ mất. Không thể hoàn tác lần sắp xếp trước nữa."
-          }
-        }
-      },
-      "extractionState" : "stale"
-    },
     "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites, collections, and layout draft are lost too." : {
       "localizations" : {
         "vi" : {
