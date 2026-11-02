@@ -3,6 +3,19 @@
     <channel>
         <title>Picnest</title>
         <item>
+            <title>1.2</title>
+            <pubDate>Mon, 02 Nov 2026 11:05:30 +0700</pubDate>
+            <link>https://github.com/megabuild-dev/picnest</link>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>1.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:releaseNotesLink>https://megabuild-dev.github.io/picnest/Picnest-1.2.md</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/megabuild-dev/picnest/releases/download/updates/Picnest-1.2.dmg" length="193187701" type="application/octet-stream" sparkle:edSignature="KAXkpY+2WOsvISZbs991EEieqtvfPqbtxykPhoPXP/2Udjclui+VUrrQfVEjFErRabH4auc2CFCCzrGcU680CA=="/>
+            <sparkle:deltas>
+                <enclosure url="https://github.com/megabuild-dev/picnest/releases/download/updates/Picnest3-2.delta" sparkle:deltaFrom="2" length="1894626" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="941872" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="pjdqICfOGmoJeKLEiG8jZlVYdL+C31aLkXVONlIcdFhpW0OoBbY7GJ5MVg7OzilZ+oODWO85zF3fSTWd8V5gBg=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>1.1</title>
             <pubDate>Fri, 30 Oct 2026 07:53:48 +0700</pubDate>
             <link>https://github.com/megabuild-dev/picnest</link>
