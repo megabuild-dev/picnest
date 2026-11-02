@@ -92,14 +92,14 @@ final class ReviewViewModel {
     var selectedItem: SidebarItem = .all {
         didSet {
             guard selectedItem != oldValue, !isRevertingItem else { return }
-            if let editor {
-                // The photo editor holds this item. Keep it until the editor closes (it may ask first).
+            if let activeEditor {
+                // The open editor holds this item. Keep it until the editor closes (it may ask first).
                 let requested = selectedItem
                 isRevertingItem = true
                 selectedItem = oldValue
                 isRevertingItem = false
                 itemAfterClose = requested
-                editor.requestClose()
+                activeEditor.session.requestClose()
                 return
             }
             // The issue filter belongs to the Needs Review view only.
@@ -213,8 +213,12 @@ final class ReviewViewModel {
     @ObservationIgnored private let revealURLs: @MainActor ([URL]) -> Void
     @ObservationIgnored private let photoEdits: PhotoEditService
     @ObservationIgnored private let chooseExportDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
-    /// The photo editor, or nil. It opens with `openEditor` and closes with `closeEditor`.
-    private(set) var editor: PhotoEditorViewModel?
+    /// The editor that fills the window, or nil. It opens with `openEditor` and closes with `closeEditor`.
+    private(set) var activeEditor: ActiveEditor?
+    /// The photo editor, or nil when none or another editor is open.
+    var editor: PhotoEditorViewModel? {
+        if case .photo(let editor)? = activeEditor { editor } else { nil }
+    }
     /// The sidebar item that the user chose while the editor was open. It shows when the editor closes.
     @ObservationIgnored private var itemAfterClose: SidebarItem?
     @ObservationIgnored private var isRevertingItem = false
@@ -968,7 +972,7 @@ final class ReviewViewModel {
 
     // MARK: - Photo editor (UI redesign, Phase 4)
 
-    var isEditing: Bool { editor != nil }
+    var isEditing: Bool { activeEditor != nil }
 
     /// True if the photo editor can open `id`: a readable image that is not in the Trash, outside Recently
     /// Deleted, while no files move and no editor is open.
@@ -996,19 +1000,19 @@ final class ReviewViewModel {
             source: source, mediaIDs: Set(mediaByID.values.map(\.relativePath)),
             otherPaths: session.trashed.map(\.trashPath))
         itemAfterClose = nil
-        editor = PhotoEditorViewModel(
+        activeEditor = .photo(PhotoEditorViewModel(
             photos: photos, start: start, service: photoEdits, protected: protected,
             chooseDestination: chooseExportDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
             onClose: { [weak self] in self?.closeEditor() },
             onCancelClose: { [weak self] in self?.itemAfterClose = nil },
-            readSize: { [weak self] id in await self?.pixelSize(of: id) })
+            readSize: { [weak self] id in await self?.pixelSize(of: id) }))
     }
 
     /// Closes the photo editor and drops its edit. The selection stays. A sidebar item that the user chose
     /// meanwhile shows now.
     func closeEditor() {
-        editor = nil
+        activeEditor = nil
         if let item = itemAfterClose {
             itemAfterClose = nil
             selectedItem = item

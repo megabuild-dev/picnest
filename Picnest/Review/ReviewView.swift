@@ -14,7 +14,7 @@ struct ReviewView: View {
     @SceneStorage("inspectorShown") private var inspectorShown = true
     /// Grid or list. Kept for the app.
     @AppStorage(LibraryLayout.storageKey) private var layout: LibraryLayout = .grid
-    /// The sidebar hides while the photo editor shows (the editor fills the window).
+    /// The sidebar hides while an editor shows (the editor fills the window).
     @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     private let review: ReviewService
@@ -55,11 +55,10 @@ struct ReviewView: View {
             SidebarView(model: model, preferences: preferences)
                 .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
         } detail: {
-            if let editor = model.editor {
-                PhotoEditorView(model: editor, library: model)
-                    .navigationTitle("Edit Photo")
+            if let active = model.activeEditor {
+                editorDetail(active)
                     .toolbar(removing: .sidebarToggle)
-                    .toolbar { editorToolbar(editor) }
+                    .toolbar { editorToolbar(active.session) }
             } else {
                 detail
                     .background(Theme.background.color)
@@ -251,7 +250,16 @@ struct ReviewView: View {
     }
 
     /// Back and Redo only: no avatar, no tab bar, no search (spec 6).
-    @ToolbarContentBuilder private func editorToolbar(_ editor: PhotoEditorViewModel) -> some ToolbarContent {
+    /// The body of the open editor.
+    @ViewBuilder private func editorDetail(_ active: ActiveEditor) -> some View {
+        switch active {
+        case .photo(let editor):
+            PhotoEditorView(model: editor, library: model)
+                .navigationTitle("Edit Photo")
+        }
+    }
+
+    @ToolbarContentBuilder private func editorToolbar(_ editor: any EditorSession) -> some ToolbarContent {
         ToolbarItem(placement: .navigation) {
             Button("Back to Photos", systemImage: "chevron.left", action: editor.requestClose)
                 .labelStyle(.iconOnly)

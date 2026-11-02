@@ -67,6 +67,7 @@
 		AF49AC18E55A4B1C228BCC6E /* EditorToolRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5A46ABA9A9B9CA6C567ED0 /* EditorToolRail.swift */; };
 		B7E179E77B6BDE70A861EA2E /* SortSheetParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B16AA15BDC3E8BD4C0603E /* SortSheetParts.swift */; };
 		BA186261E326AC460EA95727 /* NeedsReviewSelectionContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7734199ABA90DCEDB87440D /* NeedsReviewSelectionContent.swift */; };
+		BAB4CB7E2732E09588A201E2 /* ActiveEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0275D6F2C224E6884D2173F /* ActiveEditor.swift */; };
 		BC3A30688044029B80F5A1C1 /* FavoriteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58751FAD1F66B9053F1E52FE /* FavoriteButton.swift */; };
 		BF5984936F5251EDFE074BE8 /* AppearanceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6113378D0D5A7B5F61A2407 /* AppearanceStoreTests.swift */; };
 		C0C910198431EECC707F81BE /* PicnestCore in Frameworks */ = {isa = PBXBuildFile; productRef = 30B03628CE17F8732AD5C557 /* PicnestCore */; };
@@ -167,6 +168,7 @@
 		A156C5AD239F23A8E95FF6F8 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
 		A23A226DCC3C8650C439A15E /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		A7C2B7BBF113F2DC262B2B68 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		B0275D6F2C224E6884D2173F /* ActiveEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveEditor.swift; sourceTree = "<group>"; };
 		B22D4C3F95177E0A17BBD52D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		BA197D7AC0310B6062CC03C6 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		BB45CFBAAB8E36763E581EF2 /* SidebarPreferencesBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarPreferencesBar.swift; sourceTree = "<group>"; };
@@ -267,6 +269,7 @@
 		64F0574028015946FD0C568C /* Editor */ = {
 			isa = PBXGroup;
 			children = (
+				B0275D6F2C224E6884D2173F /* ActiveEditor.swift */,
 				961CAE3FEE059F362C23F8FE /* EditorCanvas.swift */,
 				363018BD1F7C6D262FEBDEA5 /* EditorFilmstrip.swift */,
 				F1FB599B0E5FD01A2E7F38E1 /* EditorPanel.swift */,
@@ -573,6 +576,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BAB4CB7E2732E09588A201E2 /* ActiveEditor.swift in Sources */,
 				ADC1EA164596F3754346FF53 /* AddPhotosSheet.swift in Sources */,
 				C9A3BD8C73107AE12AB64A4C /* AppDelegate.swift in Sources */,
 				78EC7D52544D30719D020C2A /* AppEnvironment.swift in Sources */,

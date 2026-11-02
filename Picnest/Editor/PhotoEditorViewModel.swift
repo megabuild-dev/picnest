@@ -19,7 +19,7 @@ enum EditorTool: CaseIterable {
 /// with its undo history, the preview, and the export. The edit applies to 1 photo at a time: a change of photo
 /// starts a new history, and asks first when the edit has changes. The original file is never changed.
 @MainActor @Observable
-final class PhotoEditorViewModel {
+final class PhotoEditorViewModel: EditorSession {
     /// The action that waits for **Discard Edits**.
     private enum Pending {
         case show(MediaID)
