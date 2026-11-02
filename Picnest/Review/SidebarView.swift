@@ -1,17 +1,15 @@
 import PicnestCore
 import SwiftUI
 
-/// Review sidebar (spec 3.3): sections Review, Categories, Tools and Other, each item with a count.
+/// Review sidebar (spec 4.2): sections Library, Collections, Categories, Tools and Recently Deleted, each item with a count.
 /// Category rows take dropped photos, drag to change the order, and have a context menu: Rename,
 /// Change Icon, Merge Into…, Delete.
 struct SidebarView: View {
     let model: ReviewViewModel
+    /// The appearance and language bar at the bottom. Nil in previews.
+    var preferences: SidebarPreferences?
 
-    @State private var dropTarget: CategoryID?
-    @State private var renaming: CategoryID?
-    @State private var nameDraft = ""
-    @State private var editingIcon: CategoryID?
-    @State private var deleting: CategoryID?
+    @State private var dropTarget: UUID?
 
     private var selection: Binding<ReviewViewModel.SidebarItem?> {
         Binding(get: { model.selectedItem }, set: { if let item = $0 { model.selectedItem = item } })
@@ -20,12 +18,17 @@ struct SidebarView: View {
     var body: some View {
         let counts = model.sidebarCounts
         return List(selection: selection) {
-            Section("Review") {
-                row(counts, .all, "All photos", icon: .symbol("photo.on.rectangle", .secondary))
-                row(counts, .notSure, "Not sure", icon: .symbol("exclamationmark.triangle.fill", ReviewStyle.amber))
-                row(counts, .changedByYou, "Changed by you", icon: .symbol("checkmark", ReviewStyle.green))
-            }
-            Section("Categories") {
+            Section {
+                row(counts, .all, "All Photos", icon: .symbol("photo.on.rectangle", Theme.textSecondary.color))
+                row(counts, .notSure, "Needs Review", icon: .symbol("exclamationmark.triangle.fill", Theme.needsReview.color))
+                row(counts, .favorites, "Favorites", icon: .symbol("heart", Theme.textSecondary.color))
+            } header: { sectionHeader("Library") }
+            Section {
+                ForEach(model.collections) { collection in
+                    collectionRow(counts, collection)
+                }
+            } header: { collectionsHeader }
+            Section {
                 ForEach(model.categories) { category in
                     categoryRow(counts, category)
                 }
@@ -36,117 +39,121 @@ struct SidebarView: View {
                     Label("New Category…", systemImage: "plus")
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary.color)
                 .selectionDisabled()
-            }
-            Section("Tools") {
-                row(counts, .duplicates, "Duplicates", icon: .symbol("square.on.square", .secondary))
-            }
-            Section("Other") {
-                row(counts, .dontMove, "Don't move", icon: .symbol("nosign", .secondary))
-                row(counts, .videos, "Videos", icon: .symbol("video", .secondary))
-                row(counts, .unreadable, "Unreadable", icon: .symbol("exclamationmark.octagon", .secondary))
+            } header: { sectionHeader("Categories") }
+            Section {
+                row(counts, .duplicates, "Duplicates", icon: .symbol("square.on.square", Theme.textSecondary.color))
+                row(counts, .dontMove, "Don't move", icon: .symbol("nosign", Theme.textSecondary.color))
+                row(counts, .videos, "Videos", icon: .symbol("video", Theme.textSecondary.color))
+                row(counts, .unreadable, "Unreadable", icon: .symbol("exclamationmark.octagon", Theme.textSecondary.color))
+            } header: { sectionHeader("Tools") }
+            Section {
+                row(counts, .recentlyDeleted, "Recently Deleted", icon: .symbol("trash", Theme.textSecondary.color))
             }
         }
         .listStyle(.sidebar)
-        .alert("Rename Category", isPresented: isPresented($renaming)) {
-            TextField("Name", text: $nameDraft)
-            Button("Rename") { if let renaming { model.renameCategory(renaming, to: nameDraft) } }
-            Button("Cancel", role: .cancel) {}
-        }
-        .confirmationDialog(deletingTitle, isPresented: isPresented($deleting), titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { if let deleting { Task { await model.deleteCategory(deleting) } } }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(deleting.map(model.deleteMessage(for:)) ?? "")
+        .scrollContentBackground(.hidden)
+        .background(Theme.sidebar.color)
+        .tint(Theme.accent.color)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let preferences {
+                SidebarPreferencesBar(appearance: preferences.appearance, language: preferences.language,
+                                      relauncher: preferences.relauncher)
+            }
         }
     }
 
-    private var deletingTitle: String { deleting.map(model.deleteConfirmation(for:)) ?? "" }
+    /// A section title as in the mockups: regular weight, secondary color, no capitals.
+    private func sectionHeader(_ title: LocalizedStringKey) -> some View {
+        Text(title).font(.system(size: 13)).foregroundStyle(Theme.textSecondary.color)
+    }
+
+    /// The title of the Collections section, with the button that makes a collection.
+    private var collectionsHeader: some View {
+        HStack {
+            sectionHeader("Collections")
+            Spacer(minLength: 0)
+            Button {
+                model.requestNewCollection(adding: [])
+            } label: {
+                Label("New Collection", systemImage: "plus").labelStyle(.iconOnly)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Theme.textSecondary.color)
+            .help("New Collection")
+        }
+    }
+
+    private func collectionRow(_ counts: [ReviewViewModel.SidebarItem: Int], _ collection: PhotoCollection) -> some View {
+        let id = collection.id
+        return row(counts, .collection(id), Text(verbatim: collection.name),
+                   icon: .symbol("square.stack", Theme.textSecondary.color))
+            .sidebarDropTarget(id, current: $dropTarget) { model.dropOnCollection($0, id) }
+            .contextMenu {
+                Button("Rename…") { model.requestRenameCollection(id) }
+                CreateLayoutButton(model: model, origin: .collection(id))
+                Divider()
+                Button("Delete…", role: .destructive) { model.deletingCollection = id }
+            }
+    }
 
     private func categoryRow(_ counts: [ReviewViewModel.SidebarItem: Int], _ category: PicnestCore.Category) -> some View {
         let id = category.id
-        return row(counts, .category(id), category.displayName, icon: .emoji(category.emoji))
-            .background {
-                if dropTarget == id {
-                    RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.22))
-                        .padding(-4)
-                }
-            }
-            .dropDestination(for: MediaIDs.self) { items, _ in
-                model.drop(items.flatMap(\.ids), on: id)
-            } isTargeted: { targeted in
-                if targeted { dropTarget = id } else if dropTarget == id { dropTarget = nil }
-            }
+        return row(counts, .category(id), Text(verbatim: category.displayName), icon: .emoji(category.emoji))
+            .sidebarDropTarget(id, current: $dropTarget) { model.drop($0, on: id) }
             .contextMenu {
-                Button("Rename…") {
-                    nameDraft = category.displayName
-                    renaming = id
-                }
-                Button("Change Icon…") { editingIcon = id }
+                Button("Rename…") { model.editingCategory = id }
+                Button("Change Icon…") { model.editingCategory = id }
                 Menu("Merge Into…") {
                     ForEach(model.mergeTargets(for: id)) { target in
-                        Button("\(target.emoji) \(target.displayName)") { model.merge(id, into: target.id) }
+                        Button { model.merge(id, into: target.id) } label: {
+                            Text(verbatim: "\(target.emoji) \(target.displayName)")
+                        }
                     }
                 }
                 .disabled(model.mergeTargets(for: id).isEmpty)
+                CreateLayoutButton(model: model, origin: .category(id))
                 Divider()
                 Button("Reveal in Finder") { model.showCategoryInFinder(id) }
                     .disabled(model.categoryFolder(id) == nil)
                 Divider()
-                Button("Delete…", role: .destructive) { deleting = id }
+                Button("Delete…", role: .destructive) { model.deletingCategory = id }
                     .disabled(!model.canDeleteCategory)
-            }
-            .popover(isPresented: Binding(
-                get: { editingIcon == id }, set: { if !$0, editingIcon == id { editingIcon = nil } }
-            ), arrowEdge: .trailing) {
-                EmojiField(current: category.emoji) { emoji in
-                    if model.setEmoji(id, emoji) { editingIcon = nil }
-                }
             }
     }
 
-    private func row(_ counts: [ReviewViewModel.SidebarItem: Int], _ item: ReviewViewModel.SidebarItem, _ title: String, icon: SidebarIcon) -> some View {
+    private func row(_ counts: [ReviewViewModel.SidebarItem: Int], _ item: ReviewViewModel.SidebarItem, _ title: LocalizedStringKey, icon: SidebarIcon) -> some View {
+        row(counts, item, Text(title), icon: icon)
+    }
+
+    /// A row whose title is already a `Text`: a category name is data and stays as the user typed it.
+    private func row(_ counts: [ReviewViewModel.SidebarItem: Int], _ item: ReviewViewModel.SidebarItem, _ title: Text, icon: SidebarIcon) -> some View {
         Label {
-            Text(title).lineLimit(1)
+            title.lineLimit(1)
         } icon: {
             icon
         }
         .badge(Text((counts[item] ?? 0).formatted()))
         .tag(item)
     }
-
-    /// A Bool binding that is true while `value` is set. Setting it to false clears `value`.
-    private func isPresented<T>(_ value: Binding<T?>) -> Binding<Bool> {
-        Binding(get: { value.wrappedValue != nil }, set: { if !$0 { value.wrappedValue = nil } })
-    }
 }
 
-/// The Change Icon popover: a field for 1 emoji. Input that is not exactly 1 emoji is ignored.
-private struct EmojiField: View {
-    let current: String
-    let onSubmit: (String) -> Void
-
-    @State private var text = ""
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Type or paste 1 emoji").font(.system(size: 12)).foregroundStyle(.secondary)
-            HStack {
-                TextField(current, text: $text)
-                    .font(.system(size: 22))
-                    .multilineTextAlignment(.center)
-                    .frame(width: 56)
-                    .focused($isFocused)
-                    .onSubmit { onSubmit(text) }
-                Button("Set") { onSubmit(text) }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!ReviewViewModel.isSingleEmoji(text.trimmingCharacters(in: .whitespaces)))
+private extension View {
+    /// A sidebar row that takes dropped photos. It shows the accent highlight while a drag is over it.
+    /// `current` is the id of the row that is under the drag, shared by all rows.
+    func sidebarDropTarget(_ id: UUID, current: Binding<UUID?>, perform: @escaping ([MediaID]) -> Bool) -> some View {
+        background {
+            if current.wrappedValue == id {
+                RoundedRectangle(cornerRadius: 6).fill(Theme.accent.color.opacity(0.22))
+                    .padding(-4)
             }
         }
-        .padding(12)
-        .onAppear { isFocused = true }
+        .dropDestination(for: MediaIDs.self) { items, _ in
+            perform(items.flatMap(\.ids))
+        } isTargeted: { targeted in
+            if targeted { current.wrappedValue = id } else if current.wrappedValue == id { current.wrappedValue = nil }
+        }
     }
 }
 
@@ -172,7 +179,7 @@ private struct SidebarIcon: View {
             }
         }
         .frame(width: 22, height: 22)
-        .background(.background, in: RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(0.08), lineWidth: 0.5))
+        .background(Theme.background.color, in: RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.textPrimary.color.opacity(0.08), lineWidth: 0.5))
     }
 }

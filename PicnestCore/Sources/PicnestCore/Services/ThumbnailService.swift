@@ -17,7 +17,22 @@ public final class ThumbnailService: Sendable {
     /// The thumbnail of `media` (at `source` + its relative path), or nil if it cannot be decoded.
     /// Decoding runs off the caller's actor.
     public func thumbnail(for media: MediaFile, source: URL, maxPixel: Int) async -> CGImage? {
-        await images.thumbnail(for: source.appending(path: media.relativePath), maxPixel: maxPixel)
+        await thumbnail(at: source.appending(path: media.relativePath), maxPixel: maxPixel)
+    }
+
+    /// The thumbnail of the image file at `url`, or nil if it cannot be decoded. For a file that is not
+    /// under a source folder, such as a photo in the Trash.
+    public func thumbnail(at url: URL, maxPixel: Int) async -> CGImage? {
+        await images.thumbnail(for: url, maxPixel: maxPixel)
+    }
+
+    /// The pixel size of `media`, read from the image properties off the caller's actor. Nil if unreadable.
+    public func pixelSize(of media: MediaFile, source: URL) async -> PixelSize? {
+        let url = source.appending(path: media.relativePath)
+        let images = images
+        return await Task.detached(priority: .utility) {
+            images.pixelSize(for: url).map { PixelSize(width: $0.width, height: $0.height) }
+        }.value
     }
 
     /// 2 × the tile width in points (for Retina screens), rounded up to the next step.

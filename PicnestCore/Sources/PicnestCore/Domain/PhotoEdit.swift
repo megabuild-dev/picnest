@@ -1,0 +1,197 @@
+import Foundation
+import UniformTypeIdentifiers
+
+/// An adjustment slider of the photo editor. Each one reads -100…100.
+public enum AdjustmentKind: String, CaseIterable, Sendable {
+    case exposure, contrast, warmth, saturation
+}
+
+/// A rectangle in 0…1 units of the frame. The origin is the top left.
+public struct NormalizedRect: Sendable, Hashable {
+    public var x: Double
+    public var y: Double
+    public var width: Double
+    public var height: Double
+
+    public init(x: Double, y: Double, width: Double, height: Double) {
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    }
+
+    public static let full = NormalizedRect(x: 0, y: 0, width: 1, height: 1)
+}
+
+public enum AspectRatio: String, CaseIterable, Sendable, Hashable {
+    case original, freeform, square, fourThree, threeTwo, sixteenNine
+
+    /// Width ÷ height in pixels, or `nil` for `freeform`. A fixed ratio follows
+    /// the orientation of `frame`: a portrait frame gives 3:4, not 4:3.
+    public func ratio(frame: PixelSize, original: PixelSize) -> Double? {
+        let landscape = frame.width >= frame.height
+        func oriented(_ a: Double, _ b: Double) -> Double {
+            let long = max(a, b), short = min(a, b)
+            return landscape ? long / short : short / long
+        }
+        switch self {
+        case .freeform: return nil
+        case .square: return 1
+        case .original: return oriented(Double(original.width), Double(original.height))
+        case .fourThree: return oriented(4, 3)
+        case .threeTwo: return oriented(3, 2)
+        case .sixteenNine: return oriented(16, 9)
+        }
+    }
+}
+
+/// The edit recipe of one photo. The pipeline order is: quarter turns, flips, straighten, crop, adjustments,
+/// all in the frame the user sees. `straighten` is clockwise on screen. `crop` is in that same frame.
+public struct PhotoEdit: Sendable, Hashable {
+    public var straighten: Double = 0 {
+        didSet { straighten = min(max(straighten, -45), 45) }
+    }
+    public var quarterTurns: Int = 0 {
+        didSet { quarterTurns = ((quarterTurns % 4) + 4) % 4 }
+    }
+    public var flipHorizontal = false
+    public var flipVertical = false
+    public var crop: NormalizedRect = .full
+    public var aspect: AspectRatio = .original
+    private var adjustments: [AdjustmentKind: Int] = [:]
+
+    public init() {}
+
+    public static let original = PhotoEdit()
+
+    public var isOriginal: Bool { self == .original }
+
+    public subscript(_ kind: AdjustmentKind) -> Int {
+        get { adjustments[kind] ?? 0 }
+        set {
+            let v = min(max(newValue, -100), 100)
+            adjustments[kind] = v == 0 ? nil : v
+        }
+    }
+
+    public mutating func rotate(clockwise: Bool) {
+        let c = crop
+        // The model is flip(turn(image)). One flip reverses the turn, so the stored count goes the other way.
+        let mirrored = flipHorizontal != flipVertical
+        if clockwise {
+            crop = NormalizedRect(x: 1 - c.y - c.height, y: c.x, width: c.height, height: c.width)
+            quarterTurns += mirrored ? 3 : 1
+        } else {
+            crop = NormalizedRect(x: c.y, y: 1 - c.x - c.width, width: c.height, height: c.width)
+            quarterTurns += mirrored ? 1 : 3
+        }
+    }
+
+    public mutating func flip(horizontal: Bool) {
+        // The straighten turns the frame after the flips. A mirror reverses a turn, so the angle changes
+        // sign: a flip then keeps the same picture, mirrored.
+        straighten = -straighten
+        if horizontal {
+            flipHorizontal.toggle()
+            crop.x = 1 - crop.x - crop.width
+        } else {
+            flipVertical.toggle()
+            crop.y = 1 - crop.y - crop.height
+        }
+    }
+}
+
+public enum ExportFormat: String, ExportFileFormat {
+    case jpeg, heic, png
+
+    public var utType: UTType {
+        switch self {
+        case .jpeg: return .jpeg
+        case .heic: return .heic
+        case .png: return .png
+        }
+    }
+
+    public var fileExtension: String {
+        switch self {
+        case .jpeg: return "jpg"
+        case .heic: return "heic"
+        case .png: return "png"
+        }
+    }
+
+    /// The format that suits the original file. WebP cannot be written, so it goes to JPEG.
+    public static func defaultFormat(forExtension ext: String) -> ExportFormat {
+        switch ext.lowercased() {
+        case "heic", "heif": return .heic
+        case "png", "tiff", "tif", "gif": return .png
+        default: return .jpeg
+        }
+    }
+}
+
+/// Undo and redo for any value. `show` changes `current` with no step,
+/// so a drag can show many values and `commit` them as 1 step.
+public struct History<Value: Hashable & Sendable>: Sendable {
+    public private(set) var current: Value
+    private var committed: Value
+    private let original: Value
+    private var past: [Value] = []
+    private var future: [Value] = []
+    private let limit: Int
+
+    public init(_ original: Value, limit: Int = 100) {
+        self.original = original
+        self.current = original
+        self.committed = original
+        self.limit = max(limit, 1)
+    }
+
+    public var canUndo: Bool { !past.isEmpty }
+    public var canRedo: Bool { !future.isEmpty }
+    /// True when `show` changed `current` and no `commit` followed. `undo` drops that value.
+    public var hasPendingChange: Bool { current != committed }
+
+    public mutating func show(_ e: Value) { current = e }
+
+    public mutating func commit() {
+        guard current != committed else { return }
+        past.append(committed)
+        if past.count > limit { past.removeFirst(past.count - limit) }
+        committed = current
+        future.removeAll()
+    }
+
+    public mutating func set(_ e: Value) {
+        show(e)
+        commit()
+    }
+
+    /// Sets the value given to `init`, as 1 undoable step.
+    public mutating func reset() { set(original) }
+
+    public mutating func undo() {
+        if current != committed {  // drop a value that was shown but not committed
+            current = committed
+            return
+        }
+        guard let previous = past.popLast() else { return }
+        future.append(committed)
+        committed = previous
+        current = previous
+    }
+
+    public mutating func redo() {
+        guard let next = future.popLast() else { return }
+        past.append(committed)
+        committed = next
+        current = next
+    }
+}
+
+/// Undo and redo for a `PhotoEdit`.
+public typealias EditHistory = History<PhotoEdit>
+
+extension History where Value == PhotoEdit {
+    public init(limit: Int = 100) { self.init(.original, limit: limit) }
+}

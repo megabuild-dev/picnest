@@ -17,11 +17,31 @@ struct ThumbnailServiceTests {
         #expect(again === thumb)  // The shared cache holds it.
     }
 
+    @Test func thumbnailAtURLReadsAnyFile() async throws {
+        let dir = try TempDir()
+        let url = dir.url.appending(path: "in-trash.jpg")
+        try TestImages.writeJPEG(to: url, color: (5, 60, 120), size: 900)
+        let service = ThumbnailService(images: ImageRepository())
+        let thumb = try #require(await service.thumbnail(at: url, maxPixel: 200))
+        #expect(max(thumb.width, thumb.height) <= 200)
+        #expect(await service.thumbnail(at: dir.url.appending(path: "none.jpg"), maxPixel: 200) == nil)
+    }
+
     @Test func missingFileGivesNil() async {
         let media = MediaFile(id: "none.jpg", relativePath: "none.jpg", kind: .image, size: 1,
                               modified: Date(timeIntervalSince1970: 0))
         let source = URL(filePath: "/nonexistent-\(UUID().uuidString)", directoryHint: .isDirectory)
         #expect(await ThumbnailService(images: ImageRepository()).thumbnail(for: media, source: source, maxPixel: 200) == nil)
+    }
+
+    @Test func pixelSizeReadsTheFileAndGivesNilWhenMissing() async throws {
+        let dir = try TempDir()
+        try TestImages.writeJPEG(to: dir.url.appending(path: "a.jpg"), color: (1, 2, 3), size: 48)
+        let service = ThumbnailService(images: ImageRepository())
+        let media = MediaFile(id: "a.jpg", relativePath: "a.jpg", kind: .image, size: 1, modified: Date(timeIntervalSince1970: 0))
+        #expect(await service.pixelSize(of: media, source: dir.url) == PixelSize(width: 48, height: 48))
+        let gone = MediaFile(id: "x.jpg", relativePath: "x.jpg", kind: .image, size: 1, modified: Date(timeIntervalSince1970: 0))
+        #expect(await service.pixelSize(of: gone, source: dir.url) == nil)
     }
 
     @Test func maxPixelRoundsTwiceTheWidthUpToAStep() {

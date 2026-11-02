@@ -58,7 +58,7 @@ struct DuplicatesViewModelTests {
             embedder: FakeEmbedder(), sessionsRoot: temp.url.appending(path: "Sessions"), defaults: suite.defaults)
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), onRescan: {})
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: AppModel(environment: environment), onRescan: {})
         return Fixture(model: model, review: review, ops: ops)
     }
 
@@ -125,7 +125,8 @@ struct DuplicatesViewModelTests {
         d.toggleKeep("r.jpg", in: similar)
         similar = try group(d, .similar)
         #expect(d.trashCount(of: similar) == 1)
-        #expect(d.trashTitle(of: similar) == "Move 1 to Trash")
+        #expect(d.trashTitle(of: similar) == "Clean Up (1)")
+        #expect(d.trashSummary(of: similar) == "1 photo goes to the Trash")
 
         await d.trash(similar)
         await f.review.settled()
@@ -160,8 +161,10 @@ struct DuplicatesViewModelTests {
         await d.find()
         #expect(d.cleanUpCount == 2)
         #expect(d.cleanUpTitle == "Clean Up All (2)")
+        // The fixture has an exact group and a similar group: Clean Up All covers both tabs.
+        try #require(d.exactCount > 0 && d.similarCount > 0)
         #expect(d.cleanUpConfirmation
-            == "Move 2 photos to the Trash? You can put them back with Undo or from the Trash in Finder.")
+            == "Move 2 photos in both tabs to the Trash? You can put them back with Undo or from the Trash in Finder.")
 
         await d.cleanUpAll()
         await f.review.settled()
@@ -282,6 +285,16 @@ struct DuplicatesViewModelTests {
         await d.find()
         d.toggleKeep("q.jpg", in: try group(d, .similar))  // The similar group keeps both.
         #expect(d.cleanUpCount == 1)  // p2.
+        #expect(d.cleanUpConfirmation
+            == "Move 1 photo in both tabs to the Trash? You can put them back with Undo or from the Trash in Finder.")
+    }
+
+    @Test func cleanUpConfirmationNamesNoTabWhenOnlyOneTabHasGroups() async throws {
+        let f = try fixture()
+        let d = f.duplicates
+        await d.find()
+        d.notDuplicates(try group(d, .exact))
+        try #require(d.exactCount == 0 && d.similarCount > 0)
         #expect(d.cleanUpConfirmation
             == "Move 1 photo to the Trash? You can put them back with Undo or from the Trash in Finder.")
     }

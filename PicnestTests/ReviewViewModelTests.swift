@@ -7,83 +7,314 @@ import Testing
 
 @MainActor
 struct ReviewViewModelTests {
-    private let temp: TempDir
-    private let suite = TestDefaults()
-    private let food = PicnestCore.Category(id: UUID(), displayName: "Food", emoji: "🍜", prompts: ["food"], exampleIDs: [], order: 1)
-    private let documents = PicnestCore.Category(
-        id: UUID(), displayName: "Documents", emoji: "🧾", prompts: ["documents"], exampleIDs: [], order: 0)
-    private let classify = ClassifyService(settings: .default)
+    private let fx: ReviewFixture
+    private var temp: TempDir { fx.temp }
+    private var suite: TestDefaults { fx.suite }
+    private var food: PicnestCore.Category { fx.food }
+    private var documents: PicnestCore.Category { fx.documents }
+    private var classify: ClassifyService { fx.classify }
 
-    init() throws { temp = try TempDir() }
+    init() throws { fx = try ReviewFixture() }
 
-    private var environment: AppEnvironment {
-        AppEnvironment(embedder: FakeEmbedder(), sessionsRoot: temp.url.appending(path: "Sessions"),
-                       defaults: suite.defaults)
-    }
-
-    private func day(_ year: Int, _ month: Int, _ day: Int) -> Date {
-        Calendar.current.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
-    }
-
+    private var environment: AppEnvironment { fx.environment }
+    private func day(_ year: Int, _ month: Int, _ day: Int) -> Date { fx.day(year, month, day) }
     private func file(_ name: String, kind: MediaKind = .image, modified: Date? = nil) -> MediaFile {
-        MediaFile(id: name, relativePath: name, kind: kind, size: 10, modified: modified ?? day(2020, 1, 1))
+        fx.file(name, kind: kind, modified: modified)
     }
-
     private func auto(_ c: PicnestCore.Category, _ percent: Int, uncertain: Bool = false) -> Assignment {
-        Assignment(categoryID: c.id, score: 0.3, secondCategoryID: nil, secondScore: nil, percent: percent,
-                   uncertain: uncertain)
+        fx.auto(c, percent, uncertain: uncertain)
     }
-
-    /// 8 files, 1 of each kind of tile:
-    /// a 91% Food, b 62% Food (uncertain), c manual Food, d held Not sure (Food 41%, or Documents 38%),
-    /// e Don't move, f unreadable, g video, h 80% Documents with a modification-time date.
-    private func makeSession(source: URL) -> Session {
-        let s1: Float = 0.30
-        let held = Assignment(
-            categoryID: food.id, score: s1, secondCategoryID: documents.id,
-            secondScore: s1 + ClassifySettings.default.temperature * Float(log(38.0 / 41.0)), percent: 41,
-            uncertain: true)
-        let media = [
-            file("a.jpg", modified: day(2024, 1, 1)), file("b.jpg"), file("c.jpg"), file("d.jpg"),
-            file("e.jpg"), file("f.jpg"), file("g.mov", kind: .video), file("h.jpg", modified: day(2019, 3, 3)),
-        ]
-        let states: [MediaID: PhotoState] = [
-            "a.jpg": .auto(auto(food, 91)), "b.jpg": .auto(auto(food, 62, uncertain: true)),
-            "c.jpg": .manual(food.id), "d.jpg": .heldNotSure(held), "e.jpg": .dontMove, "f.jpg": .unreadable,
-            "h.jpg": .auto(auto(documents, 80)),
-        ]
-        let dates: [MediaID: PhotoDate] = [
-            "a.jpg": PhotoDate(date: day(2024, 5, 12), source: .exif),
-            "b.jpg": PhotoDate(date: day(2023, 11, 2), source: .fileNameTimestamp),
-            "c.jpg": PhotoDate(date: day(2022, 7, 9), source: .exif),
-            "d.jpg": PhotoDate(date: day(2021, 2, 1), source: .exif),
-            "h.jpg": PhotoDate(date: day(2019, 3, 3), source: .modificationTime),
-        ]
-        return Session(
-            sourcePath: source.path(percentEncoded: false), candidateList: .everyday, categories: [food, documents],
-            states: states, scan: ScanResult(media: media, dates: dates, skipped: [:]), sortedAt: nil)
-    }
-
+    private func makeSession(source: URL) -> Session { fx.makeSession(source: source) }
     private func makeModel(onRescan: @escaping () -> Void = {}) throws -> ReviewViewModel {
-        try makeModelAndReview(onRescan: onRescan).model
+        try fx.makeModel(onRescan: onRescan)
+    }
+    private func makeModelAndReview(
+        onRescan: @escaping () -> Void = {}, trashOps: FakeTrashFileOps = FakeTrashFileOps(),
+        openURL: @escaping @MainActor (URL) -> Void = { _ in },
+        revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in },
+        folderExists: @escaping (URL) -> Bool = { _ in true },
+        session makeCustom: ((URL) -> Session)? = nil,
+        defaults: UserDefaults? = nil) throws -> (model: ReviewViewModel, review: ReviewService) {
+        try fx.makeModelAndReview(
+            onRescan: onRescan, trashOps: trashOps, openURL: openURL, revealURLs: revealURLs,
+            folderExists: folderExists, session: makeCustom, defaults: defaults)
     }
 
-    private func makeModelAndReview(
-        onRescan: @escaping () -> Void = {}, trashOps: FakeTrashFileOps = FakeTrashFileOps(), openURL: @escaping @MainActor (URL) -> Void = { _ in },
-        revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in },
-        folderExists: @escaping (URL) -> Bool = { _ in true }) throws -> (model: ReviewViewModel, review: ReviewService) {
-        let source = try temp.folder("Photos")
-        let review = ReviewService(
-            session: makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
-            sessions: SessionRepository(root: temp.url.appending(path: "Sessions")),
-            embeddings: EmbeddingRepository(embedder: FakeEmbedder(), cacheDirectory: temp.url.appending(path: "Cache")),
-            trash: TrashService(fileOps: trashOps))
-        let environment = self.environment
-        let model = ReviewViewModel(
-            review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), onRescan: onRescan,
-            openURL: openURL, revealURLs: revealURLs, folderExists: folderExists)
-        return (model, review)
+    // MARK: - Filter, search, thumbnail size (UI redesign 4.2)
+
+    private func namedSession(_ names: [String]) -> (URL) -> Session {
+        { source in
+            var session = makeSession(source: source)
+            let extra = names.map { file($0) }
+            session.scan = ScanResult(media: session.scan.media + extra, dates: session.scan.dates, skipped: [:])
+            return session
+        }
+    }
+
+    @Test func testFilterMapsToSidebarItem() throws {
+        let model = try makeModel()
+        for (filter, item) in [(PhotoFilter.all, ReviewViewModel.SidebarItem.all),
+                               (.needsReview, .notSure), (.chosenByYou, .changedByYou)] {
+            model.filter = filter
+            #expect(model.selectedItem == item)
+            model.selectedItem = .duplicates
+            model.selectedItem = item
+            #expect(model.filter == filter)
+        }
+        model.selectedItem = .category(food.id)
+        #expect(model.filter == .all)
+        #expect(PhotoFilter.allCases.count == 3)
+    }
+
+    @Test func testSearchMatchesFileNameIgnoringCaseAndDiacritics() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Ảnh_01.jpg", "Trip/Anh_Dir.jpg", "zzz.jpg"]))
+        model.searchText = "anh"
+        #expect(Set(model.visibleIDs) == ["Ảnh_01.jpg", "Trip/Anh_Dir.jpg"])
+        model.searchText = "ẢNH_01"
+        #expect(model.visibleIDs == ["Ảnh_01.jpg"])
+    }
+
+    @Test func testSearchUsesFileNameNotFolder() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Holiday/x.jpg"]))
+        model.searchText = "holiday"
+        #expect(model.visibleIDs.isEmpty)
+    }
+
+    @Test func testSearchFoldsVietnameseD() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Đà_Lạt.jpg", "other.jpg"]))
+        model.searchText = "da lat".replacingOccurrences(of: " ", with: "_")
+        #expect(model.visibleIDs == ["Đà_Lạt.jpg"])
+        model.searchText = "đà"
+        #expect(model.visibleIDs == ["Đà_Lạt.jpg"])
+    }
+
+    @Test func testSearchEmptyShowsAll() throws {
+        let (model, _) = try makeModelAndReview(session: namedSession(["Ảnh_01.jpg"]))
+        let all = model.visibleIDs
+        model.searchText = "Ảnh"
+        #expect(model.visibleIDs.count == 1)
+        model.searchText = ""
+        #expect(model.visibleIDs == all)
+        model.searchText = "   "
+        #expect(model.visibleIDs == all)
+    }
+
+    @Test func testSearchWorksWithItemAndSortOrder() throws {
+        let model = try makeModel()
+        model.sortOrder = .name
+        model.selectedItem = .all
+        model.searchText = ".jpg"
+        #expect(model.visibleIDs == ["a.jpg", "b.jpg", "c.jpg", "d.jpg", "e.jpg", "f.jpg", "h.jpg"].filter { model.visibleIDs.contains($0) })
+        model.selectedItem = .changedByYou
+        model.searchText = "c"
+        #expect(model.visibleIDs == ["c.jpg"])
+        model.searchText = "a"
+        #expect(model.visibleIDs.isEmpty)
+        model.selectedItem = .notSure
+        model.searchText = "d"
+        #expect(model.visibleIDs == ["d.jpg"])
+    }
+
+    @Test func testSearchKeepsItsTextInNeedsReview() throws {
+        let model = try makeModel()
+        model.searchText = "d"
+        model.selectedItem = .notSure
+        #expect(model.searchText == "d")
+        #expect(model.visibleIDs == ["d.jpg"])
+        model.selectedItem = .all
+        #expect(model.searchText == "d")
+    }
+
+    @Test func testEmptyStateNoResultsWhenSearchMatchesNothing() throws {
+        let model = try makeModel()
+        #expect(model.emptyState == nil)
+        model.searchText = "no-such-file"
+        #expect(model.emptyState == .noResults)
+        model.searchText = "   "
+        #expect(model.emptyState == nil)
+    }
+
+    @Test func testEmptyStateEmptyFolderWhenNoPhotos() throws {
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.scan = ScanResult(media: [], dates: [:], skipped: [:])
+            session.states = [:]
+            return session
+        })
+        #expect(model.emptyState == .emptyFolder)
+        model.searchText = "x"
+        #expect(model.emptyState == .noResults)
+        model.selectedItem = .notSure
+        #expect(model.emptyState == .nothingToReview)
+    }
+
+    @Test func testEmptyStatePerChip() throws {
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.states = session.states.filter { !$0.value.isManual && !$0.value.isNotSure }
+            return session
+        })
+        model.filter = .chosenByYou
+        #expect(model.emptyState == .noneChosen)
+        model.filter = .needsReview
+        #expect(model.emptyState == .nothingToReview)
+        model.filter = .all
+        #expect(model.emptyState == nil)
+        let full = try makeModel()
+        full.filter = .chosenByYou
+        #expect(full.emptyState == nil)
+        full.filter = .needsReview
+        #expect(full.emptyState == nil)
+    }
+
+    @Test func testListRowShowsNameCategoryDateAndSize() throws {
+        let model = try makeModel()
+        let a = model.listRow("a.jpg")
+        #expect(a.name == "a.jpg")
+        #expect(a.categoryText == "🍜 Food")
+        #expect(a.date == day(2024, 5, 12))
+        #expect(a.fileSize == 10)
+        #expect(model.listRow("c.jpg").categoryText == "🍜 Food")
+        #expect(model.listRow("d.jpg").categoryText == String(localized: "Needs Review"))
+        #expect(model.listRow("e.jpg").categoryText == String(localized: "Don't move"))
+        #expect(model.listRow("f.jpg").categoryText == "—")
+        #expect(model.listRow("h.jpg").date == nil)
+    }
+
+    // MARK: - Library chrome
+
+    private func chromeItems(_ model: ReviewViewModel) -> [ReviewViewModel.SidebarItem] {
+        [.all, .notSure, .changedByYou, .category(food.id), .duplicates, .dontMove, .videos, .unreadable]
+    }
+
+    private func chrome(_ model: ReviewViewModel, _ read: (ReviewViewModel) -> Bool) -> [Bool] {
+        chromeItems(model).map { model.selectedItem = $0; return read(model) }
+    }
+
+    @Test func testBodyKind() throws {
+        let model = try makeModel()
+        let kinds: [ReviewViewModel.BodyKind] = chromeItems(model).map { model.selectedItem = $0; return model.bodyKind }
+        #expect(kinds == [.library, .needsReview, .library, .library, .duplicates, .library, .library, .library])
+    }
+
+    @Test func testShowsFilterChips() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsFilterChips } == [true, false, true, false, false, false, false, false])
+    }
+
+    @Test func testShowsLayoutPicker() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsLayoutPicker } == [true, false, true, true, false, true, true, true])
+    }
+
+    @Test func testShowsFooter() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsFooter } == [true, false, true, true, false, true, true, true])
+    }
+
+    @Test func testShowsThumbnailSlider() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsThumbnailSlider(layout: .grid) } == [true, true, true, true, false, true, true, true])
+        #expect(chrome(model) { $0.showsThumbnailSlider(layout: .list) } == [false, true, false, false, false, false, false, false])
+    }
+
+    // MARK: - Category screen and Edit Category (UI redesign 4.3)
+
+    @Test func testCategoryHeaderShowsForCategoriesOnly() throws {
+        let model = try makeModel()
+        #expect(chrome(model) { $0.showsCategoryHeader } == [false, false, false, true, false, false, false, false])
+        model.selectedItem = .category(food.id)
+        #expect(model.selectedCategory?.id == food.id)
+        #expect(model.bodyKind == .library)
+    }
+
+    @Test func testEmptyNameIsInvalid() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName("", excluding: nil) == .empty)
+        #expect(model.validateCategoryName("  \n ", excluding: nil) == .empty)
+        #expect(model.validateCategoryName("Pets", excluding: nil) == nil)
+    }
+
+    @Test func testDuplicateNameIsInvalid() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName(" food ", excluding: nil) == .duplicate)
+        #expect(model.validateCategoryName("Food", excluding: documents.id) == .duplicate)
+        // A category does not clash with itself.
+        #expect(model.validateCategoryName("Food", excluding: food.id) == nil)
+    }
+
+    /// The folder rules replace "/" and ":" with "-", so the name is not rejected: it makes a valid, unique folder.
+    @Test func testNameWithSlashMakesValidFolder() throws {
+        let model = try makeModel()
+        #expect(model.validateCategoryName("Trips/2024", excluding: nil) == nil)
+        let folder = SortPlanner.folderName(for: "Trips/2024")
+        #expect(folder == "Trips-2024")
+        #expect(!folder.contains("/"))
+        let unique = SortPlanner.uniqueFolderName(for: "Trips/2024", among: model.categories)
+        #expect(unique == folder)
+        #expect(model.validateCategoryName("/", excluding: nil) == nil)
+        #expect(SortPlanner.folderName(for: "/") == "-")
+    }
+
+    @Test func testVietnameseNameInNFCAndNFDIsTheSameFolder() throws {
+        let composed = "\u{1EA8}m th\u{1EF1}c".precomposedStringWithCanonicalMapping
+        let decomposed = composed.decomposedStringWithCanonicalMapping
+        let food2 = PicnestCore.Category(id: UUID(), displayName: composed, emoji: "🍜", prompts: [], exampleIDs: [], order: 5)
+        let (model, _) = try makeModelAndReview(session: { source in
+            var session = makeSession(source: source)
+            session.categories.append(food2)
+            return session
+        })
+        #expect(SortPlanner.folderName(for: decomposed).unicodeScalars.elementsEqual(SortPlanner.folderName(for: composed).unicodeScalars))
+        #expect(model.validateCategoryName(decomposed, excluding: nil) == .duplicate)
+        #expect(model.validateCategoryName("am thuc", excluding: nil) == .duplicate)
+    }
+
+    @Test func testSaveCategoryEditRenamesAndSetsIcon() throws {
+        let model = try makeModel()
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Food", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: " ", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Documents", emoji: "🍜"))
+        #expect(model.canSaveCategoryEdit(food.id, name: "Food", emoji: "🍕"))
+        #expect(model.canSaveCategoryEdit(food.id, name: "Meals", emoji: "🍜"))
+        #expect(!model.canSaveCategoryEdit(food.id, name: "Food", emoji: "ab"))
+        #expect(model.saveCategoryEdit(food.id, name: "Meals", emoji: "🍕"))
+        let saved = model.categories.first { $0.id == food.id }
+        #expect(saved?.emoji == "🍕")
+        #expect(saved?.displayName == "Meals")
+    }
+
+    @Test func testEditSheetClosesWhenItsCategoryIsMerged() throws {
+        let model = try makeModel()
+        model.editingCategory = food.id
+        model.merge(food.id, into: documents.id)
+        #expect(model.editingCategory == nil)
+        model.editingCategory = documents.id
+        model.closeEditIfCategoryIsGone()
+        #expect(model.editingCategory == documents.id)
+    }
+
+    @Test func testSearchDoesNotChangeSidebarCounts() throws {
+        let model = try makeModel()
+        let before = model.sidebarCounts
+        model.searchText = "zzz-no-match"
+        #expect(model.sidebarCounts == before)
+        #expect(model.count == model.count(of: model.selectedItem))
+    }
+
+    @Test func testThumbnailSizeIsClampedAndSaved() throws {
+        let defaults = suite.defaults
+        let (model, _) = try makeModelAndReview(defaults: defaults)
+        #expect(model.thumbnailSize == 160)
+        model.thumbnailSize = 50
+        #expect(model.thumbnailSize == 80)
+        #expect(defaults.double(forKey: "thumbnailSize") == 80)
+        model.thumbnailSize = 999
+        #expect(model.thumbnailSize == 240)
+        #expect(defaults.double(forKey: "thumbnailSize") == 240)
+        model.thumbnailSize = 120
+        let (again, _) = try makeModelAndReview(defaults: defaults)
+        #expect(again.thumbnailSize == 120)
     }
 
     // MARK: - Save errors (final review I4)
@@ -373,11 +604,22 @@ struct ReviewViewModelTests {
         #expect(model.tile("g.mov").badge == nil)
     }
 
+    @Test func tileAccessibilityLabel() throws {
+        let model = try makeModel()
+        #expect(model.tile("c.jpg").accessibilityLabel.contains("Chosen by you"))
+        #expect(model.tile("c.jpg").accessibilityLabel.hasPrefix("c.jpg"))
+        #expect(model.tile("d.jpg").accessibilityLabel.contains("Needs Review"))
+        #expect(!model.tile("a.jpg").accessibilityLabel.contains("Needs Review"))
+        #expect(!model.tile("a.jpg").accessibilityLabel.contains("selected"))
+        model.click("a.jpg", modifiers: [])
+        #expect(model.tile("a.jpg").accessibilityLabel.hasSuffix("selected"))
+    }
+
     @Test func secondLineIsDateOrNoDateInCategoryViews() throws {
         let model = try makeModel()
         model.selectedItem = .category(food.id)
         #expect(model.tile("a.jpg").name == "a.jpg")
-        #expect(model.tile("a.jpg").secondLine == "2024-05-12")
+        #expect(model.tile("a.jpg").secondLine == day(2024, 5, 12).formatted(.dateTime.year().month().day()))
         #expect(model.tile("h.jpg").secondLine == "no date")
         #expect(model.tile("e.jpg").secondLine == "no date")
     }
@@ -386,27 +628,18 @@ struct ReviewViewModelTests {
         let model = try makeModel()
         model.selectedItem = .notSure
         #expect(model.tile("d.jpg").secondLine == "or Documents 38%")
-        #expect(model.tile("b.jpg").secondLine == "2023-11-02")  // No second guess: the date.
+        #expect(model.tile("b.jpg").secondLine == day(2023, 11, 2).formatted(.dateTime.year().month().day()))  // No second guess: the date.
     }
 
     // MARK: - Toolbar
 
     @Test func titleShowsEmojiForCategories() throws {
         let model = try makeModel()
-        #expect(model.title == "All photos")
+        #expect(model.title == "All Photos")
         model.selectedItem = .category(food.id)
         #expect(model.title == "🍜 Food")
         model.selectedItem = .notSure
-        #expect(model.title == "Not sure")
-    }
-
-    @Test func columnsDefaultToThreeAndStayInRange() throws {
-        let model = try makeModel()
-        #expect(model.columns == 3)
-        model.columns = 12
-        #expect(model.columns == 8)
-        model.columns = 0
-        #expect(model.columns == 2)
+        #expect(model.title == "Needs Review")
     }
 
     @Test func pathAbbreviatesHome() {
@@ -849,7 +1082,7 @@ struct ReviewViewModelTests {
         let environment = self.environment
         return ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), afterScan: afterScan, onRescan: {})
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: AppModel(environment: environment), afterScan: afterScan, onRescan: {})
     }
 
     @Test func suggestOpensOnceAfterScanWithManyNotSure() throws {
@@ -877,14 +1110,6 @@ struct ReviewViewModelTests {
 
     // MARK: - Start Over… (spec 3.3)
 
-    @Test func startOverMessageAddsSortedSentence() throws {
-        let (model, review) = try makeModelAndReview()
-        let text = "The app scans the folder again and proposes new categories. Your categories and picks are lost."
-        #expect(model.startOverMessage == text)
-        review.markSorted(at: day(2026, 10, 21))
-        #expect(model.startOverMessage == text + " The last sort can no longer be undone.")
-    }
-
     @Test func requestStartOverAsksFirst() throws {
         let model = try makeModel()
         #expect(model.canStartOver)
@@ -909,7 +1134,7 @@ struct ReviewViewModelTests {
         guard case .review(let review, _) = app.screen else { throw Failure.notInReview }
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: app, onRescan: {})
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: app, onRescan: {})
         return (app, model, folder, environment)
     }
 
@@ -983,7 +1208,7 @@ struct ReviewViewModelTests {
         let environment = self.environment
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, app: AppModel(environment: environment), onRescan: {})
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: AppModel(environment: environment), onRescan: {})
         model.selectedItem = .notSure
         return (model, review)
     }
@@ -1000,12 +1225,38 @@ struct ReviewViewModelTests {
     @Test func acceptGroupEmptiesItAndRaisesChangedByYou() throws {
         let (model, _) = try makeGroupedModel()
         let before = model.count(of: .changedByYou)
-        model.acceptGroup(at: 0)
+        let rendered = model.notSureGroups
+        model.acceptGroup(rendered[0])
         #expect(model.notSureGroups.map(\.categoryName) == ["Documents", "Pets"])
         #expect(model.count(of: .changedByYou) == before + 3)
         #expect(model.count(of: .notSure) == 3)
-        model.acceptGroup(at: 9)  // Out of range: nothing happens.
+        model.acceptGroup(rendered[0])  // A group that is gone: nothing happens.
         #expect(model.count(of: .notSure) == 3)
+    }
+
+    @Test func acceptGroupAcceptsTheRenderedGroupWhenTheOrderChanged() throws {
+        let (model, _) = try makeGroupedModel()
+        let rendered = model.notSureGroups  // Food (3), Documents (2), Pets (1).
+        // Between render and click, 2 Food photos leave Needs Review: Documents is now the largest group.
+        model.click("n2.jpg", modifiers: [])
+        model.click("n3.jpg", modifiers: .command)
+        model.moveSelection(to: pets.id)
+        try #require(model.notSureGroups.map(\.categoryName).first == "Documents")
+        let before = model.count(of: .changedByYou)
+        model.acceptGroup(rendered[0])  // The clicked group is Food: only n1 still shows in it.
+        #expect(model.count(of: .changedByYou) == before + 1)
+        #expect(model.notSureGroups.map(\.categoryName) == ["Documents", "Pets"])
+        #expect(model.notSureGroups[0].ids == ["n4.jpg", "n5.jpg"])
+    }
+
+    @Test func selectGroupSelectsTheRenderedGroupWhenTheOrderChanged() throws {
+        let (model, _) = try makeGroupedModel()
+        let rendered = model.notSureGroups
+        model.click("n2.jpg", modifiers: [])
+        model.click("n3.jpg", modifiers: .command)
+        model.moveSelection(to: pets.id)
+        model.selectGroup(rendered[0])
+        #expect(model.selection == ["n1.jpg"])
     }
 
     @Test func acceptAllEmptiesNotSureAndUndoRestoresGroups() throws {
@@ -1022,7 +1273,7 @@ struct ReviewViewModelTests {
     @Test func selectGroupReplacesSelection() throws {
         let (model, _) = try makeGroupedModel()
         model.click("n6.jpg", modifiers: [])
-        model.selectGroup(at: 1)
+        model.selectGroup(model.notSureGroups[1])
         #expect(model.selection == ["n4.jpg", "n5.jpg"])
         #expect(model.anchor == "n4.jpg")
     }
@@ -1033,7 +1284,7 @@ struct ReviewViewModelTests {
         _ = model.visibleIDs
         let groups = model.groupComputations, lists = model.listComputations
         model.click("n1.jpg", modifiers: [])
-        model.selectGroup(at: 0)
+        model.selectGroup(model.notSureGroups[0])
         model.selectAll()
         model.clearSelection()
         _ = model.notSureGroups
@@ -1064,7 +1315,7 @@ struct ReviewViewModelTests {
         let view = NSHostingView(rootView: ReviewView(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
             sortService: environment.sortService, library: environment.library,
-            app: AppModel(environment: environment)))
+            app: AppModel(environment: environment), photoEdits: environment.photoEdits, layoutExport: environment.layoutExport))
         view.frame = NSRect(x: 0, y: 0, width: 1200, height: 800)
         view.layoutSubtreeIfNeeded()
         #expect(view.fittingSize.width > 0)
@@ -1098,7 +1349,7 @@ struct ReviewViewModelTests {
                 embeddings: EmbeddingRepository(embedder: FakeEmbedder(), cacheDirectory: temp.url.appending(path: "Cache")))
             return ReviewViewModel(
                 review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-                library: environment.library, app: AppModel(environment: environment), onRescan: {})
+                library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: AppModel(environment: environment), onRescan: {})
         }
         #expect(try !model(notSure: 6).canSuggest)
         let seven = try model(notSure: 7)
@@ -1109,5 +1360,81 @@ struct ReviewViewModelTests {
         #expect(seven.suggest != nil)
         seven.closeSuggest()
         #expect(seven.suggest == nil)
+    }
+
+    // MARK: - Inspector (UI redesign 4.2, 6)
+
+    @Test func inspectorContentFollowsSelectionThenCategory() throws {
+        let model = try makeModelAndReview(folderExists: { _ in false }).model
+        #expect(model.inspectorContent == .hint)
+        model.selectedItem = .notSure
+        #expect(model.inspectorContent == .hint)  // Only a category shows facts without a photo.
+        model.selectedItem = .category(food.id)
+        let expected = CategoryFacts(
+            id: food.id, emoji: "🍜", name: "Food", photoCount: model.count(of: .category(food.id)),
+            folderName: "Food", canReveal: false)  // The folder is not on disk before Done.
+        #expect(model.inspectorContent == .category(expected))
+        #expect(expected.photoCount > 0)
+        model.click("a.jpg", modifiers: [])
+        guard case .photo(let facts) = model.inspectorContent else { Issue.record("a photo was selected"); return }
+        #expect(facts.id == "a.jpg")
+        model.click("b.jpg", modifiers: .command)
+        if case .many(let count) = model.inspectorContent { #expect(count == 2) } else { Issue.record("2 photos were selected") }
+        model.clearSelection()
+        #expect(model.inspectorContent == .category(expected))
+    }
+
+    @Test func inspectorCategoryCanRevealWhenTheFolderIsOnDisk() throws {
+        let model = try makeModel()  // The folder exists in this fixture.
+        model.selectedItem = .category(food.id)
+        guard case .category(let facts) = model.inspectorContent else { Issue.record("a category shows"); return }
+        #expect(facts.canReveal)
+    }
+
+    @Test func inspectorFactsOfOnePhoto() throws {
+        let model = try makeModel()
+        let a = try #require(model.inspectorFacts(for: "a.jpg"))
+        #expect(a.name == "a.jpg")
+        #expect(a.status == .category(emoji: "🍜", name: "Food"))
+        #expect(a.confidence == 91)
+        #expect(a.fileSize == 10)
+        #expect(a.date == day(2024, 5, 12))
+        #expect(a.suggestion == nil)
+        #expect(!a.isUncertain)
+        #expect(model.inspectorFacts(for: "nope.jpg") == nil)
+    }
+
+    @Test func inspectorFactsOfNotSurePhotoHaveSuggestionAndAlternative() throws {
+        let model = try makeModel()
+        let d = try #require(model.inspectorFacts(for: "d.jpg"))
+        #expect(d.status == .notSure)
+        #expect(d.isUncertain)
+        #expect(d.confidence == 41)
+        #expect(d.suggestion == .init(categoryName: "Food", alternativeName: "Documents", alternativePercent: 38))
+    }
+
+    @Test func inspectorFactsOfHandChosenPhotoShowNoConfidence() throws {
+        let model = try makeModel()
+        let c = try #require(model.inspectorFacts(for: "c.jpg"))
+        #expect(c.isChosenByYou)
+        #expect(c.confidence == nil)
+        #expect(c.status == .category(emoji: "🍜", name: "Food"))
+    }
+
+    @Test func inspectorFactsDateIsNilWhenOnlyModificationTimeIsKnown() throws {
+        let model = try makeModel()
+        #expect(try #require(model.inspectorFacts(for: "h.jpg")).date == nil)
+        #expect(try #require(model.inspectorFacts(for: "e.jpg")).status == .staysHere)
+        #expect(try #require(model.inspectorFacts(for: "f.jpg")).status == .none)
+    }
+
+    @Test func pixelSizeLoadsOffMainAndIsNilForUnreadableFile() async throws {
+        let (model, _) = try makeModelAndReview()
+        let source = try temp.folder("Photos")
+        try writeTestJPEG(to: source.appending(path: "a.jpg"), red: 0.1, green: 0.2, blue: 0.3, size: 48)
+        try Data("not an image".utf8).write(to: source.appending(path: "b.jpg"))
+        #expect(await model.pixelSize(of: "a.jpg") == PixelSize(width: 48, height: 48))
+        #expect(await model.pixelSize(of: "b.jpg") == nil)
+        #expect(await model.pixelSize(of: "missing.jpg") == nil)
     }
 }

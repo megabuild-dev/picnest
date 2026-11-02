@@ -33,17 +33,17 @@ struct SuggestSheet: View {
         case .loading:
             VStack(spacing: 10) {
                 ProgressView()
-                Text("Looking for groups…").foregroundStyle(.secondary)
+                Text("Looking for groups…").foregroundStyle(Theme.textSecondary.color)
             }
             .frame(maxWidth: .infinity, minHeight: 120)
         case .empty:
             Text(SuggestViewModel.emptyText)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary.color)
                 .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
                 .multilineTextAlignment(.center)
         case .failed(let message):
             Label(message, systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(ReviewStyle.amber)
+                .foregroundStyle(Theme.needsReview.color)
                 .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
         case .ready:
             ScrollView {
@@ -77,11 +77,11 @@ private struct SuggestRowView: View {
                         .onSubmit { model.commitEmoji(of: row.id) }
                         .onChange(of: emojiFocused) { if !emojiFocused { model.commitEmoji(of: row.id) } }
                     TextField("Name", text: $row.name)
-                    Text(row.ids.count == 1 ? "1 photo" : "\(row.ids.count.formatted()) photos")
-                        .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
+                    Text(CountText.photos(row.ids.count))
+                        .font(.system(size: 12)).foregroundStyle(Theme.textSecondary.color).monospacedDigit()
                 }
                 if let hint {
-                    Text(hint).font(.system(size: 11)).foregroundStyle(.red)
+                    Text(hint).font(.system(size: 11)).foregroundStyle(Theme.destructive.color)
                 }
                 HStack(spacing: 6) {
                     ForEach(row.ids.prefix(SuggestViewModel.thumbnailsPerRow), id: \.self) { id in
@@ -91,7 +91,7 @@ private struct SuggestRowView: View {
             }
         }
         .padding(12)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.placeholderFill.color.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
         .opacity(row.isOn ? 1 : 0.55)
     }
 }
@@ -102,7 +102,7 @@ private struct SuggestThumbnail: View {
     @State private var image: CGImage?
 
     var body: some View {
-        Rectangle().fill(.quaternary)
+        Rectangle().fill(Theme.placeholderFill.color)
             .frame(width: 96, height: 72)
             .overlay {
                 if let image { Image(decorative: image, scale: 1).resizable().scaledToFill() }

@@ -11,6 +11,97 @@ struct AppDelegateTests {
         #expect(AppDelegate.sortRunningMessage == "A sort is running. Stop it first, then quit.")
     }
 
+    // MARK: - Quit while an editor exports (final review I1)
+
+    private func delegate(
+        sort: Bool = false, export: Bool = false, edits: Bool = false, confirm: Bool = true,
+        relauncher: AppRelauncher = AppRelauncher(canSpawn: { true }, spawn: {})
+    ) -> (delegate: AppDelegate, alerts: Alerts) {
+        let alerts = Alerts()
+        let delegate = AppDelegate(
+            environment: nil, relauncher: relauncher, sortRunningCheck: { sort },
+            exportRunningCheck: { export }, unexportedEditsCheck: { edits })
+        delegate.showSortRunningAlert = { alerts.sort += 1 }
+        delegate.showExportRunningAlert = { alerts.export += 1 }
+        delegate.confirmQuitWithEdits = { alerts.asked += 1; return confirm }
+        delegate.flushEditors = { alerts.flushed += 1 }
+        return (delegate, alerts)
+    }
+
+    @MainActor final class Alerts { var sort = 0, export = 0, asked = 0, flushed = 0 }
+
+    @Test func quitIsCancelledWhileAnExportRuns() {
+        let (delegate, alerts) = delegate(export: true)
+        #expect(delegate.applicationShouldTerminate(NSApplication.shared) == .terminateCancel)
+        #expect(alerts.export == 1 && alerts.asked == 0 && alerts.flushed == 0)
+        #expect(AppDelegate.exportRunningMessage == "An export is running. Wait for it to finish, then quit.")
+    }
+
+    @Test func restartIsCancelledWhileAnExportRuns() {
+        let relauncher = AppRelauncher(canSpawn: { true }, spawn: {})
+        let (delegate, _) = delegate(export: true, relauncher: relauncher)
+        #expect(relauncher.request())
+        #expect(delegate.applicationShouldTerminate(NSApplication.shared) == .terminateCancel)
+        #expect(!relauncher.isRequested)
+    }
+
+    @Test func quitWithUnexportedEditsAsksFirst() {
+        let (declined, alerts) = delegate(edits: true, confirm: false)
+        #expect(declined.applicationShouldTerminate(NSApplication.shared) == .terminateCancel)
+        #expect(alerts.asked == 1 && alerts.flushed == 0)
+        let (accepted, other) = delegate(edits: true, confirm: true)
+        #expect(accepted.applicationShouldTerminate(NSApplication.shared) == .terminateNow)
+        #expect(other.asked == 1 && other.flushed == 1)
+    }
+
+    @Test func aSortStillWinsOverAnExport() {
+        let (delegate, alerts) = delegate(sort: true, export: true)
+        #expect(delegate.applicationShouldTerminate(NSApplication.shared) == .terminateCancel)
+        #expect(alerts.sort == 1 && alerts.export == 0)
+    }
+
+    @Test func quitWithNothingOpenSavesTheLayoutDraftAndGoes() {
+        let (delegate, alerts) = delegate()
+        #expect(delegate.applicationShouldTerminate(NSApplication.shared) == .terminateNow)
+        #expect(alerts.flushed == 1 && alerts.asked == 0)
+    }
+
+    // MARK: - Window close (re-review I-A)
+
+    @Test func closingTheWindowRunsTheQuitChecks() {
+        let (busy, alerts) = delegate(export: true)
+        #expect(!busy.confirmLeaving())
+        #expect(alerts.export == 1 && alerts.flushed == 0)
+        let (declined, other) = delegate(edits: true, confirm: false)
+        #expect(!declined.confirmLeaving() && other.asked == 1 && other.flushed == 0)
+        let (idle, third) = delegate()
+        #expect(idle.confirmLeaving() && third.flushed == 1)
+    }
+
+    @MainActor final class OriginalDelegate: NSObject, NSWindowDelegate {
+        var asked = 0
+        var answer = true
+        func windowShouldClose(_ sender: NSWindow) -> Bool { asked += 1; return answer }
+    }
+
+    @Test func windowDelegateAsksTheGuardThenTheOriginal() {
+        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: true)
+        let original = OriginalDelegate()
+        window.delegate = original
+        var allowed = false
+        let guardDelegate = WindowCloseDelegate(allow: { allowed })
+        guardDelegate.install(on: window)
+        #expect(window.delegate === guardDelegate)
+        #expect(!guardDelegate.windowShouldClose(window) && original.asked == 0)
+        allowed = true
+        #expect(guardDelegate.windowShouldClose(window) && original.asked == 1)
+        original.answer = false
+        #expect(!guardDelegate.windowShouldClose(window))
+        #expect(guardDelegate.responds(to: #selector(NSWindowDelegate.windowShouldClose(_:))))
+        guardDelegate.install(on: window)  // twice: still wraps the original only
+        #expect(guardDelegate.original === original)
+    }
+
     @Test func delegateAsksTheLibrary() throws {
         let temp = try TempDir()
         let suite = TestDefaults()

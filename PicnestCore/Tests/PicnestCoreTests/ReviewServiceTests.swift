@@ -169,6 +169,91 @@ struct ReviewServiceTests {
         #expect(try f.sessions.load(source: f.source) == s.session)
     }
 
+    @Test func applyOrganizeReKeysFavoritesAndMembers() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.toggleFavorite(["a1.jpg", "b1.jpg"])
+        let id = try #require(s.createCollection(name: "Trip", adding: ["a2.jpg", "a1.jpg"]))
+        await s.applyOrganize([
+            OrganizeMove(mediaID: "a1.jpg", to: "A/001.jpg"),
+            OrganizeMove(mediaID: "a2.jpg", to: "A/002.jpg"),
+        ])
+        #expect(s.session.favoriteIDs == ["A/001.jpg", "b1.jpg"])
+        #expect(s.session.collections.first { $0.id == id }?.memberIDs == ["A/002.jpg", "A/001.jpg"])
+        #expect(try f.sessions.load(source: f.source) == s.session)
+    }
+
+    @Test func applyOrganizeReKeysTheLayoutDraft() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.saveLayoutDraft(LayoutDocument.new(photos: ["a2.jpg", "a1.jpg"], title: "T"))
+        await s.applyOrganize([OrganizeMove(mediaID: "a1.jpg", to: "A/001.jpg")])
+        #expect(s.session.layoutDraft?.photoIDs == ["a2.jpg", "A/001.jpg"])
+        #expect(try f.sessions.load(source: f.source) == s.session)
+    }
+
+    @Test func layoutDraftIsSavedAndIsNotAnUndoStep() async throws {
+        let f = try fixture()
+        let s = f.service
+        let d = LayoutDocument.new(photos: ["a1.jpg"], title: "T")
+        s.saveLayoutDraft(d)
+        #expect(s.session.layoutDraft == d)
+        #expect(try f.sessions.load(source: f.source)?.layoutDraft == d)
+        #expect(!s.canUndo)
+        s.dontMove(["a2.jpg"])
+        s.undo()
+        #expect(s.canRedo)
+        s.saveLayoutDraft(nil)
+        #expect(s.canRedo)
+        #expect(try f.sessions.load(source: f.source)?.layoutDraft == nil)
+    }
+
+    @Test func favoriteChangeIsSavedAndIsNotAnUndoStep() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.toggleFavorite(["a1.jpg"])
+        #expect(s.session.favoriteIDs == ["a1.jpg"])
+        #expect(try f.sessions.load(source: f.source)?.favoriteIDs == ["a1.jpg"])
+        #expect(!s.canUndo)
+        // A collection change is saved too, and does not clear redo.
+        s.dontMove(["a2.jpg"])
+        s.undo()
+        #expect(s.canRedo)
+        let id = try #require(s.createCollection(name: "Trip", adding: ["a1.jpg"]))
+        #expect(s.renameCollection(id, to: "Trips"))
+        s.addToCollection(["b1.jpg"], id)
+        s.removeFromCollection(["a1.jpg"], id)
+        #expect(s.canRedo)
+        await s.settled()
+        let saved = try #require(try f.sessions.load(source: f.source))
+        #expect(saved.collections.map(\.name) == ["Trips"] && saved.collections[0].memberIDs == ["b1.jpg"])
+        s.deleteCollection(id)
+        #expect(try f.sessions.load(source: f.source)?.collections == [])
+        #expect(s.createCollection(name: " ", adding: []) == nil)
+    }
+
+    @Test func trashedFavoriteStaysInTheSessionAndUndoBringsItBack() async throws {
+        let (f, _) = try fakeFixture()
+        let s = f.service
+        s.toggleFavorite(["a2.jpg"])
+        _ = await s.moveToTrash(["a2.jpg"])
+        #expect(s.session.favoriteIDs == ["a2.jpg"])
+        #expect(CollectionService.visibleFavorites(in: s.session).isEmpty)
+        s.undo()
+        await s.settled()
+        #expect(CollectionService.visibleFavorites(in: s.session) == ["a2.jpg"])
+    }
+
+    @Test func undoOfAMoveKeepsFavorites() async throws {
+        let f = try fixture()
+        let s = f.service
+        s.toggleFavorite(["a1.jpg"])
+        s.move(["a2.jpg"], to: catB.id)
+        s.undo()
+        await s.settled()
+        #expect(s.session.favoriteIDs == ["a1.jpg"])
+    }
+
     /// Final review I4: a failed save sets `saveError`, and `retrySave` saves again.
     @Test func failedSaveCanBeRetried() async throws {
         let f = try fixture()
@@ -584,6 +669,23 @@ struct ReviewServiceTests {
         #expect(s.folderError == nil)
     }
 
+    @Test func folderRenameReKeysFavoritesAndMembers() async throws {
+        let ops = FakeTrashOps()  // The Trash is fake, so the test leaves nothing in the real Trash.
+        let (s, root, source, a) = try folderFixture(trash: TrashService(fileOps: ops))
+        defer { withExtendedLifetime(root) {} }
+        ops.add(source.appending(path: "A/p2.jpg"))
+        s.toggleFavorite(["A/p1.jpg", "A/p2.jpg"])
+        let id = try #require(s.createCollection(name: "Trip", adding: ["A/p2.jpg", "A/p1.jpg"]))
+        _ = await s.moveToTrash(["A/p2.jpg"])  // A trashed favorite and member in the folder.
+        s.rename(a.id, to: "Holiday")
+        await s.settled()
+        #expect(s.session.favoriteIDs == ["Holiday/p1.jpg", "Holiday/p2.jpg"])
+        #expect(s.session.collections.first { $0.id == id }?.memberIDs == ["Holiday/p2.jpg", "Holiday/p1.jpg"])
+        #expect(s.session.trashedIDs == ["Holiday/p2.jpg"])
+        let sessions = SessionRepository(root: root.url.appending(path: "Sessions", directoryHint: .isDirectory))
+        #expect(try sessions.load(source: source) == s.session)
+    }
+
     @Test func renamingACategoryWhoseFolderIsNotOnDiskStaysUndoable() async throws {
         let f = try fixture()
         let s = f.service
@@ -602,7 +704,11 @@ struct ReviewServiceTests {
         s.rename(a.id, to: "Holiday")
         await s.settled()
         #expect(category(a.id, s)?.displayName == "A")
-        #expect(s.folderError != nil)
+        guard case .renameFailed(let from, let to, _) = s.folderError else {
+            Issue.record("Expected renameFailed, got \(String(describing: s.folderError))")
+            return
+        }
+        #expect(from == "A" && to == "Holiday")
         #expect(FileManager.default.fileExists(atPath: source.appending(path: "A/p1.jpg").path))
         #expect(s.session.scan.media.map(\.id) == ["A/p1.jpg", "A/p2.jpg"])
     }
@@ -663,7 +769,7 @@ struct ReviewServiceTests {
         #expect(errors.isEmpty)
         #expect(s.session.trashedIDs == ["A/p1.jpg", "A/p2.jpg"])
         #expect(FileManager.default.fileExists(atPath: source.appending(path: "A/untracked.txt").path))
-        #expect(s.folderError?.contains("\"A\" stays") == true)
+        #expect(s.folderError == .folderKept("A", otherFiles: 3))  // The fake Trash leaves p1 and p2 on disk.
     }
 
     // MARK: - Move to Trash
@@ -918,6 +1024,122 @@ struct ReviewServiceTests {
         #expect(s.session.states["a2.jpg"] == nil)
         #expect(s.session.categories.allSatisfy { !$0.exampleIDs.contains("a2.jpg") })
         #expect(s.session.trashedIDs == ["a2.jpg"])
+    }
+
+    // MARK: - Put back from Recently Deleted
+
+    @Test func trashRecordsTheStateBeforeTrash() async throws {
+        let (f, _) = try fakeFixture()
+        let s = f.service
+        s.move(["a2.jpg"], to: catB.id)
+        _ = await s.moveToTrash(["a2.jpg", "x1.jpg"])
+        let records = Dictionary(uniqueKeysWithValues: s.session.trashed.map { ($0.mediaID, $0) })
+        #expect(records["a2.jpg"]?.stateBeforeTrash == .manual(catB.id))
+        #expect(records["x1.jpg"]?.stateBeforeTrash == .unreadable)
+    }
+
+    @Test func putBackRestoresFileStateAndFavorite() async throws {
+        let (f, ops) = try fakeFixture()
+        let s = f.service
+        s.move(["a2.jpg"], to: catB.id)
+        s.toggleFavorite(["a2.jpg"])
+        _ = await s.moveToTrash(["a2.jpg"])
+        #expect(s.session.states["a2.jpg"] == nil)
+
+        s.putBack(["a2.jpg"])
+        await s.settled()
+
+        #expect(s.lastPutBackErrors.isEmpty)
+        #expect(s.session.trashed.isEmpty)
+        #expect(ops.exists(f.source.appending(path: "a2.jpg")))
+        #expect(s.session.states["a2.jpg"] == .manual(catB.id))
+        #expect(s.session.favoriteIDs == ["a2.jpg"])
+        // Example places do not come back.
+        #expect(s.session.categories.allSatisfy { !$0.exampleIDs.contains("a2.jpg") })
+        #expect(try f.sessions.load(source: f.source) == s.session)
+    }
+
+    @Test func putBackOfAnEmptiedTrashKeepsTheRecord() async throws {
+        let (f, ops) = try fakeFixture()
+        let s = f.service
+        _ = await s.moveToTrash(["a2.jpg", "b1.jpg"])
+        ops.delete(URL(filePath: try #require(s.session.trashed.first { $0.mediaID == "a2.jpg" }).trashPath))
+
+        s.putBack(["a2.jpg", "b1.jpg"])
+        await s.settled()
+
+        #expect(s.lastPutBackErrors.count == 1)
+        #expect(s.lastPutBackErrors.first?.mediaID == "a2.jpg")
+        guard case .cannotPutBack = s.lastPutBackErrors.first else { Issue.record("expected cannotPutBack"); return }
+        #expect(s.session.trashedIDs == ["a2.jpg"])
+        #expect(ops.exists(f.source.appending(path: "b1.jpg")))
+    }
+
+    @Test func putBackWhenTheOriginalPathIsTakenKeepsTheRecord() async throws {
+        let (f, ops) = try fakeFixture()
+        let s = f.service
+        _ = await s.moveToTrash(["a2.jpg"])
+        ops.add(f.source.appending(path: "a2.jpg"))  // Another file took the place.
+
+        s.putBack(["a2.jpg"])
+        await s.settled()
+
+        #expect(s.lastPutBackErrors.count == 1)
+        #expect(s.session.trashedIDs == ["a2.jpg"])
+        s.putBack(["nope.jpg"])  // An id that is not trashed does nothing, and clears the errors.
+        await s.settled()
+        #expect(s.lastPutBackErrors.isEmpty)
+    }
+
+    @Test func twoPutBacksInARowKeepTheErrorsOfTheFirst() async throws {
+        let (f, ops) = try fakeFixture()
+        let s = f.service
+        _ = await s.moveToTrash(["a2.jpg", "b1.jpg"])
+        ops.delete(URL(filePath: try #require(s.session.trashed.first { $0.mediaID == "a2.jpg" }).trashPath))
+
+        s.putBack(["a2.jpg"])  // Fails: the Trash file is gone.
+        s.putBack(["b1.jpg"])  // Works. It must not clear the first error.
+        await s.settled()
+
+        #expect(s.lastPutBackErrors.map(\.mediaID) == ["a2.jpg"])
+        #expect(s.session.trashedIDs == ["a2.jpg"])
+    }
+
+    @Test func putBackClearsRedo() async throws {
+        let (f, _) = try fakeFixture()
+        let s = f.service
+        _ = await s.moveToTrash(["a2.jpg"])
+        s.dontMove(["a1.jpg"])
+        s.undo()
+        #expect(s.canRedo)
+
+        s.putBack(["a2.jpg"])
+        await s.settled()
+
+        #expect(!s.canRedo)
+        // The old Trash step is still an undo step, but it does nothing for the photo now.
+        #expect(s.canUndo)
+        s.undo()  // Pops the old Trash step. The photo is not trashed any more, so nothing changes for it.
+        await s.settled()
+        #expect(s.session.trashed.isEmpty)
+        #expect(s.session.states["a2.jpg"] != nil)
+    }
+
+    @Test func putBackDropsAStateOfADeletedCategory() async throws {
+        let (f, _) = try fakeFixture()
+        let s = f.service
+        s.move(["a2.jpg"], to: catB.id)
+        _ = await s.moveToTrash(["a2.jpg"])
+        s.delete(catB.id)
+        await s.settled()
+
+        s.putBack(["a2.jpg"])
+        await s.settled()
+
+        #expect(s.session.trashed.isEmpty)
+        // The classifier sorts it again; it has no manual pick for the deleted category.
+        #expect(s.session.states["a2.jpg"] != .manual(catB.id))
+        #expect(s.session.states["a2.jpg"] != nil)
     }
 
     /// A new action after a trash clears redo; a new trash clears redo too.

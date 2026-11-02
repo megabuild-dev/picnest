@@ -60,6 +60,7 @@ public final class ScanService: Sendable {
     /// it then proposes them from the kept readable images, as a first scan does. Don't move photos stay.
     /// Trashed photos leave the session (spec 7.4): one whose file is not at its original path is dropped,
     /// and one that is there again (put back with Finder) is scanned as a new photo.
+    /// Favorites and collections stay. Only the ids of removed files leave them; a photo that is back keeps its marks.
     public func rescan(_ s: Session, source: URL) -> AsyncThrowingStream<ScanEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
@@ -162,6 +163,11 @@ public final class ScanService: Sendable {
         session.categories = categories
         session.states = classified
         session.scan = scan
+        // Favorites and collection members are kept when the file is in the new scan, even if the old
+        // session listed it as trashed: the file is back at its path. Others are dropped.
+        let present = Set(scan.media.map(\.id))
+        CollectionService.prune(keeping: present, in: &session)
+        LayoutService.prune(keeping: present, in: &session)
         // A trashed photo found at its original path was classified above as new. One not found is not
         // in `scan`. Either way, it is no longer trashed.
         session.trashed = []

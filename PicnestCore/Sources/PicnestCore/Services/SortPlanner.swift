@@ -36,9 +36,11 @@ public struct SortPlanner: Sendable {
         self.timeZone = timeZone
     }
 
-    /// Makes a display name safe to use as a folder name.
+    /// Makes a display name safe to use as a folder name. The name is in NFC, so a composed and a
+    /// decomposed spelling of the same name give the same folder.
     public static func folderName(for displayName: String) -> String {
         var name = displayName
+            .precomposedStringWithCanonicalMapping
             .replacingOccurrences(of: "/", with: "-")
             .replacingOccurrences(of: ":", with: "-")
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -218,11 +220,11 @@ public struct SortPlanner: Sendable {
         }
     }
 
-    private static func key(_ name: String) -> String {
+    static func key(_ name: String) -> String {
         name.precomposedStringWithCanonicalMapping.lowercased()
     }
 
-    private static func uniqueName(_ name: String, taken: Set<String>) -> String {
+    static func uniqueName(_ name: String, taken: Set<String>) -> String {
         guard taken.contains(key(name)) else { return name }
         let ns = name as NSString
         let ext = ns.pathExtension

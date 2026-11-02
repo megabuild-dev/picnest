@@ -10,42 +10,75 @@ struct ReviewView: View {
     @State private var isOpeningSort = false
     /// Set by the hint of the Sort sheet; the suggest sheet opens when the Sort sheet is gone.
     @State private var suggestAfterSort = false
+    /// Whether the inspector at the right shows. Kept per window.
+    @SceneStorage("inspectorShown") private var inspectorShown = true
+    /// Grid or list. Kept for the app.
+    @AppStorage(LibraryLayout.storageKey) private var layout: LibraryLayout = .grid
+    /// The sidebar hides while an editor shows (the editor fills the window).
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     private let review: ReviewService
     private let sortService: SortService
     private let library: LibraryService
     private let app: AppModel
+    private let preferences: SidebarPreferences?
 
     /// The view model is made once per screen, in the `@State` initializer. `app` scans again
     /// (`rescan`) and closes the session after a sort (`done`, spec 9.1). `afterScan` is true when a scan
     /// opened this review (spec 3.7).
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, sortService: SortService,
-         library: LibraryService, app: AppModel, afterScan: Bool = false) {
+         library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil,
+         photoEdits: PhotoEditService, layoutExport: LayoutExportService) {
+        self.preferences = preferences
         self.review = review
         self.sortService = sortService
         self.library = library
         self.app = app
         _model = State(initialValue: ReviewViewModel(
-            review: review, classify: classify, thumbnails: thumbnails, library: library, app: app,
+            review: review, classify: classify, thumbnails: thumbnails, library: library, photoEdits: photoEdits, layoutExport: layoutExport, app: app,
             afterScan: afterScan, onRescan: app.rescan))
     }
 
     var body: some View {
-        NavigationSplitView {
-            SidebarView(model: model)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 320)
+        alerts
+            // The suggest sheet opens by itself once after a scan (spec 3.7).
+            .task { model.suggestAfterScanIfNeeded() }
+            .onChange(of: model.isNamingNewCategory) { if model.isNamingNewCategory { newCategoryName = "" } }
+            // Edit > Undo and Redo act on this review (ReviewCommands).
+            .focusedSceneValue(\.review, model)
+            .overlay { organizingOverlay }
+    }
+
+    /// The screen with its sheets and dialogs. Split from `body` so the compiler type-checks it in time.
+    private var screen: some View {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            SidebarView(model: model, preferences: preferences)
+                .navigationSplitViewColumnWidth(min: Theme.Metrics.sidebarMin, ideal: Theme.Metrics.sidebarMin, max: Theme.Metrics.sidebarMax)
         } detail: {
-            detail
-                .background(.background)
-                .toolbar(removing: .title)
-                .toolbar { toolbar }
+            if let active = model.activeEditor {
+                editorDetail(active)
+                    .toolbar(removing: .sidebarToggle)
+                    .toolbar { editorToolbar(active.session, showsRedo: active.hasToolbarRedo) }
+            } else {
+                detail
+                    .background(Theme.background.color)
+                    .navigationTitle(model.title)
+                    .navigationSubtitle(countText)
+                    .searchable(text: Bindable(model).searchText, placement: .toolbar, prompt: "Search")
+                    .toolbar { toolbar }
+                    .inspector(isPresented: $inspectorShown) {
+                        InspectorView(model: model)
+                            .inspectorColumnWidth(min: 280, ideal: 300, max: 360)
+                    }
+            }
         }
+        .onChange(of: model.isEditing) { columnVisibility = model.isEditing ? .detailOnly : .automatic }
         .alert("New Category", isPresented: Bindable(model).isNamingNewCategory) {
             TextField("Name", text: $newCategoryName)
             Button("Create") { model.createNewCategory(name: newCategoryName) }
             Button("Cancel", role: .cancel) { model.cancelNewCategory() }
         } message: {
-            Text(model.newCategoryMovesPhotos ? "The selected photos go to the new category." : "Name the new category.")
+            model.newCategoryMovesPhotos ? Text("The selected photos go to the new category.") : Text("Name the new category.")
         }
         .sheet(item: $sort, onDismiss: {
             if suggestAfterSort {
@@ -53,11 +86,53 @@ struct ReviewView: View {
                 model.openSuggest()
             }
         }) { SortSheet(model: $0) }
+        .sheet(isPresented: editingCategoryBinding, onDismiss: model.openPendingCollection) {
+            if let category = model.categories.first(where: { $0.id == model.editingCategory }) {
+                EditCategorySheet(model: model, category: category) { model.editingCategory = nil }
+            }
+        }
+        .confirmationDialog(
+            model.deletingCategory.map(model.deleteConfirmation(for:)) ?? "", isPresented: deletingCategoryBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let deleting = model.deletingCategory { Task { await model.deleteCategory(deleting) } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(model.deletingCategory.map(model.deleteMessage(for:)) ?? "")
+        }
+        .sheet(item: Bindable(model).editingCollection) { CollectionNameSheet(model: model, editor: $0) }
+        .sheet(item: Bindable(model).addingPhotos) { AddPhotosSheet(model: model, target: $0) }
+        .confirmationDialog(
+            model.deletingCollection.map(model.deleteCollectionTitle(for:)) ?? "", isPresented: deletingCollectionBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Collection", role: .destructive) {
+                if let deleting = model.deletingCollection { model.deleteCollection(deleting) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The photos stay in their folders.")
+        }
+    }
+
+    /// The alerts and the confirmation dialogs.
+    private var alerts: some View {
+        screen
         .sheet(item: Bindable(model).suggest) { SuggestSheet(model: $0) }
         .alert("Undo Last Sort", isPresented: undoMessageBinding) {
             Button("OK", role: .cancel) { model.undoSortMessage = nil }
         } message: {
             Text(model.undoSortMessage ?? "")
+        }
+        // Create Layout… with a saved draft.
+        .alert("Continue your last layout?", isPresented: layoutQuestionBinding) {
+            Button("Continue Layout") { model.continueLayout() }
+            Button("Start New") { model.startNewLayout() }
+            Button("Cancel", role: .cancel) { model.cancelLayoutRequest() }
+        } message: {
+            Text(model.continueLayoutMessage)
         }
         // File > Start Over… (spec 3.3).
         .confirmationDialog("Start over?", isPresented: Bindable(model).isConfirmingStartOver,
@@ -77,6 +152,11 @@ struct ReviewView: View {
         } message: {
             Text(model.trashMessage ?? "")
         }
+        .alert("Put Back", isPresented: putBackErrorBinding) {
+            Button("OK", role: .cancel) { model.putBackErrorMessage = nil }
+        } message: {
+            Text(model.putBackErrorMessage ?? "")
+        }
         .alert("Category Folder", isPresented: folderErrorBinding) {
             Button("OK", role: .cancel) { model.dismissFolderError() }
         } message: {
@@ -95,97 +175,77 @@ struct ReviewView: View {
         } message: {
             Text(model.organizeErrorMessage ?? "")
         }
-        // The suggest sheet opens by itself once after a scan (spec 3.7).
-        .task { model.suggestAfterScanIfNeeded() }
-        .onChange(of: model.isNamingNewCategory) { if model.isNamingNewCategory { newCategoryName = "" } }
-        // Edit > Undo and Redo act on this review (ReviewCommands).
-        .focusedSceneValue(\.review, model)
-        .overlay { organizingOverlay }
     }
 
     /// A blocking overlay while **Done** moves the classified photos into category folders (spec 7.2).
     @ViewBuilder private var organizingOverlay: some View {
         if model.isOrganizing {
             ZStack {
-                Color.black.opacity(0.12).ignoresSafeArea()
+                Theme.shadow.color.opacity(0.12).ignoresSafeArea()
                 VStack(spacing: 10) {
                     Text("Organizing photos…").font(.system(size: 13, weight: .semibold))
                     if let progress = model.organizeProgress, progress.total > 0 {
                         ProgressView(value: Double(progress.done), total: Double(progress.total))
                             .frame(width: 240)
                         Text("\(progress.done.formatted()) / \(progress.total.formatted())")
-                            .font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary)
+                            .font(.system(size: 11)).monospacedDigit().foregroundStyle(Theme.textSecondary.color)
                     } else {
                         ProgressView().controlSize(.small)
                     }
                 }
                 .padding(20)
+                // A system blur, not a color: it follows the wallpaper and the appearance.
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                .shadow(color: .black.opacity(0.2), radius: 14, y: 6)
+                .shadow(color: Theme.shadow.color.opacity(0.2), radius: 14, y: 6)
             }
         }
     }
 
     @ViewBuilder private var detail: some View {
-        switch model.selectedItem {
-        case .notSure:
-            NotSureView(model: model)
+        switch model.bodyKind {
         case .duplicates:
             DuplicatesView(model: model.duplicates)
-        default:
-            PhotoGridView(model: model)
+        case .needsReview:
+            NotSureView(model: model)
+        case .library, .recentlyDeleted:
+            VStack(spacing: 0) {
+                if let category = model.selectedCategory {
+                    PhotoSetHeaderView(
+                        model: model, icon: .emoji(category.emoji), name: category.displayName, photoCount: model.count,
+                        addPhotos: { model.addingPhotos = .category(category.id) },
+                        rename: { model.editingCategory = category.id },
+                        moreItems: { CategoryMoreItems(model: model, category: category) })
+                } else if let collection = model.selectedCollection {
+                    PhotoSetHeaderView(
+                        model: model, icon: .symbol("square.stack"), name: collection.name, photoCount: model.count,
+                        addPhotos: { model.addingPhotos = .collection(collection.id) },
+                        rename: { model.requestRenameCollection(collection.id) },
+                        moreItems: { CollectionMoreItems(model: model, collection: collection) })
+                }
+                LibraryBar(model: model, layout: layout)
+                switch layout {
+                case .grid: PhotoGridView(model: model)
+                case .list: PhotoListView(model: model)
+                }
+                if model.showsFooter { LibraryFooter(count: model.count) }
+            }
         }
     }
 
+    /// The photo count under the title, for example "2,413 photos".
+    private var countText: String { CountText.photos(model.count) }
+
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            HStack(spacing: 10) {
-                Text(model.title).font(.system(size: 15, weight: .bold)).lineLimit(1)
-                CountChip(count: model.count, tint: chipTint)
-                Text(model.sourcePathText)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .help(model.sourcePathText)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-        }
         ToolbarItemGroup(placement: .primaryAction) {
-            if model.selectedItem == .duplicates {
+            if model.bodyKind == .duplicates {
                 CleanUpAllButton(model: model.duplicates)
-            } else {
-                SizeSlider(model: model)
-                Picker("Sort Order", selection: Bindable(model).sortOrder) {
-                    ForEach(ReviewViewModel.SortOrder.allCases) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.menu)
-                .fixedSize()
-                .help("Sort order")
+            } else if model.showsLayoutPicker {
+                LibraryLayoutPicker(layout: $layout)
             }
-            if model.canUndoLastSort {
-                Button("Undo Last Sort", systemImage: "arrow.uturn.backward") {
-                    Task { await model.undoLastSort() }
-                }
-                .labelStyle(.titleAndIcon)
-                .disabled(!model.canSortOrRescan)
-                .help("Put the photos of the last sort back")
+            Button(inspectorShown ? "Hide Inspector" : "Show Inspector", systemImage: "sidebar.trailing") {
+                inspectorShown.toggle()
             }
-            Button("Rescan", systemImage: "arrow.clockwise", action: model.rescan)
-                .labelStyle(.titleAndIcon)
-                .disabled(!model.canSortOrRescan)
-                .help("Scan the folder again and keep your changes")
-            if model.selectedItem == .notSure && model.canSuggest {
-                Button("Suggest Categories…", systemImage: "sparkles", action: model.openSuggest)
-                    .labelStyle(.titleAndIcon)
-                    .help("Find groups in the Not sure photos and make categories")
-            }
-            if model.selectedItem == .notSure && !model.notSureGroups.isEmpty {
-                Button("Accept All Best Guesses", systemImage: "checkmark", action: model.acceptAll)
-                    .labelStyle(.titleAndIcon)
-                    .foregroundStyle(.tint)
-                    .help("Move every Not sure photo to its best guess")
-            }
+            .help(inspectorShown ? "Hide Inspector" : "Show Inspector")
             Button("Sort Photos…", action: openSort)
                 .buttonStyle(.bordered)
                 .disabled(isOpeningSort || !model.canSortOrRescan)
@@ -193,7 +253,61 @@ struct ReviewView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(!model.canDone)
                 .help("Create a folder for each category, move the photos into it, and rename them")
+            moreMenu
         }
+    }
+
+    /// The body of the open editor.
+    @ViewBuilder private func editorDetail(_ active: ActiveEditor) -> some View {
+        switch active {
+        case .photo(let editor):
+            PhotoEditorView(model: editor, library: model)
+                .navigationTitle("Edit Photo")
+        case .layout(let editor):
+            LayoutEditorView(model: editor, library: model)
+                .navigationTitle("Create Layout")
+        }
+    }
+
+    /// Back and Redo only: no avatar, no tab bar, no search (spec 6).
+    @ToolbarContentBuilder private func editorToolbar(_ editor: any EditorSession, showsRedo: Bool) -> some ToolbarContent {
+        ToolbarItem(placement: .navigation) {
+            Button("Back to Photos", systemImage: "chevron.left", action: editor.requestClose)
+                .labelStyle(.iconOnly)
+                .help("Back to Photos")
+                .disabled(editor.isExporting)
+        }
+        // The layout editor has its own Redo, next to Undo, in its header.
+        if showsRedo {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Redo", systemImage: "arrow.uturn.forward", action: editor.redo)
+                    .labelStyle(.iconOnly)
+                    .disabled(!editor.canRedo)
+                    .help("Redo")
+            }
+        }
+    }
+
+    /// The actions that the mockup has no button for.
+    private var moreMenu: some View {
+        Menu("More", systemImage: "ellipsis.circle") {
+            if model.canUndoLastSort {
+                Button("Undo Last Sort", systemImage: "arrow.uturn.backward") {
+                    Task { await model.undoLastSort() }
+                }
+                .disabled(!model.canSortOrRescan)
+            }
+            Button("Rescan", systemImage: "arrow.clockwise", action: model.rescan)
+                .disabled(!model.canSortOrRescan)
+            if model.selectedItem == .notSure && model.canSuggest {
+                Button("Suggest Categories…", systemImage: "sparkles", action: model.openSuggest)
+            }
+            if model.selectedItem == .notSure && !model.notSureGroups.isEmpty {
+                Button("Accept All Best Guesses", systemImage: "checkmark", action: model.acceptAll)
+            }
+        }
+        .menuIndicator(.hidden)
+        .help("More")
     }
 
     /// Makes the first plan from the latest review states, then shows the Sort sheet.
@@ -209,6 +323,10 @@ struct ReviewView: View {
         }
     }
 
+    private var layoutQuestionBinding: Binding<Bool> {
+        Binding(get: { model.askingToContinueLayout != nil }, set: { _ in })  // Each button of the alert answers the question.
+    }
+
     private var undoMessageBinding: Binding<Bool> {
         Binding(get: { model.undoSortMessage != nil }, set: { if !$0 { model.undoSortMessage = nil } })
     }
@@ -221,6 +339,22 @@ struct ReviewView: View {
         Binding(get: { model.trashMessage != nil }, set: { if !$0 { model.trashMessage = nil } })
     }
 
+    private var putBackErrorBinding: Binding<Bool> {
+        Binding(get: { model.putBackErrorMessage != nil }, set: { if !$0 { model.putBackErrorMessage = nil } })
+    }
+
+    private var deletingCollectionBinding: Binding<Bool> {
+        Binding(get: { model.deletingCollection != nil }, set: { if !$0 { model.deletingCollection = nil } })
+    }
+
+    private var deletingCategoryBinding: Binding<Bool> {
+        Binding(get: { model.deletingCategory != nil }, set: { if !$0 { model.deletingCategory = nil } })
+    }
+
+    private var editingCategoryBinding: Binding<Bool> {
+        Binding(get: { model.editingCategory != nil }, set: { if !$0 { model.editingCategory = nil } })
+    }
+
     private var folderErrorBinding: Binding<Bool> {
         Binding(get: { model.folderErrorMessage != nil }, set: { if !$0 { model.dismissFolderError() } })
     }
@@ -231,53 +365,6 @@ struct ReviewView: View {
 
     private var organizeErrorBinding: Binding<Bool> {
         Binding(get: { model.organizeErrorMessage != nil }, set: { if !$0 { model.dismissOrganizeError() } })
-    }
-
-    private var chipTint: Color {
-        switch model.selectedItem {
-        case .notSure: ReviewStyle.amber
-        case .changedByYou: ReviewStyle.green
-        case .category: .accentColor
-        default: .secondary
-        }
-    }
-}
-
-/// The count next to the title, in a soft capsule.
-private struct CountChip: View {
-    let count: Int
-    let tint: Color
-
-    var body: some View {
-        Text(count.formatted())
-            .font(.system(size: 12, weight: .semibold))
-            .monospacedDigit()
-            .foregroundStyle(tint)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 3)
-            .background(tint.opacity(0.14), in: Capsule())
-    }
-}
-
-/// Thumbnail size: left is small (8 columns), right is large (2 columns).
-private struct SizeSlider: View {
-    let model: ReviewViewModel
-
-    var body: some View {
-        let range = ReviewViewModel.columnRange
-        let size = Binding<Double>(
-            get: { Double(range.upperBound + range.lowerBound - model.columns) },
-            set: { model.columns = range.upperBound + range.lowerBound - Int($0.rounded()) })
-        HStack(spacing: 6) {
-            Image(systemName: "square.grid.3x3").font(.system(size: 10)).foregroundStyle(.secondary)
-            Slider(value: size, in: Double(range.lowerBound)...Double(range.upperBound), step: 1)
-                .frame(width: 90)
-                .controlSize(.small)
-            Image(systemName: "square.grid.2x2").font(.system(size: 12)).foregroundStyle(.secondary)
-        }
-        .help("Thumbnail size")
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Thumbnail size")
     }
 }
 
@@ -293,6 +380,16 @@ enum ReviewPreviewData {
     }
 
     /// A library over a temporary sessions folder and a private defaults suite.
+    static func photoEdits() -> PhotoEditService {
+        let images = ImageRepository()
+        return PhotoEditService(thumbnails: ThumbnailService(images: images), images: images)
+    }
+
+    static func layoutExport() -> LayoutExportService {
+        let images = ImageRepository()
+        return LayoutExportService(thumbnails: ThumbnailService(images: images), images: images)
+    }
+
     static func library() -> LibraryService {
         let root = FileManager.default.temporaryDirectory.appending(path: "PicnestPreview", directoryHint: .isDirectory)
         let sessions = SessionRepository(root: root.appending(path: "Sessions"))
@@ -360,18 +457,20 @@ extension ReviewView {
     fileprivate init(previewSelecting ids: [MediaID]) {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),
-                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app())
+                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app(),
+                  photoEdits: ReviewPreviewData.photoEdits(), layoutExport: ReviewPreviewData.layoutExport())
         let model = _model.wrappedValue
         for id in ids { model.click(id, modifiers: .command) }
     }
 }
 
 extension ReviewView {
-    /// The Not sure view: 6 uncertain photos in 3 groups.
+    /// The Needs Review view: 6 uncertain photos in 3 groups.
     fileprivate init(previewNotSure: Void) {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),
-                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app())
+                  sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app(),
+                  photoEdits: ReviewPreviewData.photoEdits(), layoutExport: ReviewPreviewData.layoutExport())
         _model.wrappedValue.selectedItem = .notSure
     }
 }

@@ -87,3 +87,23 @@ import Testing
     #expect(e.imageCallCount == 2 && e.textCallCount == 1)
     #expect(e.imageURLs.map(\.lastPathComponent) == ["a.jpg", "zz.jpg"])
 }
+
+@Test func assignmentWeakMatchUsesTheScoreOfTheUncertainRule() {
+    let settings = ClassifySettings.default
+    func make(score: Float, percent: Int) -> Assignment {
+        Assignment(categoryID: UUID(), score: score, secondCategoryID: UUID(), secondScore: score - 0.01,
+                   percent: percent, uncertain: true)
+    }
+    #expect(make(score: settings.minScore - 0.01, percent: 90).isWeakMatch(settings: settings))
+    #expect(!make(score: settings.minScore, percent: 10).isWeakMatch(settings: settings))
+    #expect(!make(score: settings.minScore + 0.1, percent: 40).isWeakMatch(settings: settings))
+}
+
+@Test func assignmentPlaceholderIsAPhotoWithoutAScore() {
+    let placeholder = Assignment(categoryID: UUID(), score: 0, secondCategoryID: nil, secondScore: nil, percent: 0, uncertain: true)
+    #expect(placeholder.isPlaceholder)
+    #expect(!placeholder.isWeakMatch(settings: .default))
+    let real = Assignment(categoryID: UUID(), score: 0.1, secondCategoryID: nil, secondScore: nil, percent: 30, uncertain: true)
+    #expect(!real.isPlaceholder)
+    #expect(real.isWeakMatch(settings: .default))
+}

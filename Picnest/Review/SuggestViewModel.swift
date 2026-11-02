@@ -33,7 +33,7 @@ final class SuggestViewModel: Identifiable {
         var ids: [MediaID] { suggestion.ids }
     }
 
-    static let emptyText = "No new groups found. Move the photos by hand or make a category with New Category…"
+    static let emptyText = String(localized: "No new groups found. Move the photos by hand or make a category with New Category…")
     static let thumbnailsPerRow = 4
 
     private(set) var state: State = .loading
@@ -67,7 +67,7 @@ final class SuggestViewModel: Identifiable {
         } catch is CancellationError {
             // The sheet closed.
         } catch {
-            state = .failed(error.localizedDescription)
+            state = .failed(CoreErrorMessages.text(for: error))
         }
     }
 
@@ -94,15 +94,14 @@ final class SuggestViewModel: Identifiable {
 
     /// "Add 1 Category" or "Add <N> Categories".
     var addTitle: String {
-        let n = checkedCount
-        return n == 1 ? "Add 1 Category" : "Add \(n.formatted(.number.locale(locale))) Categories"
+        String(localized: "Add \(checkedCount) Categories", locale: locale)
     }
 
     /// The red hint under the name of a checked row, or nil. An unchecked row has no hint.
     func nameHint(for row: Row) -> String? {
         guard row.isOn else { return nil }
         let name = Self.key(row.name)
-        guard !name.isEmpty else { return "Enter a name." }
+        guard !name.isEmpty else { return String(localized: "Enter a name.") }
         if review.session.categories.contains(where: { Self.key($0.displayName) == name }) { return Self.used }
         let others = rows.filter { $0.isOn && $0.id != row.id }
         return others.contains { Self.key($0.name) == name } ? Self.used : nil
@@ -125,7 +124,7 @@ final class SuggestViewModel: Identifiable {
         onAdded(review.addSuggested(suggestions))
     }
 
-    private static let used = "This name is already used."
+    private static let used = String(localized: "This name is already used.")
 
     private static func key(_ name: String) -> String {
         name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()

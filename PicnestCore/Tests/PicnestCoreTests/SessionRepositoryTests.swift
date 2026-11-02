@@ -161,6 +161,33 @@ private func makeSession(source: String) -> Session {
     #expect(json["notDuplicateKeys"] as? [String] == ["a", "b", "c", "d", "e"])
 }
 
+@Test func oldSessionWithoutFavoritesAndCollectionsDecodes() throws {
+    let dir = try TempDir()
+    let repo = SessionRepository(root: dir.url)
+    let source = URL(filePath: "/x/src")
+    let s = makeSession(source: source.path)
+    try repo.save(s)
+    let file = repo.directory(for: source).appending(path: "session.json")
+    var json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
+    #expect(json["favoriteIDs"] != nil)
+    #expect(json["collections"] != nil)
+    json.removeValue(forKey: "favoriteIDs")
+    json.removeValue(forKey: "collections")
+    try JSONSerialization.data(withJSONObject: json).write(to: file)
+
+    let loaded = try #require(try repo.load(source: source))
+    #expect(loaded.favoriteIDs == [])
+    #expect(loaded.collections == [])
+    #expect(loaded == s)
+}
+
+@Test func favoriteIDsAreSavedSorted() throws {
+    var s = makeSession(source: "/x/src")
+    s.favoriteIDs = ["b.jpg", "a.jpg"]
+    let json = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(s)) as? [String: Any])
+    #expect(json["favoriteIDs"] as? [String] == ["a.jpg", "b.jpg"])
+}
+
 /// Final review M2: a session with every field set saves and loads equal. The custom `encode` must write
 /// every field: the test also checks that the JSON has 1 key for each stored property.
 @Test func sessionWithEveryFieldRoundTrips() throws {
@@ -197,7 +224,10 @@ private func makeSession(source: String) -> Session {
             skipped: [.hidden: 1, .symlink: 2, .webFile: 3]),
         sortedAt: date.addingTimeInterval(60),
         trashed: [TrashedPhoto(mediaID: "g.jpg", trashPath: "/Users/x/.Trash/g.jpg", time: date.addingTimeInterval(5))],
-        notDuplicateKeys: [DuplicateGroup.key(for: ["a.jpg", "b.jpg"]), DuplicateGroup.key(for: ["c.jpg", "d.jpg"])])
+        notDuplicateKeys: [DuplicateGroup.key(for: ["a.jpg", "b.jpg"]), DuplicateGroup.key(for: ["c.jpg", "d.jpg"])],
+        favoriteIDs: ["a.jpg", "b.jpg"],
+        collections: [PhotoCollection(name: "Trip", memberIDs: ["b.jpg", "a.jpg"], order: 0)],
+        layoutDraft: LayoutDocument.new(photos: ["b.jpg", "a.jpg"], title: "Trip"))
 
     try repo.save(s)
     #expect(try repo.load(source: source) == s)
@@ -205,16 +235,68 @@ private func makeSession(source: String) -> Session {
     let file = repo.directory(for: source).appending(path: "session.json")
     let json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
     let fields = Set(Mirror(reflecting: s).children.compactMap(\.label))
-    #expect(fields.count == 8)
+    #expect(fields.count == 11)
     #expect(Set(json.keys) == fields)
 
     // A `session.json` from before Move to Trash and the Duplicates view has neither new key.
     var old = json
     old.removeValue(forKey: "trashed")
     old.removeValue(forKey: "notDuplicateKeys")
+    old.removeValue(forKey: "favoriteIDs")
+    old.removeValue(forKey: "collections")
+    old.removeValue(forKey: "layoutDraft")
     try JSONSerialization.data(withJSONObject: old).write(to: file)
     var expected = s
+    expected.layoutDraft = nil
     expected.trashed = []
     expected.notDuplicateKeys = []
+    expected.favoriteIDs = []
+    expected.collections = []
     #expect(try repo.load(source: source) == expected)
+}
+
+/// Moving the folder re-links the session. Favorites and collections stay (the ids are relative paths).
+@Test func relinkKeepsFavoritesAndCollections() throws {
+    let dir = try TempDir()
+    let repo = SessionRepository(root: dir.url.appending(path: "Sessions", directoryHint: .isDirectory))
+    let old = dir.url.appending(path: "Old", directoryHint: .isDirectory)
+    let new = dir.url.appending(path: "New", directoryHint: .isDirectory)
+    var s = makeSession(source: old.path)
+    s.favoriteIDs = ["a.jpg"]
+    s.collections = [PhotoCollection(name: "Trip", memberIDs: ["a.jpg"], order: 0)]
+    try repo.save(s)
+    let relinked = try #require(try repo.relink(from: old, to: new))
+    #expect(relinked.favoriteIDs == ["a.jpg"])
+    #expect(relinked.collections == s.collections)
+    #expect(try repo.load(source: new)?.favoriteIDs == ["a.jpg"])
+}
+
+/// A record from before Put Back has no `stateBeforeTrash` key. It decodes as nil.
+@Test func oldTrashedPhotoWithoutStateDecodes() throws {
+    let json = Data(#"{"mediaID":"a.jpg","trashPath":"/Trash/a.jpg","time":1700000000}"#.utf8)
+    let record = try JSONDecoder().decode(TrashedPhoto.self, from: json)
+    #expect(record.stateBeforeTrash == nil)
+    let cat = UUID()
+    let with = TrashedPhoto(mediaID: "a.jpg", trashPath: "/Trash/a.jpg", time: Date(timeIntervalSince1970: 1), stateBeforeTrash: .manual(cat))
+    #expect(try JSONDecoder().decode(TrashedPhoto.self, from: JSONEncoder().encode(with)) == with)
+}
+
+/// A `session.json` from before the layout editor has no `layoutDraft` key. It must open.
+@Test func oldSessionWithoutLayoutDraftDecodes() throws {
+    let dir = try TempDir()
+    let repo = SessionRepository(root: dir.url)
+    let source = URL(filePath: "/x/src")
+    var s = makeSession(source: source.path)
+    s.layoutDraft = LayoutDocument.new(photos: ["a.jpg"], title: "T")
+    try repo.save(s)
+    let file = repo.directory(for: source).appending(path: "session.json")
+    var json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
+    #expect(json["layoutDraft"] != nil)
+    json.removeValue(forKey: "layoutDraft")
+    try JSONSerialization.data(withJSONObject: json).write(to: file)
+
+    let loaded = try #require(try repo.load(source: source))
+    #expect(loaded.layoutDraft == nil)
+    s.layoutDraft = nil
+    #expect(loaded == s)
 }

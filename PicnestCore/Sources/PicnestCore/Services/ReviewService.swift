@@ -1,6 +1,16 @@
 import Foundation
 import Observation
 
+/// Why a category folder change failed. The app maps each case to text. The `String` of `renameFailed` is the system reason.
+public enum FolderError: Error, Equatable, Sendable {
+    /// The folder `from` could not be renamed to `to`.
+    case renameFailed(from: String, to: String, reason: String)
+    /// A deleted category's folder stays, because it holds files that were not in the category.
+    case folderKept(String, otherFiles: Int)
+    /// A deleted category's folder could not be removed.
+    case folderNotRemoved(String)
+}
+
 /// Owns the open session during review (spec 3.3, 3.4, 4.7).
 /// Each action changes `session` at once, pushes an undo snapshot, then classifies the photos again
 /// on a background task and saves the session. Only the result of the newest change is applied.
@@ -17,6 +27,8 @@ public final class ReviewService {
     /// The photos that the last undo could not put back, or the last redo could not trash again
     /// (spec 7.4). Those photos stay as they were. Empty after an undo or redo with no error.
     public private(set) var lastUndoErrors: [TrashError] = []
+    /// The photos that the last `putBack(_:)` could not put back. They stay trashed. Empty after a good put back.
+    public private(set) var lastPutBackErrors: [TrashError] = []
     /// True while a Move to Trash, a clean-up, or a Trash undo or redo runs (final review I1). The app turns
     /// off Sort, Rescan, Done, and Undo Last Sort meanwhile; `settled()` waits until it is false.
     public private(set) var isMovingFiles = false
@@ -25,7 +37,7 @@ public final class ReviewService {
     public private(set) var mediaByID: [MediaID: MediaFile]
     public private(set) var mediaRevision = 0
     /// Why the last category folder rename failed, or nil. The category keeps its name then.
-    public private(set) var folderError: String?
+    public private(set) var folderError: FolderError?
 
     /// False when only 1 category is left. `delete` ignores the last category.
     public var canDeleteCategory: Bool { session.categories.count > 1 }
@@ -162,7 +174,7 @@ public final class ReviewService {
     }
 
     /// Gives photos new paths: `map` holds the new path of each moved photo. Re-keys `scan.media` (id and
-    /// relativePath), `dates`, `states`, `trashed`, every `exampleIDs`, the image vectors, and the embedding
+    /// relativePath), `dates`, `states`, `trashed`, `favoriteIDs`, the collection members, the layout draft, every `exampleIDs`, the image vectors, and the embedding
     /// cache. Drops the duplicate state, because a moved group is a new group. Then saves the session.
     private func rekey(_ map: [MediaID: String]) async {
         var media: [MediaFile] = []
@@ -190,6 +202,8 @@ public final class ReviewService {
             moved.mediaID = map[record.mediaID] ?? record.mediaID
             return moved
         }
+        CollectionService.rekey(map, in: &session)
+        LayoutService.rekey(map, in: &session)
         session.notDuplicateKeys = []
         lastDuplicates = []
         pixelSizes = [:]
@@ -332,7 +346,7 @@ public final class ReviewService {
         }.value
         switch result {
         case .failure(let error):
-            folderError = "The folder \"\(old)\" could not be renamed to \"\(new)\": \(error.localizedDescription)"
+            folderError = .renameFailed(from: old, to: new, reason: error.localizedDescription)
         case .success(let moved):
             guard let i = session.categories.firstIndex(where: { $0.id == c }) else { return }
             session.categories[i].displayName = name
@@ -422,9 +436,7 @@ public final class ReviewService {
         let folders = folders, source = source
         let removal = await Task.detached(priority: .userInitiated) { folders.removeIfEmpty(folder, in: source) }.value
         if case .kept(let others) = removal {
-            folderError = others > 0
-                ? "The folder \"\(folder)\" stays, because it holds \(others) file\(others == 1 ? "" : "s") that were not in this category."
-                : "The folder \"\(folder)\" could not be removed."
+            folderError = others > 0 ? .folderKept(folder, otherFiles: others) : .folderNotRemoved(folder)
         }
         return errors
     }
@@ -726,6 +738,55 @@ public final class ReviewService {
         return (g.kind, keep, keeps, present.filter { !protected.contains($0) })
     }
 
+    // MARK: - Favorites and collections
+
+    // These are not review steps: they push no undo step and do not clear redo. They skip `perform`,
+    // because its guard compares only `categories` and `states`, so it would lose the change.
+
+    /// Adds the photos to the favorites, or removes them if all of them are favorites (`CollectionService`).
+    public func toggleFavorite(_ ids: [MediaID]) {
+        saveIfChanged(CollectionService.toggleFavorite(ids, in: &session))
+    }
+
+    /// Makes a collection with the photos. Returns nil when the name is empty or in use.
+    @discardableResult
+    public func createCollection(name: String, adding ids: [MediaID]) -> CollectionID? {
+        let id = CollectionService.create(name: name, adding: ids, in: &session)
+        saveIfChanged(id != nil)
+        return id
+    }
+
+    /// Returns false when the name is empty, in use, or the same as before.
+    @discardableResult
+    public func renameCollection(_ c: CollectionID, to name: String) -> Bool {
+        let changed = CollectionService.rename(c, to: name, in: &session)
+        saveIfChanged(changed)
+        return changed
+    }
+
+    public func deleteCollection(_ c: CollectionID) {
+        saveIfChanged(CollectionService.delete(c, in: &session))
+    }
+
+    public func addToCollection(_ ids: [MediaID], _ c: CollectionID) {
+        saveIfChanged(CollectionService.add(ids, to: c, in: &session))
+    }
+
+    public func removeFromCollection(_ ids: [MediaID], _ c: CollectionID) {
+        saveIfChanged(CollectionService.remove(ids, from: c, in: &session))
+    }
+
+    /// Saves the layout the user is editing. Not a review step: it pushes no undo step and does not clear redo.
+    public func saveLayoutDraft(_ d: LayoutDocument?) {
+        guard session.layoutDraft != d else { return }
+        session.layoutDraft = d
+        save()
+    }
+
+    private func saveIfChanged(_ changed: Bool) {
+        if changed { save() }
+    }
+
     // MARK: - Undo
 
     /// Undoes the last step. For a Move to Trash step, the photos come back from the Trash on a
@@ -735,7 +796,7 @@ public final class ReviewService {
         lastUndoErrors = []
         guard fileOperations == 0, let change = undoStack.popLast() else { return }
         guard change.trashedIDs.isEmpty else {
-            runFileTask { await $0.putBack(change) }
+            runFileTask { await $0.undoTrashStep(change) }
             return
         }
         redoStack.append(snapshot())
@@ -913,7 +974,11 @@ public final class ReviewService {
         trashing.subtract(moving)
 
         // The files are in the Trash now, so record them even if the session changed meanwhile.
-        let done = result.done.filter { !session.trashedIDs.contains($0.mediaID) }
+        let done = result.done.filter { !session.trashedIDs.contains($0.mediaID) }.map { record in
+            var record = record
+            record.stateBeforeTrash = session.states[record.mediaID]
+            return record
+        }
         if !done.isEmpty {
             let moved = done.map(\.mediaID)
             var change = snapshot()
@@ -931,31 +996,37 @@ public final class ReviewService {
         return result.failed
     }
 
-    /// Undo of a Move to Trash step: puts each photo back off the main actor. A photo that comes back
-    /// gets its state and example places of `change` (the state before the trash). A photo that cannot
-    /// come back stays trashed and is reported in `lastUndoErrors`.
-    private func putBack(_ change: ReviewChange) async {
+    /// Moves the files of `records` back to their original places off the main actor. Changes no session
+    /// data: the callers do that for the photos in `back`. A photo that cannot come back is in `errors`.
+    private func putBackFiles(_ records: [TrashedPhoto]) async -> (back: Set<MediaID>, errors: [TrashError]) {
         let media = Dictionary(session.scan.media.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var errors: [TrashError] = []
         var items: [(record: TrashedPhoto, original: URL)] = []
-        for id in change.trashedIDs {
-            guard let record = session.trashed.first(where: { $0.mediaID == id }) else { continue }
-            guard let m = media[id] else {
-                errors.append(.cannotPutBack(id, "the photo is not in the session any more"))
+        for record in records {
+            guard let m = media[record.mediaID] else {
+                errors.append(.cannotPutBack(record.mediaID, "the photo is not in the session any more"))
                 continue
             }
             items.append((record, originalURL(of: m)))
         }
-        let epoch = redoEpoch
         let trash = trash
         let results = await Task.detached(priority: .userInitiated) {
             items.map { trash.putBack($0.record, to: $0.original) }
         }.value
-
         var back: Set<MediaID> = []
         for (item, error) in zip(items, results) {
             if let error { errors.append(error) } else { back.insert(item.record.mediaID) }
         }
+        return (back, errors)
+    }
+
+    /// Undo of a Move to Trash step: puts each photo back off the main actor. A photo that comes back
+    /// gets its state and example places of `change` (the state before the trash). A photo that cannot
+    /// come back stays trashed and is reported in `lastUndoErrors`.
+    private func undoTrashStep(_ change: ReviewChange) async {
+        let records = change.trashedIDs.compactMap { id in session.trashed.first { $0.mediaID == id } }
+        let epoch = redoEpoch
+        let (back, errors) = await putBackFiles(records)
         lastUndoErrors = errors
         guard !back.isEmpty else { return }
 
@@ -973,6 +1044,37 @@ public final class ReviewService {
         updateFlags()
         save()
         recalculate()
+    }
+
+    /// Puts photos back from Recently Deleted (spec 7.4). Runs as a file task: it waits for a running undo
+    /// and blocks Sort and Rescan meanwhile (`isMovingFiles`); wait with `settled()`. A photo that comes
+    /// back gets its `stateBeforeTrash` when that state still refers to existing categories, else no state
+    /// (it is classified again). Example places do not come back. A photo that cannot come back stays
+    /// trashed and is in `lastPutBackErrors`, which a call clears only when no file task runs. This is not an undo step and it clears the redo stack, so an
+    /// older undo step for the same photo does nothing for it.
+    public func putBack(_ ids: [MediaID]) {
+        // Errors of a batch that still runs are kept: a second call adds its errors to them.
+        if fileOperations == 0 { lastPutBackErrors = [] }
+        runFileTask { service in
+            let records = ids.uniqued().compactMap { id in service.session.trashed.first { $0.mediaID == id } }
+            guard !records.isEmpty else { return }
+            let (back, errors) = await service.putBackFiles(records)
+            service.lastPutBackErrors += errors
+            guard !back.isEmpty else { return }
+
+            let categoryIDs = Set(service.session.categories.map(\.id))
+            for record in records where back.contains(record.mediaID) {
+                service.session.states[record.mediaID] = record.stateBeforeTrash.flatMap {
+                    Self.refersOnly(to: categoryIDs, $0) ? $0 : nil
+                }
+            }
+            service.session.trashed.removeAll { back.contains($0.mediaID) }
+            service.redoStack.removeAll()
+            service.redoEpoch += 1
+            service.updateFlags()
+            service.save()
+            service.recalculate()
+        }
     }
 
     private func originalURL(of m: MediaFile) -> URL {

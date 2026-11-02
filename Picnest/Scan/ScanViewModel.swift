@@ -25,9 +25,9 @@ struct ETAEstimator {
               last.done > first.done else { return nil }
         let perPhoto = last.time.timeIntervalSince(first.time) / Double(last.done - first.done)
         let seconds = perPhoto * Double(max(total - last.done, 0))
-        if seconds <= 60 { return "Less than a minute left" }
+        if seconds <= 60 { return String(localized: "Less than a minute left") }
         let minutes = Int((seconds / 60).rounded(.up))
-        return minutes == 1 ? "About 1 minute left" : "About \(minutes.formatted()) minutes left"
+        return String(localized: "About \(minutes) minutes left")
     }
 }
 
@@ -80,13 +80,22 @@ final class ScanViewModel {
 
     var folderName: String { source.lastPathComponent }
 
+    /// The folder path, with `~` for the home folder.
+    var folderPath: String { (source.path(percentEncoded: false) as NSString).abbreviatingWithTildeInPath }
+
+    /// "N photos" found, from the embedding total. Nil outside the embedding phase.
+    var foundText: String? {
+        guard case .embedding(_, let total) = phase else { return nil }
+        return CountText.photos(total, locale: locale)
+    }
+
     /// Text above the bar for the running phases, or the message of an end state.
     var message: String {
         switch phase {
-        case .preparingModel: "Preparing the model…"
-        case .embedding: "Looking at your photos…"
-        case .empty: "No photos found in this folder."
-        case .permissionDenied: "Picnest cannot open this folder."
+        case .preparingModel: String(localized: "Preparing the model…")
+        case .embedding: String(localized: "Looking at your photos…")
+        case .empty: String(localized: "No photos found in this folder.")
+        case .permissionDenied: String(localized: "Picnest cannot open this folder.")
         case .failed(let text): text
         }
     }
@@ -199,6 +208,6 @@ final class ScanViewModel {
     }
 
     private static func readable(_ error: any Error) -> String {
-        "The scan failed. \(error.localizedDescription)"
+        String(localized: "The scan failed. \(CoreErrorMessages.text(for: error))")
     }
 }

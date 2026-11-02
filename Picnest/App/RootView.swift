@@ -7,8 +7,10 @@ struct RootView: View {
     @State private var welcome: WelcomeViewModel
 
     private let environment: AppEnvironment
+    private let relauncher: AppRelauncher
 
-    init(app: AppModel, environment: AppEnvironment) {
+    init(app: AppModel, environment: AppEnvironment, relauncher: AppRelauncher) {
+        self.relauncher = relauncher
         self.app = app
         self.environment = environment
         _welcome = State(initialValue: WelcomeViewModel(app: app, library: environment.library))
@@ -25,7 +27,10 @@ struct RootView: View {
         case .review(let review, let afterScan):
             ReviewView(review: review, classify: environment.classifyService, thumbnails: environment.thumbnails,
                        sortService: environment.sortService, library: environment.library, app: app,
-                       afterScan: afterScan)
+                       afterScan: afterScan,
+                       preferences: SidebarPreferences(appearance: environment.appearance, language: environment.language,
+                                                       relauncher: relauncher),
+                       photoEdits: environment.photoEdits, layoutExport: environment.layoutExport)
                 .id(ObjectIdentifier(review))
         }
     }

@@ -135,7 +135,7 @@ struct SortViewModelTests {
         #expect(try await makeModel(notSure: false).showNotSureChoice == false)
         let model = try await makeModel(notSure: true)
         #expect(model.showNotSureChoice)
-        #expect(model.notSureHeader == "1 photo still \"Not sure\":")
+        #expect(model.notSureHeader == "1 photo still needs review:")
     }
 
     @Test func previewShowsFirstFoldersWithCounts() async throws {
@@ -337,6 +337,16 @@ struct SortViewModelTests {
         withExtendedLifetime(blocker) {}
     }
 
+    @Test func progressAccessibilityValueReadsDoneOfTotal() async throws {
+        let (session, source) = try makeSession()
+        let (model, _) = await makeModel(session, source: source)
+        #expect(model.progressAccessibilityValue == "")
+        model.sort()
+        #expect(model.progressAccessibilityValue == "0 of 3")
+        model.stop()
+        await model.finished()
+    }
+
     @Test func stopShowsStoppedSummaryWithUndo() async throws {
         let (session, source) = try makeSession()
         let (model, _) = await makeModel(session, source: source)
@@ -503,7 +513,7 @@ struct SortViewModelTests {
                                  onRescan: @escaping () -> Void = {}) -> ReviewViewModel {
         ReviewViewModel(
             review: review, classify: environment.classifyService, thumbnails: environment.thumbnails,
-            library: environment.library, app: app ?? AppModel(environment: environment), onRescan: onRescan)
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: app ?? AppModel(environment: environment), onRescan: onRescan)
     }
 
     @Test func doneAfterStopWithFilesKeepsReviewWithUndo() async throws {
@@ -590,7 +600,7 @@ struct SortViewModelTests {
     @Test func suggestHintShowsAt20NotSureAndTenPercent() async throws {
         let model = try await hintModel(total: 200, notSure: 20)
         #expect(model.showSuggestHint)
-        #expect(model.suggestHintText == "20 photos are not sure.")
+        #expect(model.suggestHintText == "20 photos need review.")
     }
 
     @Test func suggestHintCountsImagesOnly() async throws {
@@ -624,7 +634,7 @@ struct SortViewModelTests {
 
     @Test func suggestHintUsesGroupingSeparators() async throws {
         let model = try await hintModel(total: 1200, notSure: 1100)
-        #expect(model.suggestHintText == "1,100 photos are not sure.")
+        #expect(model.suggestHintText == "1,100 photos need review.")
     }
 
     @Test func suggestFromSortNavigates() async throws {

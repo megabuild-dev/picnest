@@ -3,6 +3,8 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 import PicnestCore
+import SwiftUI
+@testable import Picnest
 
 /// Embedder for app tests. Every image and text gets the same unit vector, so no model is needed.
 struct FakeEmbedder: Embedder {
@@ -112,15 +114,16 @@ final class FakeTrashFileOps: FileOps, @unchecked Sendable {
     }
 }
 
-/// Writes a square JPEG of 1 color to `url`, for tests that read real image files (hashes, pixel sizes).
-func writeTestJPEG(to url: URL, red: CGFloat, green: CGFloat, blue: CGFloat, size: Int) throws {
+/// Writes a JPEG of 1 color to `url`, for tests that read real image files (hashes, pixel sizes).
+/// It is square (`size` × `size`) unless `height` is given.
+func writeTestJPEG(to url: URL, red: CGFloat, green: CGFloat, blue: CGFloat, size: Int, height: Int? = nil) throws {
     enum Failure: Error { case encode }
     guard let context = CGContext(
-        data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
+        data: nil, width: size, height: height ?? size, bitsPerComponent: 8, bytesPerRow: 0,
         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
     else { throw Failure.encode }
     context.setFillColor(red: red, green: green, blue: blue, alpha: 1)
-    context.fill(CGRect(x: 0, y: 0, width: size, height: size))
+    context.fill(CGRect(x: 0, y: 0, width: size, height: height ?? size))
     guard let image = context.makeImage(),
           let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
     else { throw Failure.encode }
@@ -202,4 +205,95 @@ final class GatedFileOps: FileOps, @unchecked Sendable {
     func names(in folder: URL) -> Set<String> { local.names(in: folder) }
     func trash(_ u: URL) throws -> URL? { try local.trash(u) }
     func move(_ from: URL, _ to: URL) throws { try local.move(from, to) }
+}
+
+/// The review fixture of the view model tests: 8 files in 2 categories (see `makeSession`) and a view model on them.
+@MainActor
+struct ReviewFixture {
+    let temp: TempDir
+    let suite = TestDefaults()
+    let food = PicnestCore.Category(id: UUID(), displayName: "Food", emoji: "🍜", prompts: ["food"], exampleIDs: [], order: 1)
+    let documents = PicnestCore.Category(
+        id: UUID(), displayName: "Documents", emoji: "🧾", prompts: ["documents"], exampleIDs: [], order: 0)
+    let classify = ClassifyService(settings: .default)
+
+    init() throws { temp = try TempDir() }
+
+    var environment: AppEnvironment {
+        AppEnvironment(embedder: FakeEmbedder(), sessionsRoot: temp.url.appending(path: "Sessions"),
+                       defaults: suite.defaults)
+    }
+
+    func day(_ year: Int, _ month: Int, _ day: Int) -> Date {
+        Calendar.current.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
+
+    func file(_ name: String, kind: MediaKind = .image, modified: Date? = nil) -> MediaFile {
+        MediaFile(id: name, relativePath: name, kind: kind, size: 10, modified: modified ?? day(2020, 1, 1))
+    }
+
+    func auto(_ c: PicnestCore.Category, _ percent: Int, uncertain: Bool = false) -> Assignment {
+        Assignment(categoryID: c.id, score: 0.3, secondCategoryID: nil, secondScore: nil, percent: percent,
+                   uncertain: uncertain)
+    }
+
+    /// 8 files, 1 of each kind of tile:
+    /// a 91% Food, b 62% Food (uncertain), c manual Food, d held Not sure (Food 41%, or Documents 38%),
+    /// e Don't move, f unreadable, g video, h 80% Documents with a modification-time date.
+    func makeSession(source: URL) -> Session {
+        let s1: Float = 0.30
+        let held = Assignment(
+            categoryID: food.id, score: s1, secondCategoryID: documents.id,
+            secondScore: s1 + ClassifySettings.default.temperature * Float(log(38.0 / 41.0)), percent: 41,
+            uncertain: true)
+        let media = [
+            file("a.jpg", modified: day(2024, 1, 1)), file("b.jpg"), file("c.jpg"), file("d.jpg"),
+            file("e.jpg"), file("f.jpg"), file("g.mov", kind: .video), file("h.jpg", modified: day(2019, 3, 3)),
+        ]
+        let states: [MediaID: PhotoState] = [
+            "a.jpg": .auto(auto(food, 91)), "b.jpg": .auto(auto(food, 62, uncertain: true)),
+            "c.jpg": .manual(food.id), "d.jpg": .heldNotSure(held), "e.jpg": .dontMove, "f.jpg": .unreadable,
+            "h.jpg": .auto(auto(documents, 80)),
+        ]
+        let dates: [MediaID: PhotoDate] = [
+            "a.jpg": PhotoDate(date: day(2024, 5, 12), source: .exif),
+            "b.jpg": PhotoDate(date: day(2023, 11, 2), source: .fileNameTimestamp),
+            "c.jpg": PhotoDate(date: day(2022, 7, 9), source: .exif),
+            "d.jpg": PhotoDate(date: day(2021, 2, 1), source: .exif),
+            "h.jpg": PhotoDate(date: day(2019, 3, 3), source: .modificationTime),
+        ]
+        return Session(
+            sourcePath: source.path(percentEncoded: false), candidateList: .everyday, categories: [food, documents],
+            states: states, scan: ScanResult(media: media, dates: dates, skipped: [:]), sortedAt: nil)
+    }
+
+    func makeModel(onRescan: @escaping () -> Void = {}) throws -> ReviewViewModel {
+        try makeModelAndReview(onRescan: onRescan).model
+    }
+
+    func makeModelAndReview(
+        onRescan: @escaping () -> Void = {}, trashOps: FakeTrashFileOps = FakeTrashFileOps(), openURL: @escaping @MainActor (URL) -> Void = { _ in },
+        revealURLs: @escaping @MainActor ([URL]) -> Void = { _ in },
+        folderExists: @escaping (URL) -> Bool = { _ in true },
+        session makeCustom: ((URL) -> Session)? = nil,
+        defaults: UserDefaults? = nil,
+        chooseExport: (@MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?)? = nil,
+        chooseLayoutExport: (@MainActor (String, URL, LayoutExportFormat) async -> (URL, LayoutExportFormat)?)? = nil,
+        app: AppModel? = nil)
+        throws -> (model: ReviewViewModel, review: ReviewService) {
+        let source = try temp.folder("Photos")
+        let review = ReviewService(
+            session: makeCustom?(source) ?? makeSession(source: source), source: source, images: [:], prompts: [:], classify: classify,
+            sessions: SessionRepository(root: temp.url.appending(path: "Sessions")),
+            embeddings: EmbeddingRepository(embedder: FakeEmbedder(), cacheDirectory: temp.url.appending(path: "Cache")),
+            trash: TrashService(fileOps: trashOps))
+        let environment = self.environment
+        let model = ReviewViewModel(
+            review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: app ?? AppModel(environment: environment), onRescan: onRescan,
+            openURL: openURL, revealURLs: revealURLs, folderExists: folderExists,
+            defaults: defaults ?? suite.defaults,
+            chooseExportDestination: chooseExport, chooseLayoutDestination: chooseLayoutExport)
+        return (model, review)
+    }
 }

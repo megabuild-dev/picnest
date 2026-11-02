@@ -4,7 +4,7 @@ import PicnestCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The photo grid (spec 3.3): `columns` flexible columns. Click, ⌘-click and ⇧-click select, ⌘A selects
+/// The photo grid (spec 3.3): columns that are at least `thumbnailSize` wide. Click, ⌘-click and ⇧-click select, ⌘A selects
 /// all, Space, Return and double-click open Quick Look, keys 1 to 9 move the selection, and tiles drag to a
 /// sidebar category. The selection bar shows at the bottom while photos are selected.
 struct PhotoGridView: View {
@@ -15,7 +15,7 @@ struct PhotoGridView: View {
         let selection = model.selection
         PhotoGridInteractions(model: model) { onTap in
             ScrollView {
-                LazyVGrid(columns: model.gridColumns, spacing: ReviewStyle.gridSpacing) {
+                LazyVGrid(columns: model.gridColumns, spacing: Theme.Metrics.gridSpacing) {
                     ForEach(ids, id: \.self) { id in
                         SelectableTile(model: model, id: id, isSelected: selection.contains(id), onTap: onTap)
                     }
@@ -25,16 +25,13 @@ struct PhotoGridView: View {
                 .padding(.bottom, 20)
             }
             .overlay {
-                if ids.isEmpty {
-                    ContentUnavailableView("No Photos", systemImage: "photo.on.rectangle",
-                                           description: Text("No photos are in this list."))
-                }
+                if ids.isEmpty { LibraryEmptyView(model: model) }
             }
         }
     }
 }
 
-/// A tile with its click, double-click and drag behavior. Shared by the flat grid and the Not sure groups.
+/// A tile with its click, double-click and drag behavior. Shared by the flat grid and the Needs Review groups.
 struct SelectableTile: View {
     let model: ReviewViewModel
     let id: MediaID
@@ -42,19 +39,53 @@ struct SelectableTile: View {
     /// Runs after a click, so the grid takes the keyboard focus.
     let onTap: () -> Void
 
-    /// The AppKit view of the tile: the share sheet points its popover at it.
-    @State private var shareAnchor = ShareAnchor()
-
     var body: some View {
         PhotoTile(model: model, id: id, isSelected: isSelected)
+            .photoInteractions(model: model, id: id, onTap: onTap)
+            .tileFavorite(model: model, id: id)
+    }
+}
+
+/// The click, double-click, drag and context menu of 1 photo. Shared by the tiles of the grid and the rows of the list.
+private struct PhotoInteractions: ViewModifier {
+    let model: ReviewViewModel
+    let id: MediaID
+    let onTap: () -> Void
+
+    /// The AppKit view of the photo: the share sheet points its popover at it.
+    @State private var shareAnchor = ShareAnchor()
+
+    func body(content: Content) -> some View {
+        content
             .onTapGesture(count: 2) { model.openPreview(id) }
             .simultaneousGesture(TapGesture().onEnded {
                 model.click(id, modifiers: PhotoGridInteractions<EmptyView>.currentModifiers)
                 onTap()
             })
-            .draggable(MediaIDs(ids: model.dragIDs(for: id)))
+            .modifier(PhotoDrag(model: model, id: id))
             .background { ShareAnchorView(anchor: shareAnchor) }
             .contextMenu { PhotoContextMenu(model: model, id: id, anchor: shareAnchor.view) }
+    }
+}
+
+/// The drag of a photo to a sidebar item. A photo in Recently Deleted does not drag.
+private struct PhotoDrag: ViewModifier {
+    let model: ReviewViewModel
+    let id: MediaID
+
+    func body(content: Content) -> some View {
+        if model.bodyKind == .recentlyDeleted {
+            content
+        } else {
+            content.draggable(MediaIDs(ids: model.dragIDs(for: id)))
+        }
+    }
+}
+
+extension View {
+    /// Selection by click, Quick Look by double-click, drag to a sidebar category, and the context menu.
+    func photoInteractions(model: ReviewViewModel, id: MediaID, onTap: @escaping () -> Void) -> some View {
+        modifier(PhotoInteractions(model: model, id: id, onTap: onTap))
     }
 }
 
@@ -65,7 +96,7 @@ final class ShareAnchor {
 
 /// An invisible background that gives its tile a view for `ShareAnchor`. It lets clicks and the
 /// right-click pass through to the tile above it.
-private struct ShareAnchorView: NSViewRepresentable {
+struct ShareAnchorView: NSViewRepresentable {
     let anchor: ShareAnchor
 
     func makeNSView(context: Context) -> NSView {
@@ -87,6 +118,8 @@ private final class ClickThroughView: NSView {
 /// ⌘A and Quick Look. `content` gets the function that tiles call after a click.
 struct PhotoGridInteractions<Content: View>: View {
     let model: ReviewViewModel
+    /// The look of the selection bar at the bottom.
+    var selectionBar: SelectionBar.Variant = .library
     @ViewBuilder let content: (_ onTap: @escaping () -> Void) -> Content
     @FocusState private var isFocused: Bool
 
@@ -94,7 +127,7 @@ struct PhotoGridInteractions<Content: View>: View {
         content { isFocused = true }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !model.selection.isEmpty {
-                    SelectionBar(model: model)
+                    SelectionBar(model: model, variant: selectionBar)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 16)
                 }
@@ -116,6 +149,12 @@ struct PhotoGridInteractions<Content: View>: View {
             .onKeyPress(keys: [.delete, .deleteForward], phases: .down) { press in
                 guard press.modifiers == .command, !model.selection.isEmpty else { return .ignored }
                 Task { await model.trashSelection() }
+                return .handled
+            }
+            // `.` toggles the favorite of the selection. Only the focused grid gets it, never a text field.
+            .onKeyPress(characters: CharacterSet(charactersIn: "."), phases: .down) { press in
+                guard press.modifiers.isEmpty, model.canFavoriteSelection else { return .ignored }
+                model.toggleFavoriteSelection()
                 return .handled
             }
             .onKeyPress(characters: .decimalDigits, phases: .down) { press in

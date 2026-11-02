@@ -1,88 +1,77 @@
 import PicnestCore
 import SwiftUI
 
-/// The Not sure view (spec 3.4): an amber notice, then the photos in groups by best guess, largest group
-/// first. Each group has **Select All** and **Accept N**. The toolbar has **Accept All Best Guesses**.
+/// The Needs Review view (spec 4.3): a title, a closable amber notice, the issue filters and the sort menu,
+/// then the photos in groups by best guess, largest group first. Each group has **Select All** and
+/// **Accept N**. The toolbar has **Accept All Best Guesses**.
 struct NotSureView: View {
-    static let notice = "The app is not confident about these photos. They are grouped by best guess. "
-        + "Accept a group, or select photos and move them."
-
     let model: ReviewViewModel
 
     var body: some View {
         let groups = model.notSureGroups
         let selection = model.selection
-        PhotoGridInteractions(model: model) { onTap in
-            if groups.isEmpty {
-                ContentUnavailableView("Nothing left to check.", systemImage: "checkmark.circle",
-                                       description: Text("All photos have a category."))
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        Label(Self.notice, systemImage: "exclamationmark.triangle.fill")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.primary)
-                            .labelStyle(NoticeLabelStyle())
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 9)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(ReviewStyle.amber.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
-                            .padding(.bottom, 6)
-                        ForEach(Array(groups.enumerated()), id: \.element.id) { index, group in
-                            Section {
-                                LazyVGrid(columns: model.gridColumns, spacing: ReviewStyle.gridSpacing) {
-                                    ForEach(group.ids, id: \.self) { id in
-                                        SelectableTile(model: model, id: id, isSelected: selection.contains(id), onTap: onTap)
+        PhotoGridInteractions(model: model, selectionBar: .needsReview) { onTap in
+            VStack(spacing: 0) {
+                NeedsReviewHeader(model: model)
+                if let state = model.emptyState {
+                    NeedsReviewEmptyView(model: model, state: state)
+                } else {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(groups.enumerated()), id: \.element.id) { index, group in
+                                Section {
+                                    LazyVGrid(columns: model.gridColumns, spacing: Theme.Metrics.gridSpacing) {
+                                        ForEach(group.ids, id: \.self) { id in
+                                            SelectableTile(model: model, id: id, isSelected: selection.contains(id), onTap: onTap)
+                                        }
                                     }
+                                } header: {
+                                    NotSureGroupHeader(group: group, index: index, model: model)
                                 }
-                            } header: {
-                                GroupHeader(group: group, index: index, model: model)
                             }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 14)
-                    .padding(.bottom, 20)
                 }
             }
         }
     }
 }
 
-private struct NoticeLabelStyle: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 10) {
-            configuration.icon.foregroundStyle(ReviewStyle.amber)
-            configuration.title
-        }
-    }
-}
-
-/// "Best guess: <category>", the count, **Select All** and **Accept N**.
-private struct GroupHeader: View {
-    let group: ReviewViewModel.NotSureGroup
-    let index: Int
+/// What Needs Review shows when it has no photo to show: nothing left, or no match for the search or filter.
+private struct NeedsReviewEmptyView: View {
     let model: ReviewViewModel
+    let state: ReviewViewModel.EmptyState
 
     var body: some View {
-        HStack(spacing: 10) {
-            Text("Best guess: \(group.categoryName)").font(.system(size: 15, weight: .bold))
-            Text(group.ids.count == 1 ? "1 photo" : "\(group.ids.count.formatted()) photos")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button("Select All") { model.selectGroup(at: index) }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-            Button("Accept \(group.ids.count.formatted())", systemImage: "checkmark") { model.acceptGroup(at: index) }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .tint(.accentColor)
-                .labelStyle(.titleAndIcon)
+        VStack(spacing: 12) {
+            switch state {
+            case .noResults:
+                if model.reviewIssue != nil && Self.isBlank(model.searchText) {
+                    ContentUnavailableView("No photos match this filter.", systemImage: "line.3.horizontal.decrease.circle")
+                } else {
+                    ContentUnavailableView.search(text: model.searchText)
+                }
+                Button("Clear Filters", action: model.clearReviewFilters)
+            case .findingSimilar:
+                ProgressView().controlSize(.small)
+                Text("Looking for similar photos…").foregroundStyle(Theme.textSecondary.color)
+            case .similarSearchFailed(let message):
+                ContentUnavailableView("Could not look for similar photos.", systemImage: "exclamationmark.triangle",
+                                       description: Text(message))
+                Button("Clear Filters", action: model.clearReviewFilters)
+            default:
+                ContentUnavailableView("Nothing left to check.", systemImage: "checkmark.circle",
+                                       description: Text("All photos have a category."))
+            }
         }
-        .padding(.top, index == 0 ? 12 : 18)
-        .padding(.bottom, 10)
-        // An opaque header, so tiles that scroll under it do not show through.
-        .background(.background)
+        // A search that was cancelled starts again when the view shows.
+        .task(id: state) { if state == .findingSimilar { await model.duplicates.find() } }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private static func isBlank(_ text: String) -> Bool {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

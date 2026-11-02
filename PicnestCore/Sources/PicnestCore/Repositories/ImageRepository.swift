@@ -33,8 +33,29 @@ public final class ImageRepository: @unchecked Sendable {
         return orientation >= 5 ? (height, width) : (width, height)
     }
 
+    /// The full-size, upright image at `url` with its properties (EXIF, TIFF, GPS, IPTC). Not cached.
+    /// `FromImageAlways` is needed: without it ImageIO returns the small EXIF thumbnail of a camera JPEG.
+    /// Nil when it cannot be decoded.
+    public func fullImage(at url: URL) -> (image: CGImage, properties: [CFString: Any])? {
+        guard let size = pixelSize(for: url), let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let image = Self.decode(source, maxPixel: max(size.width, size.height))
+        else { return nil }
+        return (image, properties)
+    }
+
+    /// The upright image at `url` with its longest side at most `maxPixel`. Not cached, so a layout export
+    /// that reads 1,000 photos does not fill the shared cache. Nil when it cannot be decoded.
+    public func downsampled(at url: URL, maxPixel: Int) -> CGImage? {
+        Self.decode(url, maxPixel: maxPixel)
+    }
+
     private static func decode(_ url: URL, maxPixel: Int) -> CGImage? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        return decode(source, maxPixel: maxPixel)
+    }
+
+    private static func decode(_ source: CGImageSource, maxPixel: Int) -> CGImage? {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,

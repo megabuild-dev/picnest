@@ -35,8 +35,8 @@ final class DuplicatesViewModel {
         let fileSize: String
     }
 
-    static let notice = "Check each group. The app moves the photos that are not marked Keep to the Trash."
-    static let emptyText = "No duplicates found."
+    static let notice = String(localized: "Check each group. The app moves the photos that are not marked Keep to the Trash.")
+    static let emptyText = String(localized: "No duplicates found.")
     /// The width of a tile in a card, in points.
     static let tileWidth: Double = 200
     /// The decode size of a tile thumbnail.
@@ -49,7 +49,7 @@ final class DuplicatesViewModel {
     /// The last clicked tile. Space and Return open it in Quick Look.
     private(set) var anchor: MediaID?
 
-    /// True while a clean-up runs. **Move <N> to Trash** and **Clean Up All** are off then.
+    /// True while a clean-up runs. **Clean Up (<N>)** and **Clean Up All** are off then.
     private(set) var isCleaning = false
 
     private var phase: State = .idle
@@ -75,9 +75,18 @@ final class DuplicatesViewModel {
     /// How many times `find` searched. For tests.
     @ObservationIgnored private(set) var findCount = 0
 
+    /// The duplicate search. It calls the progress closure while it runs.
+    typealias Search = (@escaping @Sendable (Int, Int) -> Void) async throws -> [DuplicateGroup]
+
+    @ObservationIgnored private let search: Search
+    /// Counts the runs of `find` and the cancels. A run that is not the current one writes no state.
+    @ObservationIgnored private var generation = 0
+
+    /// `search` is for tests. It defaults to `ReviewService.findDuplicates`.
     init(review: ReviewService, thumbnail: @escaping (MediaID, Int) async -> CGImage?,
-         onTrashErrors: @escaping ([TrashError]) -> Void) {
+         onTrashErrors: @escaping ([TrashError]) -> Void, search: Search? = nil) {
         self.review = review
+        self.search = search ?? { [review] progress in try await review.findDuplicates(progress: progress) }
         thumbnailLoader = thumbnail
         self.onTrashErrors = onTrashErrors
         source = URL(filePath: review.session.sourcePath, directoryHint: .isDirectory)
@@ -93,21 +102,49 @@ final class DuplicatesViewModel {
     /// cancelled search (the user left the view) runs again on the next open.
     func find() async {
         guard !hasFound, !isFinding else { return }
+        generation += 1
+        let run = generation
         phase = .finding(done: 0, total: 0)
         lastDone = 0
         findCount += 1
         do {
-            let groups = try await review.findDuplicates { [weak self] done, total in
-                Task { @MainActor in self?.progress(done, total) }
+            let groups = try await withTaskCancellationHandler {
+                try await search { [weak self] done, total in
+                    Task { @MainActor in
+                        guard let self, self.generation == run else { return }
+                        self.progress(done, total)
+                    }
+                }
+            } onCancel: {
+                // A cancelled caller (the user left the view) frees the search at once, so a new `find` can start
+                // while the old run still unwinds.
+                Task { @MainActor [weak self] in self?.cancelFind(run: run) }
             }
+            // A run that was cancelled, or replaced by a newer one, writes nothing.
+            guard generation == run else { return }
+            try Task.checkCancellation()
             setFound(groups)
             hasFound = true
             phase = .ready
         } catch is CancellationError {
-            phase = .idle
+            if generation == run { phase = .idle }
         } catch {
-            phase = .failed("Picnest could not look for duplicates: \(error.localizedDescription)")
+            guard generation == run else { return }
+            phase = .failed(String(localized: "Picnest could not look for duplicates: \(CoreErrorMessages.text(for: error))"))
         }
+    }
+
+    /// Stops waiting for the running search: the state is idle at once, and the old run writes nothing when
+    /// it ends. Does nothing when no search runs. A new `find` can start right after.
+    func cancelFind() {
+        guard isFinding else { return }
+        generation += 1
+        phase = .idle
+        lastDone = 0
+    }
+
+    private func cancelFind(run: Int) {
+        if generation == run { cancelFind() }
     }
 
     private var isFinding: Bool {
@@ -164,10 +201,15 @@ final class DuplicatesViewModel {
 
     func isKeep(_ id: MediaID, in g: DuplicateGroup) -> Bool { g.keepIDs.contains(id) }
 
-    /// The count of **Move <N> to Trash**: the photos of the group that are not Keep (spec 3.6).
+    /// The count of **Clean Up (<N>)**: the photos of the group that are not Keep (spec 3.6).
     func trashCount(of g: DuplicateGroup) -> Int { g.ids.count { !g.keepIDs.contains($0) } }
 
-    func trashTitle(of g: DuplicateGroup) -> String { "Move \(trashCount(of: g)) to Trash" }
+    func trashTitle(of g: DuplicateGroup) -> String { String(localized: "Clean Up (\(trashCount(of: g)))") }
+
+    /// The line next to **Clean Up**: how many photos of the group go to the Trash.
+    func trashSummary(of g: DuplicateGroup) -> String {
+        String(localized: "\(trashCount(of: g)) photos go to the Trash")
+    }
 
     /// The photos that **Clean Up All** moves to the Trash: the photos of the shown groups that are not
     /// Keep, each 1 time. It is also the count of the **Duplicates** sidebar item (0 until found).
@@ -176,11 +218,15 @@ final class DuplicatesViewModel {
         return Set(s.groups.flatMap(\.ids)).subtracting(s.keeps).count
     }
 
-    var cleanUpTitle: String { "Clean Up All (\(cleanUpCount))" }
+    var cleanUpTitle: String { String(localized: "Clean Up All (\(cleanUpCount))") }
 
+    /// The text of the confirmation. It says "in both tabs" when the Exact copies and the Similar photos
+    /// tabs both have groups, because **Clean Up All** covers both.
     var cleanUpConfirmation: String {
-        let n = cleanUpCount
-        return "Move \(n) \(n == 1 ? "photo" : "photos") to the Trash? You can put them back with Undo or from the Trash in Finder."
+        if exactCount > 0 && similarCount > 0 {
+            return String(localized: "Move \(cleanUpCount) photos in both tabs to the Trash? You can put them back with Undo or from the Trash in Finder.")
+        }
+        return String(localized: "Move \(cleanUpCount) photos to the Trash? You can put them back with Undo or from the Trash in Finder.")
     }
 
     // MARK: - Actions
@@ -212,7 +258,7 @@ final class DuplicatesViewModel {
         version += 1
     }
 
-    /// **Move <N> to Trash**: moves the photos of the group that are not Keep to the Trash, as 1 undo step.
+    /// **Clean Up (<N>)**: moves the photos of the group that are not Keep to the Trash, as 1 undo step.
     func trash(_ g: DuplicateGroup) async {
         let s = shown
         guard let current = s.groups.first(where: { matches($0, g) }) else { return }
@@ -248,7 +294,7 @@ final class DuplicatesViewModel {
         let media = mediaByID[id]
         let name = media.map { ($0.relativePath as NSString).lastPathComponent } ?? id
         let pixels = review.pixelSize(of: id).map { "\($0.width) × \($0.height)" } ?? ""
-        let bytes = media.map { ByteCountFormatter.string(fromByteCount: $0.size, countStyle: .file) } ?? ""
+        let bytes = media.map { $0.size.formatted(.byteCount(style: .file)) } ?? ""
         return TileModel(name: name, pixelSize: pixels, fileSize: bytes)
     }
 

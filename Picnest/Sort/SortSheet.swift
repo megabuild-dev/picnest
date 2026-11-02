@@ -3,7 +3,7 @@ import PicnestCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The Sort sheet (spec 3.5, mockup `sheet-v4.html`): options and a preview, then progress, then a summary.
+/// The Sort sheet (spec 3.5, UI redesign 4.3): options and a preview, then progress, then a summary.
 struct SortSheet: View {
     @Bindable var model: SortViewModel
     @Environment(\.dismiss) private var dismiss
@@ -13,12 +13,13 @@ struct SortSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             switch model.state {
             case .editing, .confirmingMove: editing
-            case .running: running
-            case .finished, .stopped, .failed: summary
+            case .running: SortRunningView(model: model)
+            case .finished, .stopped, .failed: SortSummaryView(model: model, dismiss: dismiss.callAsFunction)
             }
         }
         .padding(22)
         .frame(width: 470)
+        .background(Theme.background.color)
         .interactiveDismissDisabled(model.isBusy)
         .confirmationDialog(model.confirmMoveTitle, isPresented: confirmingMove, titleVisibility: .visible) {
             Button("Move", role: .destructive, action: model.confirmMove)
@@ -38,219 +39,141 @@ struct SortSheet: View {
     // MARK: - Editing
 
     @ViewBuilder private var editing: some View {
-        Text(model.title).font(.system(size: 18, weight: .bold))
-        Text(model.subtitle ?? " ")
-            .font(.system(size: 13))
-            .foregroundStyle(.secondary)
-            .padding(.top, 4)
-            .padding(.bottom, 14)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(model.title).font(.system(size: 18, weight: .bold))
+                Text(model.subtitle ?? " ")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.textSecondary.color)
+            }
+            .fixedSize(horizontal: false, vertical: true)
 
-        destinationRow
-        if let note = model.destinationNote {
-            Text(note).font(.system(size: 12)).foregroundStyle(.red).padding(.top, 4)
+            destinationSection
+            modeSection
+            optionsSection
+            if model.showSuggestHint { suggestHint }
+            if model.showNotSureChoice { needsReviewSection }
+            previewSection
+
+            if let notice = model.notice {
+                Label(notice, systemImage: "exclamationmark.circle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.needsReview.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            buttons
         }
+    }
 
-        VStack(spacing: 8) {
-            ChoiceCard(title: "Copy", detail: "Originals stay in the source folder.",
-                       isOn: model.options.mode == .copy) { model.options.mode = .copy }
-            ChoiceCard(title: "Move", detail: SortViewModel.moveDetail,
-                       isOn: model.options.mode == .move) { model.options.mode = .move }
+    private var destinationSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SortCard {
+                HStack(spacing: 10) {
+                    Image(systemName: "folder").foregroundStyle(Theme.textSecondary.color)
+                        .accessibilityHidden(true)
+                    Text(model.destinationText)
+                        .font(.system(size: 13, design: .monospaced))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(model.destinationText)
+                    Spacer(minLength: 8)
+                    Button("Change…") { isChoosingDestination = true }
+                        .buttonStyle(.link)
+                }
+            }
+            if let note = model.destinationNote {
+                Label(note, systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.destructive.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .padding(.top, 12)
+    }
 
+    private var modeSection: some View {
+        let isMove = model.options.mode == .move
+        return SortCard(stroke: isMove ? Theme.destructive.color.opacity(0.6) : Theme.textSecondary.color.opacity(0.2)) {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker(selection: $model.options.mode) {
+                    Text("Copy").tag(SortMode.copy)
+                    Text("Move").tag(SortMode.move)
+                } label: { EmptyView() }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityLabel("Mode")
+                if isMove {
+                    Label(SortViewModel.moveDetail, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Theme.destructive.color)
+                } else {
+                    Label("Originals stay in the source folder.", systemImage: "doc.on.doc")
+                        .foregroundStyle(Theme.textSecondary.color)
+                }
+            }
+            .font(.system(size: 12))
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var optionsSection: some View {
+        SortCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("Make date sub-folders (year / month)", isOn: $model.options.dateFolders)
+                Toggle("Rename files to date + category + number", isOn: $model.options.rename)
+            }
+            .toggleStyle(.checkbox)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var suggestHint: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "lightbulb").foregroundStyle(Theme.textSecondary.color).accessibilityHidden(true)
+            Text(model.suggestHintText).font(.system(size: 12)).foregroundStyle(Theme.textSecondary.color)
+            Button("Suggest Categories…", action: model.suggestFromSort).buttonStyle(.link)
+            Spacer(minLength: 0)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var needsReviewSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Make date sub-folders (year / month)", isOn: $model.options.dateFolders)
-            Toggle("Rename files to date + category + number", isOn: $model.options.rename)
+            Label(model.notSureHeader, systemImage: "questionmark.circle")
+                .fontWeight(.semibold)
+                .foregroundStyle(Theme.needsReview.color)
+                .fixedSize(horizontal: false, vertical: true)
+            reviewCard(.acceptBestGuess, "Accept best guess", "Put each one in its most likely category.")
+            reviewCard(.notSureFolder, "Put in a \"Not sure\" folder", "Sort them by hand later in Finder.")
+            reviewCard(.leaveInSource, "Leave in the source folder", "Do not copy or move them.")
         }
-        .toggleStyle(.checkbox)
-        .padding(.vertical, 10)
-
-        if model.showSuggestHint {
-            HStack(spacing: 6) {
-                Text(model.suggestHintText).font(.system(size: 12)).foregroundStyle(.secondary)
-                Button("Suggest Categories…", action: model.suggestFromSort).buttonStyle(.link)
-                Spacer(minLength: 0)
-            }
-            .padding(.top, 2)
-        }
-
-        if model.showNotSureChoice {
-            Text(model.notSureHeader).fontWeight(.semibold).padding(.top, 2).padding(.bottom, 6)
-            VStack(spacing: 8) {
-                notSureCard(.acceptBestGuess, "Accept best guess", "Put each one in its most likely category.")
-                notSureCard(.notSureFolder, "Put in a \"Not sure\" folder", "Sort them by hand later in Finder.")
-                notSureCard(.leaveInSource, "Leave in the source folder", "Do not copy or move them.")
-            }
-        }
-
-        PreviewTree(lines: model.previewLines)
-            .opacity(model.isPlanning ? 0.5 : 1)
-            .padding(.top, 10)
-            .padding(.bottom, 16)
-
-        if let notice = model.notice {
-            Label(notice, systemImage: "exclamationmark.circle")
-                .font(.system(size: 12))
-                .foregroundStyle(ReviewStyle.amber)
-                .padding(.bottom, 10)
-        }
-
-        HStack(spacing: 10) {
-            Spacer()
-            Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-            Button(model.sortButtonTitle, action: model.sort)
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .disabled(!model.canSort)
-        }
-        .controlSize(.large)
     }
 
-    private var destinationRow: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "folder").foregroundStyle(.secondary)
-            Text(model.destinationText)
-                .font(.system(size: 13, design: .monospaced))
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .help(model.destinationText)
-            Spacer(minLength: 8)
-            Button("Change…") { isChoosingDestination = true }
-                .buttonStyle(.link)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
-    }
-
-    private func notSureCard(_ choice: NotSureChoice, _ title: String, _ detail: String) -> some View {
-        ChoiceCard(title: title, detail: detail, isOn: model.options.notSureChoice == choice) {
+    private func reviewCard(_ choice: NotSureChoice, _ title: LocalizedStringKey, _ detail: LocalizedStringKey) -> some View {
+        ChoiceCard(title: Text(title), detail: Text(detail), isOn: model.options.notSureChoice == choice) {
             model.options.notSureChoice = choice
         }
     }
 
-    // MARK: - Running
-
-    @ViewBuilder private var running: some View {
-        Text(model.title).font(.system(size: 18, weight: .bold)).padding(.bottom, 16)
-        ProgressView(value: model.progress)
-        Text(model.isStopping ? "Stopping after the current file…" : model.progressText)
-            .font(.system(size: 13))
-            .monospacedDigit()
-            .foregroundStyle(.secondary)
-            .padding(.top, 6)
-            .padding(.bottom, 16)
-        HStack {
-            Spacer()
-            Button("Stop", action: model.stop)
-                .disabled(model.isStopping)
-                .controlSize(.large)
-        }
+    private var previewSection: some View {
+        PreviewTree(lines: model.previewLines).opacity(model.isPlanning ? 0.5 : 1)
     }
 
-    // MARK: - Summary
-
-    @ViewBuilder private var summary: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: summaryIcon.name)
-                .font(.system(size: 28))
-                .foregroundStyle(summaryIcon.color)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(model.summaryText)
-                    .font(.system(size: 14))
-                    .fixedSize(horizontal: false, vertical: true)
-                if let warning = model.saveWarning {
-                    Text(warning)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.red)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .padding(.bottom, 20)
-
+    private var buttons: some View {
         HStack(spacing: 10) {
-            if model.isUndoing { ProgressView().controlSize(.small) }
-            if model.canUndoLastSort {
-                Button("Undo Last Sort", action: model.undoLastSort).disabled(model.isBusy)
-            }
             Spacer()
-            if case .failed = model.state {
-                Button("Back", action: model.backToOptions).disabled(model.isUndoing)
-            } else if model.canShowInFinder {
-                Button("Show in Finder") {
-                    NSWorkspace.shared.activateFileViewerSelecting([model.options.destination])
+            Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+            Button(action: model.sort) {
+                if model.options.mode == .move {
+                    Label(model.sortButtonTitle, systemImage: "arrow.right.circle")
+                } else {
+                    Label(model.sortButtonTitle, systemImage: "square.and.arrow.down.on.square")
                 }
             }
-            Button("Done") {
-                dismiss()
-                model.done()
-            }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .disabled(model.isBusy)
+            .keyboardShortcut(.defaultAction)
+            .buttonStyle(.borderedProminent)
+            .tint(model.options.mode == .move ? Theme.destructive.color : Theme.accent.color)
+            .disabled(!model.canSort)
         }
         .controlSize(.large)
-    }
-
-    private var summaryIcon: (name: String, color: Color) {
-        switch model.state {
-        case .finished: ("checkmark.circle.fill", ReviewStyle.green)
-        case .stopped: ("pause.circle.fill", ReviewStyle.amber)
-        default: ("exclamationmark.triangle.fill", ReviewStyle.amber)
-        }
-    }
-}
-
-/// A radio choice as a card: a soft accent fill and ring when selected (mockup `.opt`).
-private struct ChoiceCard: View {
-    let title: String
-    let detail: String
-    let isOn: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: 10) {
-                Circle()
-                    .strokeBorder(isOn ? Color.accentColor : Color.secondary.opacity(0.6), lineWidth: isOn ? 5 : 1.5)
-                    .frame(width: 16, height: 16)
-                    .padding(.top, 1)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).fontWeight(.semibold)
-                    Text(detail).font(.system(size: 12)).foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(isOn ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.07),
-                        in: RoundedRectangle(cornerRadius: 10))
-            .overlay {
-                if isOn { RoundedRectangle(cornerRadius: 10).strokeBorder(Color.accentColor, lineWidth: 1.5) }
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 10))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isOn ? [.isSelected] : [])
-    }
-}
-
-/// The folder tree preview (mockup `.tree`). The first line is the destination; counts are secondary.
-private struct PreviewTree: View {
-    let lines: [String]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                Text(line).lineLimit(1).truncationMode(.middle)
-            }
-        }
-        .font(.system(size: 12, design: .monospaced))
-        .frame(maxWidth: .infinity, minHeight: 60, alignment: .topLeading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
     }
 }
 

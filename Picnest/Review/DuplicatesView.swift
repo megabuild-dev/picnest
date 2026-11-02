@@ -34,18 +34,19 @@ struct DuplicatesView: View {
         return VStack(alignment: .leading, spacing: 12) {
             Label(DuplicatesViewModel.notice, systemImage: "info.circle")
                 .font(.system(size: 12.5))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary.color)
             Picker("Kind", selection: $model.kind) {
                 Text("Exact copies (\(model.exactCount))").tag(DuplicateGroup.Kind.exact)
                 Text("Similar photos (\(model.similarCount))").tag(DuplicateGroup.Kind.similar)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
+            .accessibilityLabel("Kind of duplicates")
             .fixedSize()
             ScrollView {
                 LazyVStack(spacing: 14) {
                     ForEach(groups) { group in
-                        GroupCard(model: model, group: group) { isFocused = true }
+                        DuplicateGroupCard(model: model, group: group) { isFocused = true }
                     }
                 }
                 .padding(.bottom, 20)
@@ -58,6 +59,8 @@ struct DuplicatesView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 14)
+        .background(Theme.background.color)
+        .tint(Theme.accent.color)
         .focusable()
         .focused($isFocused)
         .focusEffectDisabled()
@@ -82,124 +85,13 @@ private struct FindingView: View {
                 Text("\(done.formatted()) / \(total.formatted())")
                     .font(.system(size: 11))
                     .monospacedDigit()
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary.color)
             } else {
                 ProgressView().controlSize(.small)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-/// 1 group: the photos side by side, then **Not Duplicates** and **Move <N> to Trash**.
-private struct GroupCard: View {
-    let model: DuplicatesViewModel
-    let group: DuplicateGroup
-    /// Runs after a click, so the view takes the keyboard focus (Space and Return).
-    let onTap: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ScrollView(.horizontal) {
-                HStack(spacing: 10) {
-                    ForEach(group.ids, id: \.self) { id in
-                        DuplicateTile(model: model, id: id, isKeep: model.isKeep(id, in: group))
-                            // Double-click first, so a double-click never changes Keep.
-                            .onTapGesture(count: 2) { model.openPreview(id) }
-                            .onTapGesture {
-                                model.toggleKeep(id, in: group)
-                                onTap()
-                            }
-                    }
-                }
-                .padding(2)
-            }
-            .scrollIndicators(.automatic)
-            HStack {
-                Text("\(group.ids.count) photos")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Not Duplicates") { model.notDuplicates(group) }
-                Button(model.trashTitle(of: group)) { Task { await model.trash(group) } }
-                    .disabled(model.trashCount(of: group) == 0 || model.isCleaning)
-            }
-        }
-        .padding(12)
-        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.primary.opacity(0.08), lineWidth: 0.5))
-    }
-}
-
-/// 1 photo of a card: the thumbnail with the **Keep** badge, the file name, the pixel size and the file size.
-private struct DuplicateTile: View {
-    let model: DuplicatesViewModel
-    let id: MediaID
-    let isKeep: Bool
-
-    @State private var image: CGImage?
-    @State private var failed = false
-
-    var body: some View {
-        let tile = model.tile(id)
-        let shape = RoundedRectangle(cornerRadius: ReviewStyle.tileCorner)
-        VStack(alignment: .leading, spacing: 4) {
-            Color.clear
-                .aspectRatio(4 / 3, contentMode: .fit)
-                .overlay { thumbnail }
-                .overlay(alignment: .topLeading) { if isKeep { keepBadge } }
-                .clipShape(shape)
-                .contentShape(shape)
-                .overlay {
-                    shape.strokeBorder(isKeep ? ReviewStyle.green : Color.primary.opacity(0.1),
-                                       lineWidth: isKeep ? 2.5 : 0.5)
-                }
-                .opacity(isKeep ? 1 : 0.8)
-            Text(tile.name)
-                .font(.system(size: 12, weight: .semibold))
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Text([tile.pixelSize, tile.fileSize].filter { !$0.isEmpty }.joined(separator: " · "))
-                .font(.system(size: 11))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .frame(width: DuplicatesViewModel.tileWidth)
-        .contentShape(Rectangle())
-        .task(id: id) { await load() }
-        .help(isKeep ? "Keep. Click to unmark." : "Click to mark Keep.")
         .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(isKeep ? [.isImage, .isSelected] : .isImage)
-    }
-
-    @ViewBuilder private var thumbnail: some View {
-        if let image {
-            Image(decorative: image, scale: 1).resizable().scaledToFill()
-        } else {
-            Rectangle().fill(.quaternary).overlay {
-                if failed {
-                    Image(systemName: "photo").font(.title2).foregroundStyle(.tertiary)
-                }
-            }
-        }
-    }
-
-    private var keepBadge: some View {
-        Text("Keep")
-            .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .background(ReviewStyle.green, in: Capsule())
-            .padding(8)
-    }
-
-    private func load() async {
-        let loaded = await model.thumbnail(id, maxPixel: DuplicatesViewModel.tileMaxPixel)
-        guard !Task.isCancelled else { return }
-        image = loaded
-        failed = loaded == nil
     }
 }
 
@@ -231,6 +123,6 @@ struct CleanUpAllButton: View {
                                              "z7913505267104_a3f.jpg"],
                        keepIDs: ["z7913505267101_a3f.jpg"]),
     ])
-    return DuplicatesView(model: model).background(.background)
+    return DuplicatesView(model: model).background(Theme.background.color)
 }
 #endif

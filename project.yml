@@ -7,6 +7,8 @@ options:
     macOS: "15.0"
   createIntermediateGroups: true
   developmentLanguage: en
+  # XcodeGen reads the languages (knownRegions: en, vi) from Picnest/Localizable.xcstrings.
+  # To add a language, add its code to the catalog and run xcodegen generate.
 
 settings:
   base:
@@ -83,6 +85,10 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Picnest/Picnest.entitlements
         # The model scripts read and write folders, which the script sandbox does not allow.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+        # Each build extracts the strings in Swift code (*.stringsdata). Only the Xcode app writes them into the
+        # catalog, so run scripts/sync-string-catalog.py after a build (--check fails when the catalog differs).
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
         # The 1 place that sets the model size (a MobileCLIPSize.modelStem). The scripts below copy
         # its 2 packages, and AppEnvironment reads it from the Info.plist key PicnestModelStem.
         PICNEST_MODEL_STEM: mobileclip_s2
@@ -137,5 +143,8 @@ schemes:
     test:
       config: Debug
       gatherCoverageData: false
+      # Tests read English texts, so they run in English on a Mac with another system language.
+      commandLineArguments:
+        "-AppleLanguages (en)": true
       targets:
         - PicnestTests

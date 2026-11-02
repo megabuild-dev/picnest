@@ -11,12 +11,13 @@ struct PicnestApp: App {
         Window("Picnest", id: "main") {
             Group {
                 if let environment = delegate.environment, let app = delegate.app {
-                    RootView(app: app, environment: environment)
+                    RootView(app: app, environment: environment, relauncher: delegate.relauncher)
                 } else {
                     Color.clear
                 }
             }
             .frame(minWidth: 1000, minHeight: 680)
+            .background(WindowCloseGuard(allow: { delegate.confirmLeaving() }))
         }
         .defaultSize(width: 1200, height: 800)
         .windowResizability(.contentMinSize)
@@ -30,6 +31,16 @@ struct PicnestApp: App {
                 }
             }
             ReviewCommands()
+        }
+
+        // Settings (⌘,). Nothing in the test host, which has no environment.
+        Settings {
+            if let environment = delegate.environment {
+                SettingsView(appearance: environment.appearance, language: environment.language,
+                             relauncher: delegate.relauncher, updater: delegate.updater)
+            } else {
+                Color.clear
+            }
         }
     }
 }

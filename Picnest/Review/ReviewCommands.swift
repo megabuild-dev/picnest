@@ -9,10 +9,14 @@ extension FocusedValues {
 /// Where Edit > Undo and Redo go. In a text field (for example the Rename alert) they undo typing;
 /// elsewhere they undo review changes, if the review can.
 enum UndoRouting: Equatable {
-    case text, review, nothing
+    case text, editor, review, nothing
 
-    static func route(firstResponderIsText: Bool, reviewCanAct: Bool) -> UndoRouting {
+    /// The order is: a text field, then the photo editor, then the review. `editorCanAct` is nil when no editor
+    /// is open. An open editor that cannot act gives `.nothing`, so a key never undoes a review change
+    /// behind the editor.
+    static func route(firstResponderIsText: Bool, editorCanAct: Bool? = nil, reviewCanAct: Bool) -> UndoRouting {
         if firstResponderIsText { return .text }
+        if let editorCanAct { return editorCanAct ? .editor : .nothing }
         return reviewCanAct ? .review : .nothing
     }
 
@@ -36,23 +40,39 @@ struct ReviewCommands: Commands {
                 .keyboardShortcut("r", modifiers: [.command, .shift])
                 .disabled(review?.canStartOver != true)
         }
+        // Image > Edit Photo (⌘E): on when the photo of the anchor can open in the editor.
+        CommandMenu("Image") {
+            Button("Edit Photo") { review?.openEditor() }
+                .keyboardShortcut("e", modifiers: .command)
+                .disabled(review?.anchor.map { review?.canEdit($0) == true } != true)
+            Button("Create Layout…") { review?.requestLayoutFromMenu() }
+                .keyboardShortcut("l", modifiers: .command)
+                .disabled(review?.layoutMenuOrigin == nil)
+        }
         CommandGroup(replacing: .undoRedo) {
             Button("Undo") {
-                perform(Selector(("undo:")), reviewCanAct: review?.canUndo == true) { $0.undo() }
+                perform(Selector(("undo:")), editorCanAct: review?.activeEditor?.session.canUndo, reviewCanAct: review?.canUndo == true,
+                        editor: { $0.undo() }) { $0.undo() }
             }
             .keyboardShortcut("z", modifiers: .command)
             Button("Redo") {
-                perform(Selector(("redo:")), reviewCanAct: review?.canRedo == true) { $0.redo() }
+                perform(Selector(("redo:")), editorCanAct: review?.activeEditor?.session.canRedo, reviewCanAct: review?.canRedo == true,
+                        editor: { $0.redo() }) { $0.redo() }
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
         }
     }
 
     @MainActor private func perform(
-        _ textAction: Selector, reviewCanAct: Bool, review action: (ReviewViewModel) -> Void
+        _ textAction: Selector, editorCanAct: Bool?, reviewCanAct: Bool,
+        editor editorAction: (any EditorSession) -> Void, review action: (ReviewViewModel) -> Void
     ) {
-        switch UndoRouting.route(firstResponderIsText: UndoRouting.firstResponderIsText, reviewCanAct: reviewCanAct) {
+        switch UndoRouting.route(
+            firstResponderIsText: UndoRouting.firstResponderIsText, editorCanAct: editorCanAct,
+            reviewCanAct: reviewCanAct)
+        {
         case .text: NSApp.sendAction(textAction, to: nil, from: nil)
+        case .editor: if let session = review?.activeEditor?.session { editorAction(session) }
         case .review: if let review { action(review) }
         case .nothing: break
         }

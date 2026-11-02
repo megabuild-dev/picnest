@@ -33,6 +33,25 @@ final class AppModel {
     /// The running scans: folder path → token of `beginScan`.
     @ObservationIgnored private var activeScans: [String: UUID] = [:]
 
+    /// The editors of every window. A closed window drops its editor, so a stale entry never blocks a quit.
+    private struct WeakEditor { weak var session: (any EditorSession)? }
+    @ObservationIgnored private var editors: [WeakEditor] = []
+
+    /// Records an editor that opens, and forgets one that closes (final review I1). The quit guard reads them.
+    func editorChanged(from old: (any EditorSession)?, to new: (any EditorSession)?) {
+        if let old { editors.removeAll { $0.session == nil || $0.session === old } }
+        if let new { editors.append(WeakEditor(session: new)) }
+    }
+
+    private var openEditors: [any EditorSession] { editors.compactMap(\.session) }
+
+    /// True while any editor writes a file or has its save panel open. A quit must wait.
+    var isEditorExporting: Bool { openEditors.contains { $0.isExporting } }
+    /// True if any photo editor holds an edit that no export wrote.
+    var hasUnexportedEdits: Bool { openEditors.contains { $0.hasUnexportedEdits } }
+    /// Saves what an editor keeps only in memory (the layout draft), before the app quits.
+    func flushEditors() { openEditors.forEach { $0.flushForQuit() } }
+
     init(environment: AppEnvironment) {
         library = environment.library
     }
@@ -206,8 +225,7 @@ final class AppModel {
     }
 
     private static func organizeFailureMessage(_ count: Int) -> String {
-        count == 1 ? "1 photo could not be moved. It stays where it was." :
-            "\(count) photos could not be moved. They stay where they were."
+        String(localized: "\(count) photos could not be moved. They stay where they were.")
     }
 
     /// Goes back to the Welcome screen and stops a session that is still loading.
@@ -267,6 +285,6 @@ final class AppModel {
 
     private func show(_ error: any Error, opening url: URL) {
         screen = .welcome
-        errorMessage = "Could not open “\(url.lastPathComponent)”. \(SortMessages.text(for: error))"
+        errorMessage = String(localized: "Could not open “\(url.lastPathComponent)”. \(SortMessages.text(for: error))")
     }
 }

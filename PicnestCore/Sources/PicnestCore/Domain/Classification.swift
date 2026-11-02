@@ -61,6 +61,19 @@ public struct Assignment: Codable, Sendable, Hashable {
         self.uncertain = uncertain
     }
 
+    /// True when the best score is below `settings.minScore`: the first branch of the uncertain rule
+    /// (`ClassifyService`). A placeholder is not a weak match. `percent` does not decide this: it is a
+    /// softmax share, so a photo can have a high percent and still a low score.
+    public func isWeakMatch(settings: ClassifySettings) -> Bool {
+        !isPlaceholder && score < settings.minScore
+    }
+
+    /// True for the guess of a photo that has no score at all: the first category, with score 0 and percent 0
+    /// (a photo without an image vector, after its category was deleted).
+    public var isPlaceholder: Bool {
+        score == 0 && percent == 0 && secondCategoryID == nil
+    }
+
     public func with(uncertain: Bool) -> Assignment {
         var copy = self
         copy.uncertain = uncertain
