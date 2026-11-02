@@ -5,3 +5,6 @@ Models/
 build/
 xcuserdata/
 DerivedData/
+
+# Local design notes (kept on disk, not in the repository)
+design/PicNest — Đề xuất thiết kế UI_UX tổng thể.md
