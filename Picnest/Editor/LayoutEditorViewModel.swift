@@ -361,8 +361,8 @@ final class LayoutEditorViewModel: EditorSession {
         return String(localized: "Photo \(cell.index + 1) of \(document.photoIDs.count), \(fileNames[id] ?? id)")
     }
 
-    /// True when **Export** has work: not while it runs, and not with no photo.
-    var canExport: Bool { !isExporting && !document.photoIDs.isEmpty }
+    /// True when **Export** has work: not while it runs, and not when every photo is empty or in the Trash.
+    var canExport: Bool { !isExporting && document.photoIDs.contains(where: isAvailable) }
 
     var currentPage: LayoutPage { pages[pageIndex] }
     var canStepBack: Bool { pageIndex > 0 }
@@ -537,7 +537,7 @@ final class LayoutEditorViewModel: EditorSession {
         } catch is CancellationError {
             return
         } catch {
-            exportError = CoreErrorMessages.text(for: error)
+            exportError = CoreErrorMessages.layoutText(for: error)
         }
     }
 

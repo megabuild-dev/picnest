@@ -280,6 +280,14 @@ struct LayoutEditorViewModelTests {
         #expect(rig.model.document.photoIDs.contains("p2.jpg"))  // the draft keeps it for Put Back
     }
 
+    @Test func testCanExportNeedsAPhotoThatIsNotInTheTrash() throws {
+        let allTrashed = try makeRig(count: 2, trashed: ["p1.jpg", "p2.jpg"]).model
+        #expect(!allTrashed.canExport)
+        let someTrashed = try makeRig(count: 2, trashed: ["p1.jpg"]).model
+        #expect(someTrashed.canExport)
+        #expect(try !makeRig(count: 2, used: 0).model.canExport)
+    }
+
     @Test func testExportWithOnlyTrashedPhotosAsksNothing() async throws {
         let rig = try makeRig(count: 1, trashed: ["p1.jpg"])
         await rig.model.export()
