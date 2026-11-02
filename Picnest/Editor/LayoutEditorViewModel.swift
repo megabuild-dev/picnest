@@ -72,12 +72,14 @@ final class LayoutEditorViewModel: EditorSession {
     @ObservationIgnored private let sources: [LayoutSourceOption]
     @ObservationIgnored private let service: LayoutExportService
     @ObservationIgnored private let source: URL
-    @ObservationIgnored private let protected: ProtectedFiles
+    /// Builds the files that no export may replace, at write time (final review C1).
+    @ObservationIgnored private let protectedFiles: @MainActor () -> ProtectedFiles
     @ObservationIgnored private var fileNames: [MediaID: String]
     @ObservationIgnored private let saveDraft: @MainActor (LayoutDocument?) -> Void
     @ObservationIgnored private let chooseDestination: @MainActor (String, URL, LayoutExportFormat) async -> (URL, LayoutExportFormat)?
     @ObservationIgnored private let revealURL: @MainActor (URL) -> Void
     @ObservationIgnored private let onClose: @MainActor () -> Void
+    @ObservationIgnored private let onCancelClose: @MainActor () -> Void
     @ObservationIgnored private let isAvailable: @MainActor (MediaID) -> Bool
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -86,11 +88,12 @@ final class LayoutEditorViewModel: EditorSession {
     /// `isAvailable` is false for a photo that is in the Trash: such a photo stays in the draft, so **Put Back**
     /// keeps its place, but the export leaves it out.
     init(document: LayoutDocument, sources: [LayoutSourceOption], startSource: String, service: LayoutExportService,
-         source: URL, protected: ProtectedFiles, fileNames: [MediaID: String],
+         source: URL, protected: @escaping @MainActor () -> ProtectedFiles, fileNames: [MediaID: String],
          saveDraft: @escaping @MainActor (LayoutDocument?) -> Void,
          chooseDestination: @escaping @MainActor (_ name: String, _ folder: URL, _ format: LayoutExportFormat) async -> (URL, LayoutExportFormat)?,
          revealURL: @escaping @MainActor (URL) -> Void,
          onClose: @escaping @MainActor () -> Void,
+         onCancelClose: @escaping @MainActor () -> Void = {},
          isAvailable: @escaping @MainActor (MediaID) -> Bool = { _ in true },
          defaults: UserDefaults = .standard) {
         history = History(document)
@@ -99,12 +102,13 @@ final class LayoutEditorViewModel: EditorSession {
         sourceID = sources.contains { $0.id == startSource } ? startSource : (sources.first?.id ?? startSource)
         self.service = service
         self.source = source
-        self.protected = protected
+        self.protectedFiles = protected
         self.fileNames = fileNames
         self.saveDraft = saveDraft
         self.chooseDestination = chooseDestination
         self.revealURL = revealURL
         self.onClose = onClose
+        self.onCancelClose = onCancelClose
         self.isAvailable = isAvailable
         self.defaults = defaults
         refreshPreview()
@@ -427,6 +431,11 @@ final class LayoutEditorViewModel: EditorSession {
 
     /// Saves the draft at once, then closes. There is no discard dialog: the layout is a draft.
     func requestClose() {
+        // The save panel and the write still need this editor and its lock (final review C1).
+        guard !isExporting else {
+            onCancelClose()
+            return
+        }
         finishChange()
         draftTask?.cancel()
         draftTask = nil
@@ -515,7 +524,7 @@ final class LayoutEditorViewModel: EditorSession {
         lastExport = []
         do {
             lastExport = try await service.export(
-                d, fileNames: fileNames, source: source, to: destination, format: format, protected: protected)
+                d, fileNames: fileNames, source: source, to: destination, format: format, protected: protectedFiles())
             defaults.set(destination.deletingLastPathComponent().path, forKey: Self.exportFolderKey)
         } catch is CancellationError {
             return

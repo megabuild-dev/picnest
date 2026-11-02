@@ -277,7 +277,8 @@ struct ReviewFixture {
         folderExists: @escaping (URL) -> Bool = { _ in true },
         session makeCustom: ((URL) -> Session)? = nil,
         defaults: UserDefaults? = nil,
-        chooseExport: (@MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?)? = nil)
+        chooseExport: (@MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?)? = nil,
+        chooseLayoutExport: (@MainActor (String, URL, LayoutExportFormat) async -> (URL, LayoutExportFormat)?)? = nil)
         throws -> (model: ReviewViewModel, review: ReviewService) {
         let source = try temp.folder("Photos")
         let review = ReviewService(
@@ -291,7 +292,7 @@ struct ReviewFixture {
             library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: AppModel(environment: environment), onRescan: onRescan,
             openURL: openURL, revealURLs: revealURLs, folderExists: folderExists,
             defaults: defaults ?? suite.defaults,
-            chooseExportDestination: chooseExport)
+            chooseExportDestination: chooseExport, chooseLayoutDestination: chooseLayoutExport)
         return (model, review)
     }
 }

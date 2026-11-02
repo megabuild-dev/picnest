@@ -219,6 +219,7 @@ final class ReviewViewModel {
     @ObservationIgnored private let photoEdits: PhotoEditService
     @ObservationIgnored private let layoutExport: LayoutExportService
     @ObservationIgnored private let chooseExportDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
+    @ObservationIgnored private let chooseLayoutDestination: @MainActor (String, URL, LayoutExportFormat) async -> (URL, LayoutExportFormat)?
     /// The editor that fills the window, or nil. It opens with `openEditor` and closes with `closeEditor`.
     private(set) var activeEditor: ActiveEditor?
     /// The photo editor, or nil when none or another editor is open.
@@ -262,11 +263,16 @@ final class ReviewViewModel {
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
          defaults: UserDefaults = .standard, duplicateSearch: DuplicatesViewModel.Search? = nil,
-         chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil) {
+         chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil,
+         chooseLayoutDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: LayoutExportFormat) async -> (URL, LayoutExportFormat)?)? = nil) {
         self.defaults = defaults
         self.photoEdits = photoEdits
         self.layoutExport = layoutExport
         self.chooseExportDestination = chooseExportDestination ?? { name, folder, format in
+            await EditorSavePanel.choose(
+                suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
+        }
+        self.chooseLayoutDestination = chooseLayoutDestination ?? { name, folder, format in
             await EditorSavePanel.choose(
                 suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
         }
@@ -1004,7 +1010,7 @@ final class ReviewViewModel {
         guard !photos.isEmpty else { return }
         itemAfterClose = nil
         activeEditor = .photo(PhotoEditorViewModel(
-            photos: photos, start: start, service: photoEdits, protected: protectedFiles(),
+            photos: photos, start: start, service: photoEdits, protected: protectedFilesProvider,
             chooseDestination: chooseExportDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
             onClose: { [weak self] in self?.closeEditor() },
@@ -1012,16 +1018,22 @@ final class ReviewViewModel {
             readSize: { [weak self] id in await self?.pixelSize(of: id) }))
     }
 
-    /// The files that no export may replace: every photo of the folder and every file in the Trash.
-    private func protectedFiles() -> ProtectedFiles {
-        ProtectedFiles(
-            source: source, mediaIDs: Set(mediaByID.values.map(\.relativePath)),
-            otherPaths: review.session.trashed.map(\.trashPath))
+    /// The files that no export may replace: every photo of the folder and every file in the Trash. The editor
+    /// calls this after the save panel returns, so a photo that moved or went to the Trash meanwhile counts.
+    /// It reads the live review, not a copy made when the editor opened (final review C1).
+    private var protectedFilesProvider: @MainActor () -> ProtectedFiles {
+        { [review, source] in
+            ProtectedFiles(
+                source: source, mediaIDs: Set(review.mediaByID.values.map(\.relativePath)),
+                otherPaths: review.session.trashed.map(\.trashPath))
+        }
     }
 
     /// Closes the editor and drops its edit. The selection stays. A sidebar item that the user chose
     /// meanwhile shows now.
     func closeEditor() {
+        // An export still needs the editor, its lock, and its place to show an error (final review C1, I2).
+        guard activeEditor?.session.isExporting != true else { return }
         activeEditor = nil
         if let item = itemAfterClose {
             itemAfterClose = nil
@@ -1157,14 +1169,12 @@ final class ReviewViewModel {
         askingToContinueLayout = nil
         activeEditor = .layout(LayoutEditorViewModel(
             document: document, sources: sources, startSource: sourceID(of: origin), service: layoutExport,
-            source: source, protected: protectedFiles(), fileNames: fileNames,
+            source: source, protected: protectedFilesProvider, fileNames: fileNames,
             saveDraft: { [weak self] in self?.review.saveLayoutDraft($0) },
-            chooseDestination: { name, folder, format in
-                await EditorSavePanel.choose(
-                    suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
-            },
+            chooseDestination: chooseLayoutDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
             onClose: { [weak self] in self?.closeEditor() },
+            onCancelClose: { [weak self] in self?.itemAfterClose = nil },
             isAvailable: { [weak self] id in
                 guard let self else { return false }
                 return !self.review.session.trashed.contains { $0.mediaID == id }

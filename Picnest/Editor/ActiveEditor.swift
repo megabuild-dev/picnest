@@ -9,6 +9,9 @@ protocol EditorSession: AnyObject {
     var canRedo: Bool { get }
     func undo()
     func redo()
+    /// True from the click on **Export** until the write ends, with the save panel open too. The editor refuses
+    /// to close then, so the lock on **Done** and **Rescan** stays on and no error is lost.
+    var isExporting: Bool { get }
     /// Asks the editor to close. The editor may ask first, then calls its `onClose`.
     func requestClose()
 }

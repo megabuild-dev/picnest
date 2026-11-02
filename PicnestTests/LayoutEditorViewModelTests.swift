@@ -10,11 +10,16 @@ struct LayoutEditorViewModelTests {
     @MainActor final class Spy {
         var drafts: [LayoutDocument?] = []
         var closes = 0
+        var cancels = 0
         var destination: URL?
         var suggestions: [(name: String, folder: URL)] = []
         var revealed: [URL] = []
         /// While true, the fake save panel waits.
         var holdsPanel = false
+        /// The ids that the editor reads as protected at write time.
+        var protectedIDs: Set<MediaID> = []
+        /// Runs when the fake save panel opens.
+        var onPanel: (() -> Void)?
     }
 
     struct Rig {
@@ -37,6 +42,7 @@ struct LayoutEditorViewModelTests {
                 to: source.appending(path: id), red: CGFloat(i) / 10, green: 0.5, blue: 0.2, size: 80, height: 60)
         }
         let spy = Spy()
+        spy.protectedIDs = Set(ids)
         let suite = TestDefaults()
         let images = ImageRepository()
         let service = LayoutExportService(thumbnails: ThumbnailService(images: images), images: images)
@@ -46,16 +52,18 @@ struct LayoutEditorViewModelTests {
             document: layout,
             sources: [LayoutSourceOption(id: "all", title: "All Photos", photos: photos)],
             startSource: "all", service: service, source: source,
-            protected: ProtectedFiles(source: source, mediaIDs: Set(ids), otherPaths: []),
+            protected: { [spy] in ProtectedFiles(source: source, mediaIDs: spy.protectedIDs, otherPaths: []) },
             fileNames: Dictionary(uniqueKeysWithValues: photos.map { ($0.id, $0.fileName) }),
             saveDraft: { spy.drafts.append($0) },
             chooseDestination: { [spy] name, folder, format in
                 spy.suggestions.append((name, folder))
+                spy.onPanel?()
                 while spy.holdsPanel { await Task.yield() }
                 return spy.destination.map { ($0, format) }
             },
             revealURL: { spy.revealed.append($0) },
             onClose: { spy.closes += 1 },
+            onCancelClose: { spy.cancels += 1 },
             isAvailable: { !trashed.contains($0) },
             defaults: suite.defaults)
         return Rig(model: model, spy: spy, temp: temp, source: source, suite: suite)
@@ -352,6 +360,32 @@ struct LayoutEditorViewModelTests {
         rig.model.setPaper(.a3)
         rig.model.undo()
         try await waitUntil { rig.spy.drafts.last??.paper == .a4 }
+    }
+
+    /// Final review C1: a photo that moved while the panel was open is protected at write time.
+    @Test func testProtectedSetIsRebuiltAfterThePanelReturns() async throws {
+        let rig = try makeRig()
+        let moved = rig.source.appending(path: "moved.pdf")
+        try Data([7, 7, 7]).write(to: moved)
+        rig.spy.destination = moved
+        rig.spy.onPanel = { [spy = rig.spy] in spy.protectedIDs.insert("moved.pdf") }
+        await rig.model.export()
+        #expect(rig.model.exportError == CoreErrorMessages.text(for: PhotoExportError.wouldReplaceOriginal))
+        #expect(try Data(contentsOf: moved) == Data([7, 7, 7]))
+    }
+
+    /// Final review C1: Back and Esc cannot close the editor while the panel is open or the export runs.
+    @Test func testCloseIsRefusedWhileThePanelIsOpen() async throws {
+        let rig = try makeRig()
+        rig.spy.holdsPanel = true
+        let export = Task { await rig.model.export() }
+        try await waitUntil { rig.model.isExporting }
+        rig.model.requestClose()
+        #expect(rig.spy.closes == 0 && rig.spy.cancels == 1)
+        rig.spy.holdsPanel = false
+        await export.value
+        rig.model.requestClose()
+        #expect(rig.spy.closes == 1)
     }
 
     @Test func testSecondExportCallDoesNotOpenASecondPanel() async throws {
