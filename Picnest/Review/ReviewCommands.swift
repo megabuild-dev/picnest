@@ -45,6 +45,9 @@ struct ReviewCommands: Commands {
             Button("Edit Photo") { review?.openEditor() }
                 .keyboardShortcut("e", modifiers: .command)
                 .disabled(review?.anchor.map { review?.canEdit($0) == true } != true)
+            Button("Create Layout…") { review?.requestLayoutFromMenu() }
+                .keyboardShortcut("l", modifiers: .command)
+                .disabled(review?.layoutMenuOrigin == nil)
         }
         CommandGroup(replacing: .undoRedo) {
             Button("Undo") {

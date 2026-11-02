@@ -178,6 +178,8 @@ struct PhotoContextMenu: View {
         Button("Open") { model.contextMenuSelect(id); model.openInDefaultApp(id) }
         Button("Edit Photo…") { model.contextMenuSelect(id); model.openEditor(id) }
             .disabled(!model.canEdit(id))
+        Button("Create Layout…") { model.contextMenuSelect(id); model.requestLayout(from: .selection) }
+            .disabled(!model.canCreateLayout(for: id))
         Button("Show in Finder") { model.contextMenuSelect(id); model.showInFinder() }
         Button("Share…") {
             model.contextMenuSelect(id)
@@ -212,5 +214,16 @@ private struct KeyCap: View {
             .padding(.vertical, 1)
             .background(Theme.placeholderFill.color, in: RoundedRectangle(cornerRadius: 4))
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.textPrimary.color.opacity(0.15), lineWidth: 0.5))
+    }
+}
+
+/// **Create Layout…** for a category or a collection: the item of its sidebar menu and of its more menu.
+struct CreateLayoutButton: View {
+    let model: ReviewViewModel
+    let origin: LayoutOrigin
+
+    var body: some View {
+        Button("Create Layout…") { model.requestLayout(from: origin) }
+            .disabled(!model.canCreateLayout(from: origin))
     }
 }

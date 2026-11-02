@@ -37,6 +37,11 @@ enum CollectionEditor: Identifiable, Equatable {
 
 /// State of the Review screen (spec 3.3). Talks to `ReviewService`, `ClassifyService`, `ThumbnailService`
 /// and `LibraryService` (for **Undo Last Sort**) only, and asks `AppModel` (through `onRescan`) to scan again.
+/// Where a layout takes its photos from.
+enum LayoutOrigin: Hashable {
+    case selection, category(CategoryID), collection(CollectionID)
+}
+
 @MainActor
 @Observable
 final class ReviewViewModel {
@@ -212,6 +217,7 @@ final class ReviewViewModel {
     @ObservationIgnored private let openURL: @MainActor (URL) -> Void
     @ObservationIgnored private let revealURLs: @MainActor ([URL]) -> Void
     @ObservationIgnored private let photoEdits: PhotoEditService
+    @ObservationIgnored private let layoutExport: LayoutExportService
     @ObservationIgnored private let chooseExportDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
     /// The editor that fills the window, or nil. It opens with `openEditor` and closes with `closeEditor`.
     private(set) var activeEditor: ActiveEditor?
@@ -251,7 +257,7 @@ final class ReviewViewModel {
     /// `app` holds the undo flag that every window shares, and starts over (`startOver`). `afterScan` is true
     /// when a scan or a rescan opened this review.
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
-         photoEdits: PhotoEditService, app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
+         photoEdits: PhotoEditService, layoutExport: LayoutExportService? = nil, app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
@@ -259,6 +265,7 @@ final class ReviewViewModel {
          chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil) {
         self.defaults = defaults
         self.photoEdits = photoEdits
+        self.layoutExport = layoutExport ?? LayoutExportService(thumbnails: thumbnails, images: ImageRepository())
         self.chooseExportDestination = chooseExportDestination ?? { name, folder, format in
             await EditorSavePanel.choose(
                 suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
@@ -995,13 +1002,9 @@ final class ReviewViewModel {
             mediaByID[id].map { EditorPhoto(id: id, url: url(of: $0), fileName: Self.fileName($0)) }
         }
         guard !photos.isEmpty else { return }
-        let session = review.session
-        let protected = ProtectedFiles(
-            source: source, mediaIDs: Set(mediaByID.values.map(\.relativePath)),
-            otherPaths: session.trashed.map(\.trashPath))
         itemAfterClose = nil
         activeEditor = .photo(PhotoEditorViewModel(
-            photos: photos, start: start, service: photoEdits, protected: protected,
+            photos: photos, start: start, service: photoEdits, protected: protectedFiles(),
             chooseDestination: chooseExportDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
             onClose: { [weak self] in self?.closeEditor() },
@@ -1009,7 +1012,14 @@ final class ReviewViewModel {
             readSize: { [weak self] id in await self?.pixelSize(of: id) }))
     }
 
-    /// Closes the photo editor and drops its edit. The selection stays. A sidebar item that the user chose
+    /// The files that no export may replace: every photo of the folder and every file in the Trash.
+    private func protectedFiles() -> ProtectedFiles {
+        ProtectedFiles(
+            source: source, mediaIDs: Set(mediaByID.values.map(\.relativePath)),
+            otherPaths: review.session.trashed.map(\.trashPath))
+    }
+
+    /// Closes the editor and drops its edit. The selection stays. A sidebar item that the user chose
     /// meanwhile shows now.
     func closeEditor() {
         activeEditor = nil
@@ -1017,6 +1027,145 @@ final class ReviewViewModel {
             itemAfterClose = nil
             selectedItem = item
         }
+    }
+
+    // MARK: - Layout editor (UI redesign, Phase 5)
+
+    /// The layout editor, or nil when none or another editor is open.
+    var layoutEditor: LayoutEditorViewModel? {
+        if case .layout(let editor)? = activeEditor { editor } else { nil }
+    }
+
+    /// The origin that the user has not yet decided on: set when a draft with photos exists.
+    var askingToContinueLayout: LayoutOrigin?
+
+    /// True if a layout can start from `origin`: no files move and no editor is open, and the origin has at
+    /// least 1 readable image that is not in the Trash.
+    func canCreateLayout(from origin: LayoutOrigin) -> Bool {
+        canSortOrRescan && !layoutPhotoIDs(of: origin).isEmpty
+    }
+
+    /// The same for a right-click on `id`: the selection if `id` is selected, else `id`.
+    func canCreateLayout(for id: MediaID) -> Bool {
+        canSortOrRescan && contextTargets(for: id).contains(where: isEditable)
+    }
+
+    /// The origin of **Image > Create Layout…**: the selection when it is not empty, else the current category or
+    /// collection. Nil when no origin applies or it has no photo to lay out.
+    var layoutMenuOrigin: LayoutOrigin? {
+        let origin: LayoutOrigin
+        if !selection.isEmpty {
+            origin = .selection
+        } else {
+            switch selectedItem {
+            case .category(let c): origin = .category(c)
+            case .collection(let c): origin = .collection(c)
+            default: return nil
+            }
+        }
+        return canCreateLayout(from: origin) ? origin : nil
+    }
+
+    func requestLayoutFromMenu() {
+        if let origin = layoutMenuOrigin { requestLayout(from: origin) }
+    }
+
+    /// Opens the layout editor on the photos of `origin`. A draft with photos makes the screen ask first.
+    func requestLayout(from origin: LayoutOrigin) {
+        guard canCreateLayout(from: origin) else { return }
+        if let draft = review.session.layoutDraft, !draft.photoIDs.isEmpty {
+            askingToContinueLayout = origin
+        } else {
+            openLayout(.new(photos: layoutPhotoIDs(of: origin), title: layoutTitle(of: origin)), origin: origin)
+        }
+    }
+
+    /// Answers the question with **Continue Layout**: opens the draft.
+    func continueLayout() {
+        guard let origin = askingToContinueLayout else { return }
+        askingToContinueLayout = nil
+        guard canSortOrRescan, let draft = review.session.layoutDraft else { return }
+        openLayout(draft, origin: origin)
+    }
+
+    /// Answers the question with **Start New**: opens a new layout on the photos of the origin.
+    func startNewLayout() {
+        guard let origin = askingToContinueLayout else { return }
+        askingToContinueLayout = nil
+        guard canCreateLayout(from: origin) else { return }
+        openLayout(.new(photos: layoutPhotoIDs(of: origin), title: layoutTitle(of: origin)), origin: origin)
+    }
+
+    /// Answers the question with **Cancel**. The draft stays.
+    func cancelLayoutRequest() { askingToContinueLayout = nil }
+
+    /// The title of a new layout: the category or collection name, or empty for a selection.
+    private func layoutTitle(of origin: LayoutOrigin) -> String {
+        switch origin {
+        case .selection: ""
+        case .category(let c): review.session.categories.first { $0.id == c }?.displayName ?? ""
+        case .collection(let c): collections.first { $0.id == c }?.name ?? ""
+        }
+    }
+
+    /// The readable images of `origin` that are not in the Trash: the selection in grid order, a category in
+    /// the order of its grid, or a collection in the order of its members.
+    private func layoutPhotoIDs(of origin: LayoutOrigin) -> [MediaID] {
+        switch origin {
+        case .selection: selectedInGridOrder.filter(isEditable)
+        case .category(let c): layoutPhotoIDs(of: .category(c) as SidebarItem)
+        case .collection(let c): layoutPhotoIDs(of: .collection(c) as SidebarItem)
+        }
+    }
+
+    private func layoutPhotoIDs(of item: SidebarItem) -> [MediaID] {
+        let session = review.session
+        if case .collection(let c) = item {
+            return CollectionService.visibleMembers(of: c, in: session).filter(isEditable)
+        }
+        let files = session.visibleMedia.filter {
+            Self.includes($0, state: session.states[$0.id], in: item) && isEditable($0.id)
+        }
+        return sorted(files, session: session)
+    }
+
+    private func sourceID(of origin: LayoutOrigin) -> String {
+        switch origin {
+        case .selection: "all"
+        case .category(let c): "category:\(c.uuidString)"
+        case .collection(let c): "collection:\(c.uuidString)"
+        }
+    }
+
+    private func openLayout(_ document: LayoutDocument, origin: LayoutOrigin) {
+        guard canSortOrRescan else { return }
+        func option(_ id: String, _ title: String, _ item: SidebarItem) -> LayoutSourceOption {
+            LayoutSourceOption(id: id, title: title, photos: layoutPhotoIDs(of: item).compactMap { id in
+                mediaByID[id].map { LayoutPhoto(id: id, fileName: Self.fileName($0)) }
+            })
+        }
+        let sources = [option("all", String(localized: "All Photos"), .all)]
+            + categories.map { option(sourceID(of: .category($0.id)), "\($0.emoji) \($0.displayName)", .category($0.id)) }
+            + collections.map { option(sourceID(of: .collection($0.id)), $0.name, .collection($0.id)) }
+        let fileNames = Dictionary(
+            mediaByID.values.filter { $0.kind == .image }.map { ($0.id, Self.fileName($0)) },
+            uniquingKeysWith: { first, _ in first })
+        itemAfterClose = nil
+        askingToContinueLayout = nil
+        activeEditor = .layout(LayoutEditorViewModel(
+            document: document, sources: sources, startSource: sourceID(of: origin), service: layoutExport,
+            source: source, protected: protectedFiles(), fileNames: fileNames,
+            saveDraft: { [weak self] in self?.review.saveLayoutDraft($0) },
+            chooseDestination: { name, folder, format in
+                await EditorSavePanel.choose(
+                    suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
+            },
+            revealURL: { [weak self] in self?.revealURLs([$0]) },
+            onClose: { [weak self] in self?.closeEditor() },
+            isAvailable: { [weak self] id in
+                guard let self else { return false }
+                return !self.review.session.trashed.contains { $0.mediaID == id }
+            }))
     }
 
     // MARK: - Photo actions

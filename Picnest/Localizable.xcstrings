@@ -1227,6 +1227,26 @@
         }
       }
     },
+    "Continue Layout" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiếp tục bố cục"
+          }
+        }
+      }
+    },
+    "Continue your last layout?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiếp tục bố cục trước?"
+          }
+        }
+      }
+    },
     "Contrast" : {
       "localizations" : {
         "vi" : {
@@ -1343,6 +1363,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tạo"
+          }
+        }
+      }
+    },
+    "Create Layout…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo bố cục…"
           }
         }
       }
@@ -3400,6 +3430,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tiêu chuẩn (150 dpi)"
+          }
+        }
+      }
+    },
+    "Start New" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo mới"
           }
         }
       }

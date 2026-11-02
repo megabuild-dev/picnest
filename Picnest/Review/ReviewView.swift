@@ -28,14 +28,14 @@ struct ReviewView: View {
     /// opened this review (spec 3.7).
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, sortService: SortService,
          library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil,
-         photoEdits: PhotoEditService) {
+         photoEdits: PhotoEditService, layoutExport: LayoutExportService? = nil) {
         self.preferences = preferences
         self.review = review
         self.sortService = sortService
         self.library = library
         self.app = app
         _model = State(initialValue: ReviewViewModel(
-            review: review, classify: classify, thumbnails: thumbnails, library: library, photoEdits: photoEdits, app: app,
+            review: review, classify: classify, thumbnails: thumbnails, library: library, photoEdits: photoEdits, layoutExport: layoutExport, app: app,
             afterScan: afterScan, onRescan: app.rescan))
     }
 
@@ -125,6 +125,12 @@ struct ReviewView: View {
             Button("OK", role: .cancel) { model.undoSortMessage = nil }
         } message: {
             Text(model.undoSortMessage ?? "")
+        }
+        // Create Layout… with a saved draft.
+        .alert("Continue your last layout?", isPresented: layoutQuestionBinding) {
+            Button("Continue Layout") { model.continueLayout() }
+            Button("Start New") { model.startNewLayout() }
+            Button("Cancel", role: .cancel) { model.cancelLayoutRequest() }
         }
         // File > Start Over… (spec 3.3).
         .confirmationDialog("Start over?", isPresented: Bindable(model).isConfirmingStartOver,
@@ -309,6 +315,10 @@ struct ReviewView: View {
             sort = sortModel
             isOpeningSort = false
         }
+    }
+
+    private var layoutQuestionBinding: Binding<Bool> {
+        Binding(get: { model.askingToContinueLayout != nil }, set: { _ in })  // Each button of the alert answers the question.
     }
 
     private var undoMessageBinding: Binding<Bool> {
