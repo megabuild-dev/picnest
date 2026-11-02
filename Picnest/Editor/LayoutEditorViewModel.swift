@@ -130,10 +130,13 @@ final class LayoutEditorViewModel: EditorSession {
         return CountText.uses(min(document.template.cellCount, count), of: count)
     }
 
-    var paperText: String {
-        let size = document.paper.millimetres
-        let (w, h) = document.orientation == .portrait ? (size.width, size.height) : (size.height, size.width)
-        return String(localized: "\(Self.paperName(document.paper)) (\(Self.millimetres(w)) × \(Self.millimetres(h)) mm)")
+    var paperText: String { Self.paperText(document.paper, orientation: document.orientation) }
+
+    /// "A4 (297 × 210 mm)": the name and the size of the paper in the page orientation.
+    static func paperText(_ paper: PaperSize, orientation: PageOrientation) -> String {
+        let size = paper.millimetres
+        let (w, h) = orientation == .portrait ? (size.width, size.height) : (size.height, size.width)
+        return String(localized: "\(paperName(paper)) (\(millimetres(w)) × \(millimetres(h)) mm)")
     }
 
     var spacingText: String { Self.pointsText(document.spacing) }
@@ -170,6 +173,12 @@ final class LayoutEditorViewModel: EditorSession {
         guard let needle = SearchText.needle(searchText) else { return photos }
         return photos.filter { SearchText.matches($0.fileName, needle: needle) }
     }
+
+    /// "N photos" for the photos that the left panel shows.
+    var sourceCountText: String { CountText.photos(sourcePhotos.count) }
+
+    /// The photos that the layout holds, for the check mark on the left panel tiles.
+    var usedIDs: Set<MediaID> { Set(document.photoIDs) }
 
     func setSource(_ id: String) {
         guard sources.contains(where: { $0.id == id }) else { return }
@@ -264,7 +273,93 @@ final class LayoutEditorViewModel: EditorSession {
         changed()
     }
 
-    func selectCell(_ index: Int?) { selectedCell = index }
+    /// Selects a cell, and shows its page. An index with no cell clears the selection.
+    func selectCell(_ index: Int?) {
+        guard let index, let page = pages.firstIndex(where: { $0.cells.contains { $0.index == index } }) else {
+            selectedCell = nil
+            return
+        }
+        selectedCell = index
+        if page != pageIndex {
+            pageIndex = page
+            refreshPreview()
+        }
+    }
+
+    /// ← and →: selects the cell `offset` places away, across pages. With no selection it selects the first cell of
+    /// the shown page. It stays at the first or the last cell.
+    func moveSelection(by offset: Int) {
+        let total = pages.reduce(0) { $0 + $1.cells.count }
+        guard total > 0 else { return }
+        guard let current = selectedCell else {
+            selectCell(pages[pageIndex].cells.first?.index)
+            return
+        }
+        selectCell(min(max(current + offset, 0), total - 1))
+    }
+
+    /// ⌥← and ⌥→: moves the photo of the selected cell `offset` places. The selection follows the photo.
+    func moveSelectedPhoto(by offset: Int) {
+        guard let cell = selectedCell else { return }
+        movePhoto(at: cell, by: offset)
+    }
+
+    /// Moves the photo of a cell `offset` places, up to the first or the last photo. A cell with no photo stays.
+    func movePhoto(at cell: Int, by offset: Int) {
+        let ids = document.photoIDs
+        guard ids.indices.contains(cell) else { return }
+        let target = min(max(cell + offset, 0), ids.count - 1)
+        guard target != cell else { return }
+        move(ids[cell], to: target)
+        selectCell(target)
+    }
+
+    func canMovePhoto(at cell: Int, by offset: Int) -> Bool {
+        document.photoIDs.indices.contains(cell) && document.photoIDs.indices.contains(cell + offset)
+    }
+
+    func removePhoto(at cell: Int) {
+        guard document.photoIDs.indices.contains(cell) else { return }
+        remove([document.photoIDs[cell]])
+    }
+
+    /// The cell of the shown page under a point, in page points (the view divides a point by `scale`). Nil if none.
+    func cell(atPagePoint point: CGPoint) -> Int? {
+        pages[pageIndex].cells.first {
+            point.x >= $0.frame.x && point.x < $0.frame.maxX && point.y >= $0.frame.y && point.y < $0.frame.maxY
+        }?.index
+    }
+
+    /// A drop of photos. On a cell they go in at its index. On the page with no cell they go to the end. A photo
+    /// that the layout holds already moves instead: onto a cell with a photo it swaps with that photo, onto an
+    /// empty cell it goes to the end, and elsewhere nothing changes.
+    func drop(_ ids: [MediaID], onCell index: Int?) {
+        let held = document.photoIDs
+        if ids.count == 1, let id = ids.first, let from = held.firstIndex(of: id) {
+            guard let index, index != from else { return }
+            if held.indices.contains(index) {
+                swap(id, held[index])
+                selectCell(index)
+            } else {
+                move(id, to: held.count - 1)
+                selectCell(held.count - 1)
+            }
+            return
+        }
+        let before = held.count
+        add(ids, at: index)
+        if let index, document.photoIDs.count > before { selectCell(min(index, document.photoIDs.count - 1)) }
+    }
+
+    /// The text that VoiceOver reads for a cell: "Photo 3 of 6, IMG_2048.jpg" or "Empty cell 4".
+    func cellLabel(for cell: LayoutCell) -> String {
+        guard let id = cell.mediaID else { return String(localized: "Empty cell \(cell.index + 1)") }
+        return String(localized: "Photo \(cell.index + 1) of \(document.photoIDs.count), \(fileNames[id] ?? id)")
+    }
+
+    var currentPage: LayoutPage { pages[pageIndex] }
+    var canStepBack: Bool { pageIndex > 0 }
+    var canStepForward: Bool { pageIndex < pages.count - 1 }
 
     // MARK: - Pages and zoom
 
@@ -304,6 +399,11 @@ final class LayoutEditorViewModel: EditorSession {
 
     /// **Preview** hides the panels and the cell overlays.
     func togglePreview() { isPreviewing.toggle() }
+
+    /// Esc leaves **Preview** first. Without **Preview** it closes the editor.
+    func handleEscape() {
+        if isPreviewing { isPreviewing = false } else { requestClose() }
+    }
 
     // MARK: - Undo and closing
 
@@ -397,7 +497,7 @@ final class LayoutEditorViewModel: EditorSession {
 
     /// **Export**: asks for a place with a unique suggested name, then writes the PNG or PDF file.
     /// A photo in the Trash is left out. The layout stays.
-    func export() async {
+    func export(startingWith first: LayoutExportFormat = .pdf) async {
         guard !isExporting else { return }
         finishChange()
         let d = exportDocument
@@ -407,7 +507,7 @@ final class LayoutEditorViewModel: EditorSession {
         exportError = nil
         defer { isExporting = false }
         let folder = exportFolder
-        guard let (destination, format) = await chooseDestination(suggestedName(format: .pdf, in: folder), folder, .pdf)
+        guard let (destination, format) = await chooseDestination(suggestedName(format: first, in: folder), folder, first)
         else { return }
         lastExport = []
         do {

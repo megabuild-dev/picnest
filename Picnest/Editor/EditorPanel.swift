@@ -78,7 +78,7 @@ struct EditorPanel: View {
     }
 
     private var straighten: some View {
-        valueSlider(
+        slider(
             "Straighten", value: Binding(get: { model.edit.straighten }, set: model.setStraighten),
             range: -45...45, step: 0.1, showsLabel: false, text: PhotoEditorViewModel.straightenText(model.edit.straighten))
     }
@@ -116,7 +116,7 @@ struct EditorPanel: View {
     private var adjustments: some View {
         VStack(spacing: 12) {
             ForEach(AdjustmentKind.allCases, id: \.self) { kind in
-                valueSlider(
+                slider(
                     kind.title,
                     value: Binding(get: { Double(model.edit[kind]) }, set: { model.setAdjustment(kind, Int($0.rounded())) }),
                     range: -100...100, step: 1, showsLabel: true, text: PhotoEditorViewModel.adjustmentText(model.edit[kind]))
@@ -124,24 +124,11 @@ struct EditorPanel: View {
         }
     }
 
-    /// A slider with its value at the right. VoiceOver reads the value. The end of a drag is 1 undo step.
-    private func valueSlider(
+    private func slider(
         _ title: LocalizedStringKey, value: Binding<Double>, range: ClosedRange<Double>, step: Double, showsLabel: Bool, text: String
     ) -> some View {
-        HStack(spacing: 8) {
-            if showsLabel {
-                Text(title).font(.system(size: 13)).foregroundStyle(Theme.textSecondary.color)
-                    .frame(width: 70, alignment: .leading)
-            }
-            Slider(value: value, in: range, step: step) { editing in
-                if editing { model.beginDrag() } else { model.endDrag() }
-            }
-            .tint(Theme.accent.color)
-            .accessibilityLabel(Text(title))
-            .accessibilityValue(Text(verbatim: text))
-            Text(verbatim: text).font(.system(size: 12)).monospacedDigit()
-                .frame(width: 44, alignment: .trailing)
-                .accessibilityHidden(true)
-        }
+        EditorValueSlider(
+            title: title, value: value, range: range, step: step, showsLabel: showsLabel, text: text,
+            onEditing: { if $0 { model.beginDrag() } else { model.endDrag() } })
     }
 }

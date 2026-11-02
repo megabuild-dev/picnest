@@ -388,4 +388,103 @@ struct LayoutEditorViewModelTests {
         #expect(Set(LayoutBackground.allCases.map(\.title)).count == LayoutBackground.allCases.count)
         #expect(Set(ExportResolution.allCases.map(\.title)).count == ExportResolution.allCases.count)
     }
+
+    // MARK: - Cells, keys, and drops
+
+    @Test func testCellAtPagePointUsesTheCellFrames() throws {
+        let model = try makeRig().model
+        let cell = model.currentPage.cells[4]
+        let inside = CGPoint(x: cell.frame.x + cell.frame.width / 2, y: cell.frame.y + cell.frame.height / 2)
+        #expect(model.cell(atPagePoint: inside) == 4)
+        #expect(model.cell(atPagePoint: CGPoint(x: 1, y: 1)) == nil)
+    }
+
+    @Test func testArrowKeysSelectAcrossPages() throws {
+        let model = try makeRig(count: 7).model
+        #expect(model.pages.count == 2)
+        model.moveSelection(by: 1)
+        #expect(model.selectedCell == 0)
+        model.moveSelection(by: -1)
+        #expect(model.selectedCell == 0)
+        model.selectCell(5)
+        model.moveSelection(by: 1)
+        #expect(model.selectedCell == 6 && model.pageIndex == 1)
+        model.moveSelection(by: 100)
+        #expect(model.selectedCell == 11)
+        model.selectCell(99)
+        #expect(model.selectedCell == nil)
+    }
+
+    @Test func testOptionArrowsMoveThePhotoAndTheSelectionFollows() throws {
+        let model = try makeRig(count: 3).model
+        model.selectCell(1)
+        model.moveSelectedPhoto(by: 1)
+        #expect(model.document.photoIDs == ["p1.jpg", "p3.jpg", "p2.jpg"] && model.selectedCell == 2)
+        model.moveSelectedPhoto(by: 1)
+        #expect(model.document.photoIDs == ["p1.jpg", "p3.jpg", "p2.jpg"])
+        #expect(model.canMovePhoto(at: 2, by: -1) && !model.canMovePhoto(at: 2, by: 1))
+        model.selectCell(4)  // an empty cell: nothing moves
+        model.moveSelectedPhoto(by: -1)
+        #expect(model.document.photoIDs == ["p1.jpg", "p3.jpg", "p2.jpg"])
+    }
+
+    @Test func testDeleteRemovesTheSelectedPhotoAsOneUndoStep() throws {
+        let model = try makeRig(count: 3).model
+        model.selectCell(0)
+        model.removeSelected()
+        #expect(model.document.photoIDs == ["p2.jpg", "p3.jpg"])
+        model.undo()
+        #expect(model.document.photoIDs.count == 3)
+        model.removePhoto(at: 9)
+        #expect(model.document.photoIDs.count == 3)
+    }
+
+    @Test func testDropOnACellInsertsThereAndOnThePageAppends() throws {
+        let model = try makeRig(count: 5, used: 3).model
+        model.drop(["p4.jpg"], onCell: 1)
+        #expect(model.document.photoIDs == ["p1.jpg", "p4.jpg", "p2.jpg", "p3.jpg"])
+        model.drop(["p5.jpg"], onCell: nil)
+        #expect(model.document.photoIDs.last == "p5.jpg")
+        model.undo()
+        #expect(model.document.photoIDs.count == 4)
+    }
+
+    @Test func testDropOfAHeldPhotoSwapsOrGoesToTheEnd() throws {
+        let model = try makeRig(count: 3).model
+        model.drop(["p1.jpg"], onCell: 2)
+        #expect(model.document.photoIDs == ["p3.jpg", "p2.jpg", "p1.jpg"] && model.selectedCell == 2)
+        model.drop(["p3.jpg"], onCell: 5)
+        #expect(model.document.photoIDs == ["p2.jpg", "p1.jpg", "p3.jpg"])
+        model.drop(["p2.jpg"], onCell: nil)
+        model.drop(["p2.jpg"], onCell: 0)
+        #expect(model.document.photoIDs == ["p2.jpg", "p1.jpg", "p3.jpg"])
+    }
+
+    @Test func testCellLabelsNameThePhotoOrTheEmptyCell() throws {
+        let model = try makeRig(count: 2).model
+        let cells = model.currentPage.cells
+        #expect(model.cellLabel(for: cells[1]) == "Photo 2 of 2, P2é.jpg")
+        #expect(model.cellLabel(for: cells[3]) == "Empty cell 4")
+    }
+
+    @Test func testEscapeLeavesPreviewBeforeClosing() throws {
+        let rig = try makeRig()
+        rig.model.togglePreview()
+        rig.model.handleEscape()
+        #expect(!rig.model.isPreviewing && rig.spy.closes == 0)
+        rig.model.handleEscape()
+        #expect(rig.spy.closes == 1)
+    }
+
+    @Test func testExportOffersTheChosenFormatFirst() async throws {
+        let rig = try makeRig()
+        rig.spy.destination = nil
+        await rig.model.export(startingWith: .png)
+        #expect(rig.spy.suggestions.last?.name.hasSuffix(".png") == true)
+    }
+
+    @Test func testPaperTextFollowsTheOrientation() {
+        #expect(LayoutEditorViewModel.paperText(.a4, orientation: .landscape) == "A4 (297 × 210 mm)")
+        #expect(LayoutEditorViewModel.paperText(.a4, orientation: .portrait) == "A4 (210 × 297 mm)")
+    }
 }

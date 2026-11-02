@@ -54,4 +54,9 @@ enum CountText {
     static func lastLayout(_ n: Int, locale: Locale = .current) -> String {
         String(localized: "Your last layout has \(n) photos.", locale: locale)
     }
+
+    /// "N photos in Recently Deleted stay out of the export.", under the page of the layout editor.
+    static func leftOut(_ n: Int, locale: Locale = .current) -> String {
+        String(localized: "\(n) photos in Recently Deleted stay out of the export.", locale: locale)
+    }
 }

@@ -261,9 +261,9 @@ struct ReviewView: View {
         case .photo(let editor):
             PhotoEditorView(model: editor, library: model)
                 .navigationTitle("Edit Photo")
-        case .layout:
-            // Task 5.9 adds the layout editor screen. Nothing opens a layout editor before task 5.8.
-            Color.clear
+        case .layout(let editor):
+            LayoutEditorView(model: editor, library: model)
+                .navigationTitle("Create Layout")
         }
     }
 

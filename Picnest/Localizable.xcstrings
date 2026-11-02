@@ -281,6 +281,40 @@
         }
       }
     },
+    "%lld photos in Recently Deleted stay out of the export." : {
+      "localizations" : {
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ảnh trong Đã xóa gần đây sẽ không được xuất."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo in Recently Deleted stays out of the export."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos in Recently Deleted stay out of the export."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld photos in this set" : {
       "localizations" : {
         "en" : {
@@ -781,6 +815,16 @@
         }
       }
     },
+    "Add to Layout" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm vào bố cục"
+          }
+        }
+      }
+    },
     "Adjust" : {
       "localizations" : {
         "vi" : {
@@ -897,6 +941,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quay lại ảnh"
+          }
+        }
+      }
+    },
+    "Background" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nền"
           }
         }
       }
@@ -1367,6 +1421,16 @@
         }
       }
     },
+    "Create Layout" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo bố cục"
+          }
+        }
+      }
+    },
     "Create Layout…" : {
       "localizations" : {
         "vi" : {
@@ -1567,6 +1631,16 @@
         }
       }
     },
+    "Drag to add to layout" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kéo để thêm vào bố cục"
+          }
+        }
+      }
+    },
     "Drop a folder of photos here" : {
       "localizations" : {
         "vi" : {
@@ -1677,6 +1751,16 @@
         }
       }
     },
+    "Empty cell %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ô trống %lld"
+          }
+        }
+      }
+    },
     "Enter a name." : {
       "localizations" : {
         "vi" : {
@@ -1693,6 +1777,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bản sao giống hệt (%lld)"
+          }
+        }
+      }
+    },
+    "Export" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xuất"
           }
         }
       }
@@ -1747,6 +1841,16 @@
         }
       }
     },
+    "File names under photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên tệp dưới ảnh"
+          }
+        }
+      }
+    },
     "File size" : {
       "localizations" : {
         "vi" : {
@@ -1773,6 +1877,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tìm thư mục…"
+          }
+        }
+      }
+    },
+    "Fit Page" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vừa trang"
           }
         }
       }
@@ -1947,6 +2061,26 @@
         }
       }
     },
+    "In Layout" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trong bố cục"
+          }
+        }
+      }
+    },
+    "Include captions" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm chú thích"
+          }
+        }
+      }
+    },
     "Keep" : {
       "localizations" : {
         "vi" : {
@@ -2045,6 +2179,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bố cục"
+          }
+        }
+      }
+    },
+    "Layout name" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên bố cục"
+          }
+        }
+      }
+    },
+    "Layout presets" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mẫu bố cục"
           }
         }
       }
@@ -2165,6 +2319,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tạo thư mục con theo ngày (năm / tháng)"
+          }
+        }
+      }
+    },
+    "Margin" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lề"
           }
         }
       }
@@ -2317,6 +2481,26 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Move Earlier" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển lên trước"
+          }
+        }
+      }
+    },
+    "Move Later" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển ra sau"
           }
         }
       }
@@ -2481,6 +2665,16 @@
         }
       }
     },
+    "Next Page" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang sau"
+          }
+        }
+      }
+    },
     "Next photo" : {
       "localizations" : {
         "vi" : {
@@ -2607,6 +2801,16 @@
         }
       }
     },
+    "Note" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ghi chú"
+          }
+        }
+      }
+    },
     "Nothing Recently Deleted" : {
       "localizations" : {
         "vi" : {
@@ -2677,6 +2881,16 @@
         }
       }
     },
+    "Orientation" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hướng giấy"
+          }
+        }
+      }
+    },
     "Original" : {
       "localizations" : {
         "vi" : {
@@ -2717,12 +2931,52 @@
         }
       }
     },
+    "PDF…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF…"
+          }
+        }
+      }
+    },
+    "PNG…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PNG…"
+          }
+        }
+      }
+    },
     "Page %lld of %lld" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trang %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "Paper size" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khổ giấy"
+          }
+        }
+      }
+    },
+    "Photo %lld of %lld, %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ảnh %1$lld trên %2$lld, %3$@"
           }
         }
       }
@@ -2748,7 +3002,15 @@
       }
     },
     "Picnest" : {
-      "shouldTranslate" : false
+      "shouldTranslate" : false,
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest"
+          }
+        }
+      }
     },
     "Picnest cannot open this folder." : {
       "localizations" : {
@@ -2856,6 +3118,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xem trước"
+          }
+        }
+      }
+    },
+    "Previous Page" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang trước"
           }
         }
       }
@@ -2980,6 +3252,16 @@
         }
       }
     },
+    "Remove from Layout" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa khỏi bố cục"
+          }
+        }
+      }
+    },
     "Remove from Recent" : {
       "localizations" : {
         "vi" : {
@@ -3046,6 +3328,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đặt lại"
+          }
+        }
+      }
+    },
+    "Resolution" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ phân giải"
           }
         }
       }
@@ -3194,6 +3486,16 @@
         }
       }
     },
+    "Search photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tìm ảnh"
+          }
+        }
+      }
+    },
     "Select All" : {
       "localizations" : {
         "vi" : {
@@ -3210,6 +3512,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chọn một ảnh để xem chi tiết."
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cài đặt"
           }
         }
       }
@@ -3410,6 +3722,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã sắp xếp %@"
+          }
+        }
+      }
+    },
+    "Spacing" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khoảng cách"
           }
         }
       }
@@ -3674,6 +3996,16 @@
         }
       }
     },
+    "The layout saves by itself. Export makes a PNG or PDF file. Your photos do not change." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bố cục tự lưu. Xuất tạo tệp PNG hoặc PDF. Ảnh của bạn không thay đổi."
+          }
+        }
+      }
+    },
     "The model of Picnest has an unexpected format. Install Picnest again." : {
       "localizations" : {
         "vi" : {
@@ -3840,6 +4172,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kích thước ảnh thu nhỏ"
+          }
+        }
+      }
+    },
+    "Title" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiêu đề"
           }
         }
       }
@@ -4088,6 +4430,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ảnh của bạn chỉ nằm trên máy Mac này."
+          }
+        }
+      }
+    },
+    "Zoom" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thu phóng"
+          }
+        }
+      }
+    },
+    "Zoom In" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phóng to"
+          }
+        }
+      }
+    },
+    "Zoom Out" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thu nhỏ"
           }
         }
       }

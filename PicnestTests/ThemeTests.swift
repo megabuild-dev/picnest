@@ -1,4 +1,5 @@
 import AppKit
+import PicnestCore
 import XCTest
 @testable import Picnest
 
@@ -95,5 +96,18 @@ final class ThemeTests: XCTestCase {
             XCTAssertEqual(got.g, want.g, accuracy: 0.003)
             XCTAssertEqual(got.b, want.b, accuracy: 0.003)
         }
+    }
+
+    func testPageCaptionContrastOnEachBackground() {
+        for background in LayoutBackground.allCases {
+            let page = RGB(r: background.rgb.r, g: background.rgb.g, b: background.rgb.b)
+            let text = RGB(r: background.textRGB.r, g: background.textRGB.g, b: background.textRGB.b)
+            XCTAssertGreaterThanOrEqual(text.contrast(with: page), 4.5, "\(background)")
+        }
+    }
+
+    func testPageShadowIsBlackAtTheSameAlphaInBothModes() {
+        XCTAssertEqual(Theme.pageShadow.light, Theme.pageShadow.dark)
+        XCTAssertEqual(Theme.pageShadowAlpha, 0.12)
     }
 }

@@ -39,3 +39,19 @@ extension ExportResolution {
         }
     }
 }
+
+extension GridPreset {
+    /// "3 × 2": columns by rows.
+    var title: String { "\(columns) × \(rows)" }
+}
+
+extension CollageTemplate {
+    /// The cells of the template as columns and rows, for the drawn preview.
+    var previewGrid: GridPreset {
+        switch self {
+        case .twoByTwo: GridPreset(columns: 2, rows: 2)
+        }
+    }
+
+    var title: String { previewGrid.title }
+}
