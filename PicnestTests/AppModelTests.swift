@@ -74,6 +74,22 @@ struct AppModelTests {
             library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: app, onRescan: app.rescan)
     }
 
+    /// Re-review M-A: while Done plans and moves files, no editor opens, so no export can pick a renamed photo.
+    @Test func doneRunningTurnsOffEditorsAndLayouts() async throws {
+        let (source, _) = try savedFolder()
+        app.open(source)
+        await app.settled()
+        let model = try reviewModel()
+        #expect(model.canSortOrRescan && model.canEdit("a.jpg"))
+        app.organizeAndFinish()
+        #expect(app.isOrganizing)
+        #expect(!model.canSortOrRescan && !model.canEdit("a.jpg") && !model.canCreateLayout(from: .selection))
+        model.openEditor("a.jpg")
+        model.requestLayout(from: .selection)
+        #expect(!model.isEditing)
+        await app.settled()
+    }
+
     /// `afterScan` of the review screen, or nil on another screen.
     private var afterScan: Bool? {
         if case .review(_, let afterScan) = app.screen { return afterScan }

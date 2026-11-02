@@ -374,10 +374,11 @@ final class ReviewViewModel {
     /// True while **Undo Last Sort** runs in any window.
     var isUndoingSort: Bool { app.isUndoingSort }
     /// False while a sort or an undo of a sort runs, while files move to or from the Trash (final review I1),
-    /// or while **Start Over…** runs, or while the photo editor is open: **Rescan**, **Sort Photos…**,
+    /// or while **Start Over…** or **Done** runs, or while an editor is open: **Rescan**, **Sort Photos…**,
     /// **Undo Last Sort**, **Done**, and **Start Over…** are off.
     var canSortOrRescan: Bool {
-        !isEditing && !isUndoingSort && !review.isMovingFiles && !app.isStartingOver && !library.isSortRunning
+        !isEditing && !isUndoingSort && !review.isMovingFiles && !app.isStartingOver && !app.isOrganizing
+            && !library.isSortRunning
     }
     /// The text of the Undo Last Sort alert, or nil.
     var undoSortMessage: String?
@@ -411,7 +412,7 @@ final class ReviewViewModel {
     var organizeErrorMessage: String? { app.organizeErrorMessage }
 
     /// **Done** is on when there is at least 1 category and no sort, undo, or Trash move runs.
-    var canDone: Bool { !review.session.categories.isEmpty && canSortOrRescan && !app.isOrganizing }
+    var canDone: Bool { !review.session.categories.isEmpty && canSortOrRescan }
 
     /// **Done**: move every classified photo into a category sub-folder of the source folder, rename it,
     /// and close the session (spec 7.2). One-way.
