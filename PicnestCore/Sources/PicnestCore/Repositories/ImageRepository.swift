@@ -44,6 +44,12 @@ public final class ImageRepository: @unchecked Sendable {
         return (image, properties)
     }
 
+    /// The upright image at `url` with its longest side at most `maxPixel`. Not cached, so a layout export
+    /// that reads 1,000 photos does not fill the shared cache. Nil when it cannot be decoded.
+    public func downsampled(at url: URL, maxPixel: Int) -> CGImage? {
+        Self.decode(url, maxPixel: maxPixel)
+    }
+
     private static func decode(_ url: URL, maxPixel: Int) -> CGImage? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         return decode(source, maxPixel: maxPixel)
