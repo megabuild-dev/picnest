@@ -27,18 +27,31 @@ struct EditorEntryTests {
     @MainActor final class Panel {
         var destination: URL?
         var suggestions: [String] = []
+        /// While true, the fake save panel waits.
+        var holds = false
+        /// Runs while the panel is open, for example a move of the session photos.
+        var whileOpen: (() async -> Void)?
     }
 
     private func makeModel(
         panel: Panel = Panel(), trashOps: FakeTrashFileOps = FakeTrashFileOps(),
-        session: ((URL) -> Session)? = nil, onRescan: @escaping () -> Void = {}
+        session: ((URL) -> Session)? = nil, onRescan: @escaping () -> Void = {}, app: AppModel? = nil
     ) throws -> (model: ReviewViewModel, review: ReviewService) {
         try fx.makeModelAndReview(
             onRescan: onRescan, trashOps: trashOps, session: session,
             chooseExport: { [panel] name, _, format in
                 panel.suggestions.append(name)
+                while panel.holds { await Task.yield() }
+                await panel.whileOpen?()
                 return panel.destination.map { ($0, format) }
-            })
+            },
+            chooseLayoutExport: { [panel] name, _, format in
+                panel.suggestions.append(name)
+                while panel.holds { await Task.yield() }
+                await panel.whileOpen?()
+                return panel.destination.map { ($0, format) }
+            },
+            app: app)
     }
 
     // MARK: - Which photos open
@@ -102,6 +115,110 @@ struct EditorEntryTests {
         model.closeEditor()
         model.openEditor("e.jpg")  // a given id wins over the anchor
         #expect(model.editor?.current.id == "e.jpg")
+    }
+
+    // MARK: - Export keeps the editor and the lock (final review C1, I2)
+
+    /// A photo that Done moved while the save panel was open: the user picks its new path. Nothing is replaced.
+    @Test func testExportIsRefusedOverAPhotoThatMovedWhilePanelWasOpen() async throws {
+        let panel = Panel()
+        let (model, review) = try makeModel(panel: panel)
+        let moved = source.appending(path: "Food/b.jpg")
+        try FileManager.default.createDirectory(at: moved.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data([7, 7, 7]).write(to: moved)
+        model.openEditor("a.jpg")
+        let editor = try #require(model.editor)
+        editor.rotate(clockwise: true)
+        panel.destination = moved
+        panel.whileOpen = { await review.applyOrganize([OrganizeMove(mediaID: "b.jpg", to: "Food/b.jpg")]) }
+        await editor.export()
+        #expect(editor.exportError == CoreErrorMessages.text(for: PhotoExportError.wouldReplaceOriginal))
+        #expect(try Data(contentsOf: moved) == Data([7, 7, 7]))
+    }
+
+    @Test(arguments: [false, true])
+    func testEditorStaysAndLockStaysOnWhileTheExportRuns(layout: Bool) async throws {
+        let panel = Panel()
+        let (model, _) = try makeModel(panel: panel)
+        if layout {
+            model.requestLayout(from: .category(fx.food.id))
+        } else {
+            model.openEditor("a.jpg")
+        }
+        try #require(model.isEditing)
+        panel.destination = source.appending(path: "out.jpg")
+        panel.holds = true
+        let export = Task { @MainActor in
+            if layout { await model.layoutEditor?.export() } else { await model.editor?.export() }
+        }
+        try await waitUntil { model.activeEditor?.session.isExporting == true }
+        let other = ReviewViewModel.SidebarItem.videos
+        model.activeEditor?.session.requestClose()
+        model.selectedItem = other
+        model.closeEditor()
+        #expect(model.isEditing && model.selectedItem != other)
+        #expect(!model.canSortOrRescan && !model.canDone && !model.canStartOver)
+        // A refused sidebar change does not jump later.
+        panel.holds = false
+        await export.value
+        #expect(model.isEditing && model.selectedItem != other)
+        // I2: the failed export is still on the editor, so the user sees it.
+        let error = layout ? model.layoutEditor?.exportError : model.editor?.exportError
+        #expect(error != nil)
+        model.activeEditor?.session.requestClose()
+        #expect(!model.isEditing)
+    }
+
+    // MARK: - The app sees the editors (final review I1)
+
+    private func appModel() -> AppModel { AppModel(environment: fx.environment) }
+
+    @Test func testAppKnowsAnExportingEditorAndForgetsAClosedOne() async throws {
+        let app = appModel()
+        let panel = Panel()
+        let (model, _) = try makeModel(panel: panel, app: app)
+        #expect(!app.isEditorExporting && !app.hasUnexportedEdits)
+        model.openEditor("a.jpg")
+        let editor = try #require(model.editor)
+        #expect(!app.hasUnexportedEdits)
+        editor.rotate(clockwise: true)
+        #expect(app.hasUnexportedEdits)
+        panel.holds = true
+        let export = Task { @MainActor in await editor.export() }
+        try await waitUntil { app.isEditorExporting }
+        panel.holds = false
+        await export.value
+        #expect(!app.isEditorExporting)
+        model.closeEditor()
+        #expect(!app.hasUnexportedEdits)
+    }
+
+    @Test func testAnExportedEditIsNotUnexportedButANewEditIs() async throws {
+        let panel = Panel()
+        let (model, _) = try makeModel(panel: panel)
+        // The fixture photos are not real images, so write one.
+        try writeTestJPEG(to: source.appending(path: "a.jpg"), red: 0.5, green: 0.5, blue: 0.5, size: 40, height: 20)
+        panel.destination = source.appending(path: "out.jpg")
+        model.openEditor("a.jpg")
+        let editor = try #require(model.editor)
+        editor.rotate(clockwise: true)
+        #expect(editor.hasUnexportedEdits)
+        await editor.export()
+        #expect(editor.exportError == nil && !editor.hasUnexportedEdits)
+        editor.rotate(clockwise: true)
+        #expect(editor.hasUnexportedEdits)
+    }
+
+    @Test func testQuitSavesTheLayoutDraftAtOnce() throws {
+        let app = appModel()
+        let (model, review) = try makeModel(app: app)
+        model.requestLayout(from: .category(fx.food.id))
+        let editor = try #require(model.layoutEditor)
+        editor.setTitle("Quick")
+        #expect(review.session.layoutDraft?.title != "Quick")  // the draft timer has not run
+        app.flushEditors()
+        #expect(review.session.layoutDraft?.title == "Quick")
+        #expect(!editor.hasUnexportedEdits)
     }
 
     // MARK: - Editing state

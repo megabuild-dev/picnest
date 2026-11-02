@@ -40,6 +40,8 @@ final class PhotoEditorViewModel: EditorSession {
     var exportError: String?
     /// The copy that the last export wrote for the shown photo, or nil.
     private(set) var lastExport: URL?
+    /// The photo and the edit of the last good export. A later edit makes the photo "unexported" again.
+    @ObservationIgnored private var exported: (id: MediaID, edit: PhotoEdit)?
     /// True while the Discard Edits dialog shows.
     var isConfirmingDiscard = false
 
@@ -67,7 +69,8 @@ final class PhotoEditorViewModel: EditorSession {
 
     @ObservationIgnored private let photos: [EditorPhoto]
     @ObservationIgnored private let service: PhotoEditService
-    @ObservationIgnored private let protected: ProtectedFiles
+    /// Builds the files that no export may replace, at write time (final review C1).
+    @ObservationIgnored private let protectedFiles: @MainActor () -> ProtectedFiles
     @ObservationIgnored private let chooseDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
     @ObservationIgnored private let revealURL: @MainActor (URL) -> Void
     @ObservationIgnored private let onClose: @MainActor () -> Void
@@ -83,7 +86,7 @@ final class PhotoEditorViewModel: EditorSession {
     /// `photos` must not be empty. `start` is the photo to show first (the first one if it is not in `photos`).
     /// `chooseDestination` shows the save panel with a suggested name, a folder, and a format; it returns the
     /// chosen file and format, or nil on cancel.
-    init(photos: [EditorPhoto], start: MediaID, service: PhotoEditService, protected: ProtectedFiles,
+    init(photos: [EditorPhoto], start: MediaID, service: PhotoEditService, protected: @escaping @MainActor () -> ProtectedFiles,
          chooseDestination: @escaping @MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?,
          revealURL: @escaping @MainActor (URL) -> Void,
          onClose: @escaping @MainActor () -> Void,
@@ -93,7 +96,7 @@ final class PhotoEditorViewModel: EditorSession {
         self.photos = photos
         index = photos.firstIndex { $0.id == start } ?? 0
         self.service = service
-        self.protected = protected
+        self.protectedFiles = protected
         self.chooseDestination = chooseDestination
         self.revealURL = revealURL
         self.onClose = onClose
@@ -241,7 +244,22 @@ final class PhotoEditorViewModel: EditorSession {
         move(to: id)
     }
 
+    /// True if the shown photo has an edit that no export wrote (final review I1).
+    var hasUnexportedEdits: Bool {
+        guard hasChanges else { return false }
+        guard let exported else { return true }
+        return exported.id != current.id || exported.edit != edit
+    }
+
+    /// A photo editor keeps nothing outside memory that a quit could save.
+    func flushForQuit() {}
+
     func requestClose() {
+        // The save panel and the write still need this editor and its lock (final review C1).
+        guard !isExporting else {
+            onCancelClose()
+            return
+        }
         if hasChanges {
             ask(.close)
         } else {
@@ -432,13 +450,15 @@ final class PhotoEditorViewModel: EditorSession {
         let stem = (photo.fileName as NSString).deletingPathExtension
         let suggested = PhotoEditService.uniqueName(
             String(localized: "\(stem) edited") + "." + format.fileExtension, in: folder)
-        guard let (destination, chosen) = await chooseDestination(suggested, folder, format) else { return }
+        // Set before the panel opens: a second click cannot open a second panel, and the editor cannot close.
         isExporting = true
         exportError = nil
         defer { isExporting = false }
+        guard let (destination, chosen) = await chooseDestination(suggested, folder, format) else { return }
         do {
             let written = try await service.exportCopy(
-                of: photo.url, edit: edit, to: destination, format: chosen, protected: protected)
+                of: photo.url, edit: edit, to: destination, format: chosen, protected: protectedFiles())
+            exported = (photo.id, edit)
             if current.id == photo.id { lastExport = written }
         } catch is CancellationError {
             return

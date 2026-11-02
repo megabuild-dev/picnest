@@ -17,6 +17,7 @@ struct PicnestApp: App {
                 }
             }
             .frame(minWidth: 1000, minHeight: 680)
+            .background(WindowCloseGuard(allow: { delegate.confirmLeaving() }))
         }
         .defaultSize(width: 1200, height: 800)
         .windowResizability(.contentMinSize)

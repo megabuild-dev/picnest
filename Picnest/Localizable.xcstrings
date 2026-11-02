@@ -41,6 +41,16 @@
         }
       }
     },
+    "%@ already exists." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ đã tồn tại."
+          }
+        }
+      }
+    },
     "%@ edited" : {
       "localizations" : {
         "vi" : {
@@ -891,6 +901,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Danh mục thay thế"
+          }
+        }
+      }
+    },
+    "An export is running. Wait for it to finish, then quit." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang xuất tệp. Hãy chờ xuất xong rồi thoát."
           }
         }
       }
@@ -2031,6 +2051,16 @@
         }
       }
     },
+    "If you quit now, the edits are lost. The photo itself does not change." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nếu thoát bây giờ, các chỉnh sửa sẽ mất. Ảnh gốc không thay đổi."
+          }
+        }
+      }
+    },
     "If you start a new sort, the last sort can no longer be undone." : {
       "localizations" : {
         "vi" : {
@@ -3102,6 +3132,16 @@
         }
       }
     },
+    "Picnest could not save the layout: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picnest không lưu được bố cục: %@"
+          }
+        }
+      }
+    },
     "Picnest could not save your changes: %@" : {
       "localizations" : {
         "vi" : {
@@ -3218,6 +3258,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xem nhanh"
+          }
+        }
+      }
+    },
+    "Quit" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thoát"
           }
         }
       }
@@ -3926,22 +3976,22 @@
         }
       }
     },
-    "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too." : {
+    "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites, collections, and layout draft are lost too." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Mục ưa thích và bộ sưu tập của bạn cũng sẽ mất."
+            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Mục ưa thích, bộ sưu tập và bản nháp bố cục của bạn cũng sẽ mất."
           }
         }
       }
     },
-    "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too. The last sort can no longer be undone." : {
+    "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites, collections, and layout draft are lost too. The last sort can no longer be undone." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Mục ưa thích và bộ sưu tập của bạn cũng sẽ mất. Không thể hoàn tác lần sắp xếp trước nữa."
+            "value" : "Ứng dụng quét lại thư mục và đề xuất danh mục mới. Các danh mục và lựa chọn của bạn sẽ mất. Mục ưa thích, bộ sưu tập và bản nháp bố cục của bạn cũng sẽ mất. Không thể hoàn tác lần sắp xếp trước nữa."
           }
         }
       }
@@ -3956,12 +4006,32 @@
         }
       }
     },
+    "The edit cannot be applied." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không áp dụng được chỉnh sửa."
+          }
+        }
+      }
+    },
     "The edits to this photo are not exported yet." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Các chỉnh sửa của ảnh này chưa được xuất."
+          }
+        }
+      }
+    },
+    "The file cannot be created." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tạo được tệp."
           }
         }
       }
@@ -4002,6 +4072,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thư mục đổi theo tên danh mục."
+          }
+        }
+      }
+    },
+    "The image cannot be encoded." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không mã hóa được ảnh."
           }
         }
       }
@@ -4052,6 +4132,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ảnh gốc không còn trong thư mục."
+          }
+        }
+      }
+    },
+    "The page cannot be drawn." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không vẽ được trang."
           }
         }
       }
@@ -4426,6 +4516,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bạn chưa chọn danh mục cho ảnh nào."
+          }
+        }
+      }
+    },
+    "Your edits to a photo are not exported yet." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các chỉnh sửa ảnh của bạn chưa được xuất."
           }
         }
       }

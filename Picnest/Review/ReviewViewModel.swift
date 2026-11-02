@@ -219,8 +219,11 @@ final class ReviewViewModel {
     @ObservationIgnored private let photoEdits: PhotoEditService
     @ObservationIgnored private let layoutExport: LayoutExportService
     @ObservationIgnored private let chooseExportDestination: @MainActor (String, URL, ExportFormat) async -> (URL, ExportFormat)?
+    @ObservationIgnored private let chooseLayoutDestination: @MainActor (String, URL, LayoutExportFormat) async -> (URL, LayoutExportFormat)?
     /// The editor that fills the window, or nil. It opens with `openEditor` and closes with `closeEditor`.
-    private(set) var activeEditor: ActiveEditor?
+    private(set) var activeEditor: ActiveEditor? {
+        didSet { app.editorChanged(from: oldValue?.session, to: activeEditor?.session) }
+    }
     /// The photo editor, or nil when none or another editor is open.
     var editor: PhotoEditorViewModel? {
         if case .photo(let editor)? = activeEditor { editor } else { nil }
@@ -262,11 +265,16 @@ final class ReviewViewModel {
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
          defaults: UserDefaults = .standard, duplicateSearch: DuplicatesViewModel.Search? = nil,
-         chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil) {
+         chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil,
+         chooseLayoutDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: LayoutExportFormat) async -> (URL, LayoutExportFormat)?)? = nil) {
         self.defaults = defaults
         self.photoEdits = photoEdits
         self.layoutExport = layoutExport
         self.chooseExportDestination = chooseExportDestination ?? { name, folder, format in
+            await EditorSavePanel.choose(
+                suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
+        }
+        self.chooseLayoutDestination = chooseLayoutDestination ?? { name, folder, format in
             await EditorSavePanel.choose(
                 suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
         }
@@ -366,10 +374,11 @@ final class ReviewViewModel {
     /// True while **Undo Last Sort** runs in any window.
     var isUndoingSort: Bool { app.isUndoingSort }
     /// False while a sort or an undo of a sort runs, while files move to or from the Trash (final review I1),
-    /// or while **Start Over…** runs, or while the photo editor is open: **Rescan**, **Sort Photos…**,
+    /// or while **Start Over…** or **Done** runs, or while an editor is open: **Rescan**, **Sort Photos…**,
     /// **Undo Last Sort**, **Done**, and **Start Over…** are off.
     var canSortOrRescan: Bool {
-        !isEditing && !isUndoingSort && !review.isMovingFiles && !app.isStartingOver && !library.isSortRunning
+        !isEditing && !isUndoingSort && !review.isMovingFiles && !app.isStartingOver && !app.isOrganizing
+            && !library.isSortRunning
     }
     /// The text of the Undo Last Sort alert, or nil.
     var undoSortMessage: String?
@@ -403,7 +412,7 @@ final class ReviewViewModel {
     var organizeErrorMessage: String? { app.organizeErrorMessage }
 
     /// **Done** is on when there is at least 1 category and no sort, undo, or Trash move runs.
-    var canDone: Bool { !review.session.categories.isEmpty && canSortOrRescan && !app.isOrganizing }
+    var canDone: Bool { !review.session.categories.isEmpty && canSortOrRescan }
 
     /// **Done**: move every classified photo into a category sub-folder of the source folder, rename it,
     /// and close the session (spec 7.2). One-way.
@@ -427,8 +436,8 @@ final class ReviewViewModel {
     /// The text of the Start Over confirmation.
     var startOverMessage: String {
         canUndoLastSort
-            ? String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too. The last sort can no longer be undone.")
-            : String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites and collections are lost too.")
+            ? String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites, collections, and layout draft are lost too. The last sort can no longer be undone.")
+            : String(localized: "The app scans the folder again and proposes new categories. Your categories and picks are lost. Your favorites, collections, and layout draft are lost too.")
     }
 
     /// File > **Start Over…**: shows the confirmation.
@@ -1004,7 +1013,7 @@ final class ReviewViewModel {
         guard !photos.isEmpty else { return }
         itemAfterClose = nil
         activeEditor = .photo(PhotoEditorViewModel(
-            photos: photos, start: start, service: photoEdits, protected: protectedFiles(),
+            photos: photos, start: start, service: photoEdits, protected: protectedFilesProvider,
             chooseDestination: chooseExportDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
             onClose: { [weak self] in self?.closeEditor() },
@@ -1012,16 +1021,22 @@ final class ReviewViewModel {
             readSize: { [weak self] id in await self?.pixelSize(of: id) }))
     }
 
-    /// The files that no export may replace: every photo of the folder and every file in the Trash.
-    private func protectedFiles() -> ProtectedFiles {
-        ProtectedFiles(
-            source: source, mediaIDs: Set(mediaByID.values.map(\.relativePath)),
-            otherPaths: review.session.trashed.map(\.trashPath))
+    /// The files that no export may replace: every photo of the folder and every file in the Trash. The editor
+    /// calls this after the save panel returns, so a photo that moved or went to the Trash meanwhile counts.
+    /// It reads the live review, not a copy made when the editor opened (final review C1).
+    private var protectedFilesProvider: @MainActor () -> ProtectedFiles {
+        { [review, source] in
+            ProtectedFiles(
+                source: source, mediaIDs: Set(review.mediaByID.values.map(\.relativePath)),
+                otherPaths: review.session.trashed.map(\.trashPath))
+        }
     }
 
     /// Closes the editor and drops its edit. The selection stays. A sidebar item that the user chose
     /// meanwhile shows now.
     func closeEditor() {
+        // An export still needs the editor, its lock, and its place to show an error (final review C1, I2).
+        guard activeEditor?.session.isExporting != true else { return }
         activeEditor = nil
         if let item = itemAfterClose {
             itemAfterClose = nil
@@ -1157,14 +1172,12 @@ final class ReviewViewModel {
         askingToContinueLayout = nil
         activeEditor = .layout(LayoutEditorViewModel(
             document: document, sources: sources, startSource: sourceID(of: origin), service: layoutExport,
-            source: source, protected: protectedFiles(), fileNames: fileNames,
+            source: source, protected: protectedFilesProvider, fileNames: fileNames,
             saveDraft: { [weak self] in self?.review.saveLayoutDraft($0) },
-            chooseDestination: { name, folder, format in
-                await EditorSavePanel.choose(
-                    suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
-            },
+            chooseDestination: chooseLayoutDestination,
             revealURL: { [weak self] in self?.revealURLs([$0]) },
             onClose: { [weak self] in self?.closeEditor() },
+            onCancelClose: { [weak self] in self?.itemAfterClose = nil },
             isAvailable: { [weak self] id in
                 guard let self else { return false }
                 return !self.review.session.trashed.contains { $0.mediaID == id }

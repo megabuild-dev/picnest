@@ -197,7 +197,7 @@ struct CollectionsViewModelTests {
     @Test func testStartOverMessageNamesFavoritesAndCollections() throws {
         let (model, review) = try make()
         let text = "The app scans the folder again and proposes new categories. Your categories and picks are lost."
-            + " Your favorites and collections are lost too."
+            + " Your favorites, collections, and layout draft are lost too."
         #expect(model.startOverMessage == text)
         review.markSorted(at: Date())
         #expect(model.startOverMessage == text + " The last sort can no longer be undone.")

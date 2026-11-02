@@ -21,13 +21,19 @@ struct PhotoEditorViewModelTests {
         let model: PhotoEditorViewModel
         let panel: Panel
         var closed: Closed
+        /// The ids that the photo editor reads as protected at write time.
+        let protect: Protect
     }
+
+    @MainActor final class Protect { var ids: Set<MediaID> = [] }
 
     /// Records the calls of the fake save panel.
     @MainActor final class Panel {
         var suggestions: [String] = []
         var answer: ((String, URL) -> URL?)?
         var revealed: [URL] = []
+        /// While true, the fake save panel waits.
+        var holds = false
     }
 
     @MainActor final class Closed { var count = 0; var cancels = 0 }
@@ -46,11 +52,14 @@ struct PhotoEditorViewModelTests {
         }
         let panel = Panel()
         let closed = Closed()
-        let protected = ProtectedFiles(source: folder, mediaIDs: Set(names).union(protectedIDs), otherPaths: [])
+        let protect = Protect()
+        protect.ids = Set(names).union(protectedIDs)
         let model = PhotoEditorViewModel(
-            photos: photos, start: start ?? names[0], service: service, protected: protected,
+            photos: photos, start: start ?? names[0], service: service,
+            protected: { [folder] in ProtectedFiles(source: folder, mediaIDs: protect.ids, otherPaths: []) },
             chooseDestination: { [panel, folder] name, _, format in
                 panel.suggestions.append(name)
+                while panel.holds { await Task.yield() }
                 guard let answer = panel.answer, let url = answer(name, folder) else { return nil }
                 return (url, format)
             },
@@ -58,7 +67,7 @@ struct PhotoEditorViewModelTests {
             onClose: { [closed] in closed.count += 1 },
             onCancelClose: { [closed] in closed.cancels += 1 },
             readSize: { _ in storedSize })
-        return Fixture(model: model, panel: panel, closed: closed)
+        return Fixture(model: model, panel: panel, closed: closed, protect: protect)
     }
 
     // MARK: - History
@@ -193,6 +202,51 @@ struct PhotoEditorViewModelTests {
         #expect(fx.model.savedText == "Saved “a edited.jpg”.")
         fx.model.revealLastExport()
         #expect(fx.panel.revealed == [expected])
+    }
+
+    /// Final review C1: a photo that moved while the panel was open is protected at write time.
+    @Test func testProtectedSetIsRebuiltAfterThePanelReturns() async throws {
+        let fx = try makeModel()
+        let moved = folder.appending(path: "moved.jpg")
+        try Data([7, 7, 7]).write(to: moved)
+        fx.panel.answer = { [protect = fx.protect] _, _ in
+            protect.ids.insert("moved.jpg")  // Done moved a photo here while the panel was open
+            return moved
+        }
+        fx.model.rotate(clockwise: true)
+        await fx.model.export()
+        #expect(fx.model.exportError == CoreErrorMessages.text(for: PhotoExportError.wouldReplaceOriginal))
+        #expect(try Data(contentsOf: moved) == Data([7, 7, 7]))
+    }
+
+    /// Final review C1: Back, Esc, and a sidebar change cannot close the editor while the panel is open.
+    @Test func testCloseIsRefusedWhileThePanelIsOpen() async throws {
+        let fx = try makeModel()
+        fx.panel.holds = true
+        let export = Task { await fx.model.export() }
+        try await waitUntil { fx.model.isExporting }
+        fx.model.requestClose()
+        #expect(fx.closed.count == 0 && fx.closed.cancels == 1 && !fx.model.isConfirmingDiscard)
+        fx.model.rotate(clockwise: true)
+        fx.model.requestClose()
+        #expect(fx.closed.count == 0 && !fx.model.isConfirmingDiscard)
+        fx.panel.holds = false
+        await export.value
+        fx.model.reset()
+        fx.model.requestClose()
+        #expect(fx.closed.count == 1)
+    }
+
+    @Test func testSecondExportClickDoesNotOpenASecondPanel() async throws {
+        let fx = try makeModel()
+        fx.panel.holds = true
+        let first = Task { await fx.model.export() }
+        try await waitUntil { fx.model.isExporting }
+        await fx.model.export()
+        #expect(fx.panel.suggestions.count == 1)
+        fx.panel.holds = false
+        await first.value
+        #expect(!fx.model.isExporting)
     }
 
     // MARK: - Preview

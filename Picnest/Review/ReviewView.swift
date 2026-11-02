@@ -275,6 +275,7 @@ struct ReviewView: View {
             Button("Back to Photos", systemImage: "chevron.left", action: editor.requestClose)
                 .labelStyle(.iconOnly)
                 .help("Back to Photos")
+                .disabled(editor.isExporting)
         }
         // The layout editor has its own Redo, next to Undo, in its header.
         if showsRedo {

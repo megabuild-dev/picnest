@@ -28,14 +28,15 @@ struct SidebarPreferencesBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Picker("Appearance", selection: $appearance.mode) {
-                Image(systemName: "circle.lefthalf.filled").tag(AppearanceMode.system)
+                Label("System", systemImage: "circle.lefthalf.filled").tag(AppearanceMode.system)
                     .help("System")
-                Image(systemName: "sun.max").tag(AppearanceMode.light)
+                Label("Light", systemImage: "sun.max").tag(AppearanceMode.light)
                     .help("Light")
-                Image(systemName: "moon").tag(AppearanceMode.dark)
+                Label("Dark", systemImage: "moon").tag(AppearanceMode.dark)
                     .help("Dark")
             }
             .pickerStyle(.segmented)
+            .labelStyle(.iconOnly)
             .labelsHidden()
             .accessibilityLabel("Appearance")
             Picker(selection: $language.language) {

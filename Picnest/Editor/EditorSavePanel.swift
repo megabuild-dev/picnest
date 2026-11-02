@@ -56,6 +56,7 @@ enum EditorSavePanel {
     }
 
     /// Changes the extension of the name and the allowed type when the user picks another format.
+    @MainActor
     private final class FormatTarget: NSObject {
         let panel: NSSavePanel
         let popUp: NSPopUpButton

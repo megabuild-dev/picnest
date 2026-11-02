@@ -72,4 +72,26 @@ struct SortMessagesTests {
             #expect(strings[key] != nil, "No catalog key: \(key)")
         }
     }
+
+    // MARK: - Export errors (final review, minor 2)
+
+    @Test func layoutErrorsDoNotSayEditedCopy() {
+        let cases: [(String, String)] = [
+            ("The page cannot be drawn.", "The page cannot be drawn."),
+            ("The file cannot be created.", "The file cannot be created."),
+            ("Layout 2.png already exists.", "Layout 2.png already exists."),
+            ("Disk is full", "Disk is full"),
+        ]
+        for (reason, shown) in cases {
+            let text = CoreErrorMessages.layoutText(for: PhotoExportError.cannotWrite(reason))
+            #expect(text == "Picnest could not save the layout: \(shown)")
+            #expect(!text.contains("edited copy"))
+        }
+        #expect(CoreErrorMessages.layoutText(for: PhotoExportError.cannotRead) == "Picnest could not read the photo.")
+    }
+
+    @Test func photoErrorsKeepTheEditedCopyWording() {
+        let text = CoreErrorMessages.text(for: PhotoExportError.cannotWrite("The image cannot be encoded."))
+        #expect(text == "Picnest could not save the edited copy: The image cannot be encoded.")
+    }
 }
