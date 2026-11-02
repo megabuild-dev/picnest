@@ -43,11 +43,47 @@ enum CoreErrorMessages {
     /// The text of an edited copy that could not be saved.
     static func text(for error: PhotoExportError) -> String {
         switch error {
+        case .cannotWrite(let reason):
+            return String(localized: "Picnest could not save the edited copy: \(exportReason(reason))")
+        default:
+            return sharedText(for: error)
+        }
+    }
+
+    /// The text of a layout export that failed. Any other error uses `text(for:)`.
+    static func layoutText(for error: any Error) -> String {
+        guard let error = error as? PhotoExportError else { return text(for: error) }
+        switch error {
+        case .cannotWrite(let reason):
+            return String(localized: "Picnest could not save the layout: \(exportReason(reason))")
+        default:
+            return sharedText(for: error)
+        }
+    }
+
+    /// The texts that the edited copy and the layout share.
+    private static func sharedText(for error: PhotoExportError) -> String {
+        switch error {
         case .wouldReplaceOriginal:
             return String(localized: "Choose another name. Picnest never replaces a photo of this folder.")
         case .originalMissing: return String(localized: "The original photo is not in its folder now.")
         case .cannotRead: return String(localized: "Picnest could not read the photo.")
-        case .cannotWrite(let reason): return String(localized: "Picnest could not save the edited copy: \(reason)")
+        case .cannotWrite(let reason): return reason
+        }
+    }
+
+    /// The reasons that the export gives are English text of the core. The app translates the known ones.
+    /// Any other reason is the text of the system.
+    private static func exportReason(_ reason: String) -> String {
+        switch reason {
+        case "The file cannot be created.": return String(localized: "The file cannot be created.")
+        case "The image cannot be encoded.": return String(localized: "The image cannot be encoded.")
+        case "The page cannot be drawn.": return String(localized: "The page cannot be drawn.")
+        case "The edit cannot be applied.": return String(localized: "The edit cannot be applied.")
+        default:
+            let suffix = " already exists."
+            guard reason.hasSuffix(suffix), reason.count > suffix.count else { return reason }
+            return String(localized: "\(String(reason.dropLast(suffix.count))) already exists.")
         }
     }
 
