@@ -25,6 +25,11 @@ struct LayoutEditorView: View {
         .focused($hasFocus)
         .focusEffectDisabled()
         .onAppear { hasFocus = true }
+        // A click on a picker, a slider, or the page takes the focus from this view. Take it back, so the keys work.
+        .onChange(of: model.document) { retakeFocus() }
+        .onChange(of: model.selectedCell) { retakeFocus() }
+        .onChange(of: model.pageIndex) { retakeFocus() }
+        .onChange(of: model.isPreviewing) { retakeFocus() }
         .onKeyPress(phases: [.down, .repeat], action: handle)
         .alert("Could not export", isPresented: errorBinding) {
             Button("OK", role: .cancel) { model.exportError = nil }
@@ -42,9 +47,11 @@ struct LayoutEditorView: View {
                     .textFieldStyle(.plain).multilineTextAlignment(.center)
                     .font(.system(size: 13)).foregroundStyle(Theme.textSecondary.color)
                     .frame(width: 220)
+                    .onSubmit { hasFocus = true }
             }
             Spacer(minLength: 0)
             Button("Undo", systemImage: "arrow.uturn.backward", action: model.undo).disabled(!model.canUndo)
+            Button("Redo", systemImage: "arrow.uturn.forward", action: model.redo).disabled(!model.canRedo)
             Button { model.togglePreview() } label: { Label("Preview", systemImage: "eye") }
                 .accessibilityAddTraits(model.isPreviewing ? .isSelected : [])
             exportMenu
@@ -56,12 +63,20 @@ struct LayoutEditorView: View {
         Menu {
             Button("PNG…") { Task { await model.export(startingWith: .png) } }
             Button("PDF…") { Task { await model.export(startingWith: .pdf) } }
-                .keyboardShortcut("e", modifiers: [.command, .shift])
         } label: {
             Label("Export", systemImage: "square.and.arrow.up")
         }
         .menuStyle(.button).buttonStyle(.borderedProminent)
-        .disabled(model.isExporting || model.document.photoIDs.isEmpty)
+        .disabled(!model.canExport)
+        .background { exportShortcut }
+    }
+
+    /// Carries ⇧⌘E, so the key works while the menu is closed. It is invisible and has no other job.
+    private var exportShortcut: some View {
+        Button("PDF…") { Task { await model.export(startingWith: .pdf) } }
+            .keyboardShortcut("e", modifiers: [.command, .shift])
+            .disabled(!model.canExport)
+            .opacity(0).allowsHitTesting(false).accessibilityHidden(true)
     }
 
     private var center: some View {
@@ -109,6 +124,10 @@ struct LayoutEditorView: View {
         default: return .ignored
         }
         return .handled
+    }
+
+    private func retakeFocus() {
+        if !Self.isEditingText { hasFocus = true }
     }
 
     private static var isEditingText: Bool { NSApp.keyWindow?.firstResponder is NSText }

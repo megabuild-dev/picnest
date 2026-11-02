@@ -118,7 +118,7 @@ struct EndToEndTests {
         await app!.settled()
         var reviewModel: ReviewViewModel? = ReviewViewModel(
             review: try review(app!), classify: env!.classifyService, thumbnails: env!.thumbnails,
-            library: env!.library, photoEdits: env!.photoEdits, app: app!, onRescan: {})
+            library: env!.library, photoEdits: env!.photoEdits, layoutExport: env!.layoutExport, app: app!, onRescan: {})
         let categories = reviewModel!.categories
         try #require(categories.count >= 2)
         #expect(reviewModel!.count(of: .all) == 30)
@@ -212,7 +212,7 @@ struct EndToEndTests {
         await app.settled()
 
         let model = ReviewViewModel(review: try review(app), classify: env.classifyService, thumbnails: env.thumbnails,
-                                    library: env.library, photoEdits: env.photoEdits, app: app, onRescan: {})
+                                    library: env.library, photoEdits: env.photoEdits, layoutExport: env.layoutExport, app: app, onRescan: {})
         let categoryCount = model.categories.count
         #expect(model.count(of: .all) == 30)
         #expect(model.canDone)
@@ -242,7 +242,7 @@ struct EndToEndTests {
         welcome2.openRecent(try #require(welcome2.recent.first))
         await app2.settled()
         let model2 = ReviewViewModel(review: try review(app2), classify: env2.classifyService,
-                                     thumbnails: env2.thumbnails, library: env2.library, photoEdits: env2.photoEdits, app: app2, onRescan: {})
+                                     thumbnails: env2.thumbnails, library: env2.library, photoEdits: env2.photoEdits, layoutExport: env2.layoutExport, app: app2, onRescan: {})
         #expect(model2.categories.count == categoryCount)
         #expect(model2.count(of: .all) == 30)
     }

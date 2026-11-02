@@ -94,9 +94,25 @@ private struct CellActions: ViewModifier {
     @ViewBuilder func body(content: Content) -> some View {
         if cell.mediaID != nil {
             content
-                .accessibilityAction(named: Text("Move Earlier")) { model.movePhoto(at: cell.index, by: -1) }
-                .accessibilityAction(named: Text("Move Later")) { model.movePhoto(at: cell.index, by: 1) }
+                .modifier(MoveAction(name: "Move Earlier", model: model, cell: cell.index, offset: -1))
+                .modifier(MoveAction(name: "Move Later", model: model, cell: cell.index, offset: 1))
                 .accessibilityAction(named: Text("Remove from Layout")) { model.removePhoto(at: cell.index) }
+        } else {
+            content
+        }
+    }
+}
+
+/// A move action that VoiceOver lists only when the photo can move that way: not before the first or after the last.
+private struct MoveAction: ViewModifier {
+    let name: LocalizedStringKey
+    let model: LayoutEditorViewModel
+    let cell: Int
+    let offset: Int
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if model.canMovePhoto(at: cell, by: offset) {
+            content.accessibilityAction(named: Text(name)) { model.movePhoto(at: cell, by: offset) }
         } else {
             content
         }

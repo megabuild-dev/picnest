@@ -257,7 +257,7 @@ final class ReviewViewModel {
     /// `app` holds the undo flag that every window shares, and starts over (`startOver`). `afterScan` is true
     /// when a scan or a rescan opened this review.
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, library: LibraryService,
-         photoEdits: PhotoEditService, layoutExport: LayoutExportService? = nil, app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
+         photoEdits: PhotoEditService, layoutExport: LayoutExportService, app: AppModel, afterScan: Bool = false, onRescan: @escaping () -> Void,
          openURL: @escaping @MainActor (URL) -> Void = { NSWorkspace.shared.open($0) },
          revealURLs: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
          folderExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
@@ -265,7 +265,7 @@ final class ReviewViewModel {
          chooseExportDestination: (@MainActor (_ suggestedName: String, _ folder: URL, _ format: ExportFormat) async -> (URL, ExportFormat)?)? = nil) {
         self.defaults = defaults
         self.photoEdits = photoEdits
-        self.layoutExport = layoutExport ?? LayoutExportService(thumbnails: thumbnails, images: ImageRepository())
+        self.layoutExport = layoutExport
         self.chooseExportDestination = chooseExportDestination ?? { name, folder, format in
             await EditorSavePanel.choose(
                 suggestedName: name, folder: folder, format: format, title: EditorSavePanel.title(of:))
@@ -1079,6 +1079,9 @@ final class ReviewViewModel {
             openLayout(.new(photos: layoutPhotoIDs(of: origin), title: layoutTitle(of: origin)), origin: origin)
         }
     }
+
+    /// The message of the "Continue your last layout?" alert: how many photos the draft has.
+    var continueLayoutMessage: String { CountText.lastLayout(review.session.layoutDraft?.photoIDs.count ?? 0) }
 
     /// Answers the question with **Continue Layout**: opens the draft.
     func continueLayout() {

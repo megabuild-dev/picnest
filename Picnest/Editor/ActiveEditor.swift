@@ -18,6 +18,11 @@ enum ActiveEditor {
     case photo(PhotoEditorViewModel)
     case layout(LayoutEditorViewModel)
 
+    /// False for the layout editor: it has Redo in its own header.
+    var hasToolbarRedo: Bool {
+        if case .photo = self { true } else { false }
+    }
+
     var session: any EditorSession {
         switch self {
         case .photo(let editor): editor

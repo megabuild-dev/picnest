@@ -288,7 +288,7 @@ struct ReviewFixture {
         let environment = self.environment
         let model = ReviewViewModel(
             review: review, classify: classify, thumbnails: ThumbnailService(images: ImageRepository()),
-            library: environment.library, photoEdits: environment.photoEdits, app: AppModel(environment: environment), onRescan: onRescan,
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: AppModel(environment: environment), onRescan: onRescan,
             openURL: openURL, revealURLs: revealURLs, folderExists: folderExists,
             defaults: defaults ?? suite.defaults,
             chooseExportDestination: chooseExport)

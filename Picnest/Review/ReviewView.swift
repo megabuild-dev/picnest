@@ -28,7 +28,7 @@ struct ReviewView: View {
     /// opened this review (spec 3.7).
     init(review: ReviewService, classify: ClassifyService, thumbnails: ThumbnailService, sortService: SortService,
          library: LibraryService, app: AppModel, afterScan: Bool = false, preferences: SidebarPreferences? = nil,
-         photoEdits: PhotoEditService, layoutExport: LayoutExportService? = nil) {
+         photoEdits: PhotoEditService, layoutExport: LayoutExportService) {
         self.preferences = preferences
         self.review = review
         self.sortService = sortService
@@ -58,7 +58,7 @@ struct ReviewView: View {
             if let active = model.activeEditor {
                 editorDetail(active)
                     .toolbar(removing: .sidebarToggle)
-                    .toolbar { editorToolbar(active.session) }
+                    .toolbar { editorToolbar(active.session, showsRedo: active.hasToolbarRedo) }
             } else {
                 detail
                     .background(Theme.background.color)
@@ -131,6 +131,8 @@ struct ReviewView: View {
             Button("Continue Layout") { model.continueLayout() }
             Button("Start New") { model.startNewLayout() }
             Button("Cancel", role: .cancel) { model.cancelLayoutRequest() }
+        } message: {
+            Text(model.continueLayoutMessage)
         }
         // File > Start Over… (spec 3.3).
         .confirmationDialog("Start over?", isPresented: Bindable(model).isConfirmingStartOver,
@@ -268,17 +270,20 @@ struct ReviewView: View {
     }
 
     /// Back and Redo only: no avatar, no tab bar, no search (spec 6).
-    @ToolbarContentBuilder private func editorToolbar(_ editor: any EditorSession) -> some ToolbarContent {
+    @ToolbarContentBuilder private func editorToolbar(_ editor: any EditorSession, showsRedo: Bool) -> some ToolbarContent {
         ToolbarItem(placement: .navigation) {
             Button("Back to Photos", systemImage: "chevron.left", action: editor.requestClose)
                 .labelStyle(.iconOnly)
                 .help("Back to Photos")
         }
-        ToolbarItem(placement: .primaryAction) {
-            Button("Redo", systemImage: "arrow.uturn.forward", action: editor.redo)
-                .labelStyle(.iconOnly)
-                .disabled(!editor.canRedo)
-                .help("Redo")
+        // The layout editor has its own Redo, next to Undo, in its header.
+        if showsRedo {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Redo", systemImage: "arrow.uturn.forward", action: editor.redo)
+                    .labelStyle(.iconOnly)
+                    .disabled(!editor.canRedo)
+                    .help("Redo")
+            }
         }
     }
 
@@ -379,6 +384,11 @@ enum ReviewPreviewData {
         return PhotoEditService(thumbnails: ThumbnailService(images: images), images: images)
     }
 
+    static func layoutExport() -> LayoutExportService {
+        let images = ImageRepository()
+        return LayoutExportService(thumbnails: ThumbnailService(images: images), images: images)
+    }
+
     static func library() -> LibraryService {
         let root = FileManager.default.temporaryDirectory.appending(path: "PicnestPreview", directoryHint: .isDirectory)
         let sessions = SessionRepository(root: root.appending(path: "Sessions"))
@@ -447,7 +457,7 @@ extension ReviewView {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),
                   sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app(),
-                  photoEdits: ReviewPreviewData.photoEdits())
+                  photoEdits: ReviewPreviewData.photoEdits(), layoutExport: ReviewPreviewData.layoutExport())
         let model = _model.wrappedValue
         for id in ids { model.click(id, modifiers: .command) }
     }
@@ -459,7 +469,7 @@ extension ReviewView {
         self.init(review: ReviewPreviewData.review(), classify: ClassifyService(),
                   thumbnails: ThumbnailService(images: ImageRepository()),
                   sortService: SortService(), library: ReviewPreviewData.library(), app: ReviewPreviewData.app(),
-                  photoEdits: ReviewPreviewData.photoEdits())
+                  photoEdits: ReviewPreviewData.photoEdits(), layoutExport: ReviewPreviewData.layoutExport())
         _model.wrappedValue.selectedItem = .notSure
     }
 }

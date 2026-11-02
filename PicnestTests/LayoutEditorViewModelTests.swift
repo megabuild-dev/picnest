@@ -487,4 +487,24 @@ struct LayoutEditorViewModelTests {
         #expect(LayoutEditorViewModel.paperText(.a4, orientation: .landscape) == "A4 (297 × 210 mm)")
         #expect(LayoutEditorViewModel.paperText(.a4, orientation: .portrait) == "A4 (210 × 297 mm)")
     }
+
+    @Test func testMoveIsOfferedOnlyInsideTheRange() throws {
+        let model = try makeRig(count: 3).model
+        #expect(!model.canMovePhoto(at: 0, by: -1) && model.canMovePhoto(at: 0, by: 1))
+        #expect(model.canMovePhoto(at: 2, by: -1) && !model.canMovePhoto(at: 2, by: 1))
+        #expect(!model.canMovePhoto(at: 4, by: -1))
+    }
+
+    @Test func testExportIsOnlyOfferedWithPhotosAndNotWhileRunning() async throws {
+        let empty = try makeRig(count: 1, used: 0).model
+        #expect(!empty.canExport)
+        let rig = try makeRig()
+        #expect(rig.model.canExport)
+        rig.spy.holdsPanel = true
+        let task = Task { await rig.model.export() }
+        while !rig.model.isExporting { await Task.yield() }
+        #expect(!rig.model.canExport)
+        rig.spy.holdsPanel = false
+        await task.value
+    }
 }

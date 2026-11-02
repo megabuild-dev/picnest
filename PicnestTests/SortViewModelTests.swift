@@ -513,7 +513,7 @@ struct SortViewModelTests {
                                  onRescan: @escaping () -> Void = {}) -> ReviewViewModel {
         ReviewViewModel(
             review: review, classify: environment.classifyService, thumbnails: environment.thumbnails,
-            library: environment.library, photoEdits: environment.photoEdits, app: app ?? AppModel(environment: environment), onRescan: onRescan)
+            library: environment.library, photoEdits: environment.photoEdits, layoutExport: environment.layoutExport, app: app ?? AppModel(environment: environment), onRescan: onRescan)
     }
 
     @Test func doneAfterStopWithFilesKeepsReviewWithUndo() async throws {

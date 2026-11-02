@@ -357,6 +357,9 @@ final class LayoutEditorViewModel: EditorSession {
         return String(localized: "Photo \(cell.index + 1) of \(document.photoIDs.count), \(fileNames[id] ?? id)")
     }
 
+    /// True when **Export** has work: not while it runs, and not with no photo.
+    var canExport: Bool { !isExporting && !document.photoIDs.isEmpty }
+
     var currentPage: LayoutPage { pages[pageIndex] }
     var canStepBack: Bool { pageIndex > 0 }
     var canStepForward: Bool { pageIndex < pages.count - 1 }

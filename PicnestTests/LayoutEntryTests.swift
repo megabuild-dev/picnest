@@ -106,6 +106,7 @@ struct LayoutEntryTests {
         model.click("c.jpg", modifiers: [])
         model.requestLayout(from: .selection)
         #expect(model.askingToContinueLayout == .selection)
+        #expect(model.continueLayoutMessage == "Your last layout has 2 photos.")
         #expect(model.layoutEditor == nil)
         model.continueLayout()
         #expect(model.askingToContinueLayout == nil)
